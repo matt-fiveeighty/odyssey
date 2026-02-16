@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Sidebar } from "@/components/layout/sidebar";
-import { MobileNav } from "@/components/layout/mobile-nav";
-import { Header } from "@/components/layout/header";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,10 +19,19 @@ export const metadata: Metadata = {
   },
   description:
     "Plan your western big game hunting strategy like a financial portfolio. Track preference points, calculate draw investments, and build your personalized 10-year roadmap across CO, WY, MT, and 7 more states.",
-  keywords: ["western hunting", "big game", "preference points", "draw strategy", "elk hunting", "mule deer", "hunt planner"],
+  keywords: [
+    "western hunting",
+    "big game",
+    "preference points",
+    "draw strategy",
+    "elk hunting",
+    "mule deer",
+    "hunt planner",
+  ],
   openGraph: {
     title: "Hunt Planner | Strategic Western Big Game Portfolio",
-    description: "Plan your western big game hunting strategy like a financial portfolio.",
+    description:
+      "Plan your western big game hunting strategy like a financial portfolio.",
     type: "website",
     locale: "en_US",
   },
@@ -45,16 +51,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <div className="flex h-screen overflow-hidden">
-          <Sidebar />
-          <div className="flex-1 flex flex-col overflow-hidden">
-            <Header />
-            <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
-              {children}
-            </main>
-          </div>
-        </div>
-        <MobileNav />
+        {children}
       </body>
     </html>
   );

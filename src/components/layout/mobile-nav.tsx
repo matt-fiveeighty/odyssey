@@ -6,7 +6,7 @@ import { Home, Calculator, Map, Target, Compass, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/dashboard", label: "Home", icon: Home },
   { href: "/calculator", label: "Calc", icon: Calculator },
   { href: "/units", label: "Units", icon: Map },
   { href: "/goals", label: "Goals", icon: Target },
