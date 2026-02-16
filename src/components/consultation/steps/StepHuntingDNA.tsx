@@ -6,6 +6,7 @@ import { ToggleChip } from "../shared/ToggleChip";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin } from "lucide-react";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import type { HuntStyle } from "@/lib/types";
 
 const STYLE_OPTIONS: { id: HuntStyle; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -31,14 +32,14 @@ const TERRAIN_OPTIONS = [
 ];
 
 const FACTOR_OPTIONS = [
-  { id: "draw_odds", label: "Draw Odds" },
-  { id: "trophy_quality", label: "Trophy Quality" },
-  { id: "solitude", label: "Solitude" },
-  { id: "accessibility", label: "Accessibility" },
-  { id: "cost", label: "Low Cost" },
-  { id: "success_rate", label: "Success Rate" },
-  { id: "scenery", label: "Scenery" },
-  { id: "season_timing", label: "Season Timing" },
+  { id: "draw_odds", label: "Draw Odds", tooltip: "draw odds" },
+  { id: "trophy_quality", label: "Trophy Quality", tooltip: "trophy rating" },
+  { id: "solitude", label: "Solitude", tooltip: "" },
+  { id: "accessibility", label: "Accessibility", tooltip: "" },
+  { id: "cost", label: "Low Cost", tooltip: "" },
+  { id: "success_rate", label: "Success Rate", tooltip: "success rate" },
+  { id: "scenery", label: "Scenery", tooltip: "" },
+  { id: "season_timing", label: "Season Timing", tooltip: "" },
 ];
 
 export function StepHuntingDNA() {
@@ -122,8 +123,10 @@ export function StepHuntingDNA() {
                     wizard.toggleArrayField("importantFactors", f.id);
                   }
                 }}
-                label={f.label}
-              />
+                label={f.tooltip ? undefined : f.label}
+              >
+                {f.tooltip ? <HuntingTerm term={f.tooltip}>{f.label}</HuntingTerm> : undefined}
+              </ToggleChip>
             ))}
           </div>
           <p className="text-[10px] text-muted-foreground mt-2">{wizard.importantFactors.length}/3 selected</p>

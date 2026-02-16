@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { HuntStyle, UserPoints, UserGoal, Milestone, DreamHunt, StrategicAssessment, StateScoreBreakdown } from "@/lib/types";
+import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 
 // ============================================================================
 // Strategic Consultation Wizard Store v4
@@ -87,12 +88,13 @@ interface ConsultationState {
   setGenerationPhase: (phase: string) => void;
   setGenerationProgress: (pct: number) => void;
   confirmPlan: (assessment: StrategicAssessment) => void;
+  prefillFromGoals: (goals: import("@/lib/types").UserGoal[]) => void;
   reset: () => void;
 }
 
 const consultationInitial: Omit<ConsultationState,
   | "setStep" | "setField" | "setExistingPoints" | "toggleArrayField"
-  | "addDreamHunt" | "removeDreamHunt" | "confirmPlan" | "reset"
+  | "addDreamHunt" | "removeDreamHunt" | "confirmPlan" | "prefillFromGoals" | "reset"
   | "setPreviewScores" | "confirmStateSelection" | "setFineTuneAnswer"
   | "setGenerationPhase" | "setGenerationProgress"
 > = {
@@ -167,6 +169,30 @@ export const useWizardStore = create<ConsultationState>()(
       setGenerationPhase: (phase) => set({ generationPhase: phase }),
       setGenerationProgress: (pct) => set({ generationProgress: pct }),
       confirmPlan: (assessment) => set({ confirmedPlan: assessment }),
+      prefillFromGoals: (goals) => {
+        // Extract unique species from goals
+        const species = [...new Set(goals.map(g => g.speciesId))];
+        // Most common hunt style across goals (if any)
+        const styleCounts: Record<string, number> = {};
+        goals.forEach(g => { if (g.huntStyle) styleCounts[g.huntStyle] = (styleCounts[g.huntStyle] ?? 0) + 1; });
+        const topStyle = Object.entries(styleCounts).sort((a, b) => b[1] - a[1])[0]?.[0] as import("@/lib/types").HuntStyle | undefined;
+        // Trophy vs meat from trophy descriptions
+        const hasTrophyDreams = goals.some(g => g.trophyDescription && g.trophyDescription.length > 10);
+        const trophyVsMeat = hasTrophyDreams ? "lean_trophy" as const : null;
+        // Bucket list from all trophy descriptions
+        const bucketList = goals
+          .filter(g => g.trophyDescription)
+          .map(g => `${g.title}: ${g.trophyDescription}`)
+          .join("\n");
+
+        set({
+          species,
+          ...(topStyle ? { huntStylePrimary: topStyle } : {}),
+          ...(trophyVsMeat ? { trophyVsMeat } : {}),
+          ...(bucketList ? { bucketListDescription: bucketList } : {}),
+          step: 1,
+        } as Partial<ConsultationState>);
+      },
       reset: () => set(consultationInitial as ConsultationState),
     }),
     { name: "hunt-planner-wizard-v4" }
@@ -226,19 +252,51 @@ export const useAppStore = create<AppState>()(
 
       setUserGoals: (userGoals) => set({ userGoals }),
       addUserGoal: (goal) =>
-        set((state) => ({ userGoals: [...state.userGoals, goal] })),
+        set((state) => {
+          const goalMs = generateMilestonesForGoal(goal);
+          return {
+            userGoals: [...state.userGoals, goal],
+            milestones: [...state.milestones, ...goalMs],
+          };
+        }),
       updateUserGoal: (id, updates) =>
-        set((state) => ({
-          userGoals: state.userGoals.map((g) =>
+        set((state) => {
+          const updatedGoals = state.userGoals.map((g) =>
             g.id === id ? { ...g, ...updates } : g
-          ),
-        })),
+          );
+          const updatedGoal = updatedGoals.find((g) => g.id === id);
+          // Preserve completion status from old goal milestones
+          const oldGoalMs = state.milestones.filter((m) => m.planId === id);
+          const completedMap = new Map(
+            oldGoalMs.filter((m) => m.completed).map((m) => [m.id, m.completedAt])
+          );
+          const otherMs = state.milestones.filter((m) => m.planId !== id);
+          const newGoalMs = updatedGoal
+            ? generateMilestonesForGoal(updatedGoal).map((m) =>
+                completedMap.has(m.id)
+                  ? { ...m, completed: true, completedAt: completedMap.get(m.id) }
+                  : m
+              )
+            : [];
+          return {
+            userGoals: updatedGoals,
+            milestones: [...otherMs, ...newGoalMs],
+          };
+        }),
       removeUserGoal: (id) =>
         set((state) => ({
           userGoals: state.userGoals.filter((g) => g.id !== id),
+          milestones: state.milestones.filter((m) => m.planId !== id),
         })),
 
-      setMilestones: (milestones) => set({ milestones }),
+      setMilestones: (milestones) =>
+        set((state) => {
+          // Preserve goal-sourced milestones; only replace plan-sourced ones
+          const goalMs = state.milestones.filter(
+            (m) => m.planId && state.userGoals.some((g) => g.id === m.planId)
+          );
+          return { milestones: [...milestones, ...goalMs] };
+        }),
       addMilestones: (newMilestones) =>
         set((state) => ({ milestones: [...state.milestones, ...newMilestones] })),
       completeMilestone: (id) =>
@@ -255,7 +313,14 @@ export const useAppStore = create<AppState>()(
         })),
 
       setConfirmedAssessment: (assessment) => set({ confirmedAssessment: assessment }),
-      clearConfirmedAssessment: () => set({ confirmedAssessment: null, milestones: [] }),
+      clearConfirmedAssessment: () =>
+        set((state) => ({
+          confirmedAssessment: null,
+          // Keep goal-sourced milestones, only clear plan ones
+          milestones: state.milestones.filter(
+            (m) => m.planId && state.userGoals.some((g) => g.id === m.planId)
+          ),
+        })),
     }),
     { name: "hunt-planner-app-v2" }
   )

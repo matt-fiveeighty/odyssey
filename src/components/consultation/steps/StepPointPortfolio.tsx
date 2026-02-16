@@ -5,6 +5,7 @@ import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
 import { STATES_MAP } from "@/lib/constants/states";
 import { Wallet } from "lucide-react";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 export function StepPointPortfolio() {
   const wizard = useWizardStore();
@@ -23,7 +24,7 @@ export function StepPointPortfolio() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 7 of 9</p>
-          <h2 className="text-xl font-bold">Do you have any points already?</h2>
+          <h2 className="text-xl font-bold">Do you have any <HuntingTerm term="preference points">points</HuntingTerm> already?</h2>
           <p className="text-sm text-muted-foreground mt-1">Existing points are invested capital. We&apos;ll never recommend abandoning an investment.</p>
         </div>
 
@@ -47,7 +48,7 @@ export function StepPointPortfolio() {
         {wizard.hasExistingPoints && (
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">Enter your current point balances.</p>
-            {["CO", "WY", "MT", "NV", "AZ", "UT", "OR", "KS"].map((stateId) => {
+            {["CO", "WY", "MT", "NV", "AZ", "UT", "OR", "KS", "WA", "NE", "SD", "ND"].map((stateId) => {
               const state = STATES_MAP[stateId];
               if (!state || state.pointSystem === "random") return null;
               return (

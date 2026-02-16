@@ -8,8 +8,10 @@ export const SPECIES: Species[] = [
   { id: "moose", name: "Moose", icon: "🫎" },
   { id: "pronghorn", name: "Pronghorn", icon: "🦌" },
   { id: "bighorn_sheep", name: "Bighorn Sheep", icon: "🐏" },
+  { id: "dall_sheep", name: "Dall Sheep", icon: "🐏" },
   { id: "mountain_goat", name: "Mountain Goat", icon: "🐐" },
   { id: "bison", name: "Bison", icon: "🦬" },
+  { id: "caribou", name: "Caribou", icon: "🦌" },
   { id: "mountain_lion", name: "Mountain Lion", icon: "🦁" },
 ];
 

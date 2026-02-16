@@ -16,6 +16,7 @@ export type PressureLevel = "Low" | "Moderate" | "High";
 export type HuntStyle = "diy_truck" | "diy_backpack" | "guided" | "drop_camp";
 export type PlanFocus = "trophy" | "opportunity" | "balanced";
 export type GoalStatus = "active" | "dream" | "completed";
+export type DreamHuntTier = "once_in_a_lifetime" | "trophy" | "bucket_list" | "attainable";
 export type WeaponType = "archery" | "rifle" | "muzzleloader";
 export type SeasonPreference = "early" | "mid" | "late" | "any";
 export type PlanStatus = "draft" | "active" | "completed";
@@ -41,6 +42,7 @@ export interface CostLineItem {
   speciesId?: string;
   url?: string;            // Link to purchase
   dueDate?: string;        // Application deadline
+  notes?: string;          // Additional context
 }
 
 // ============================================================================
@@ -213,13 +215,7 @@ export interface State {
   };
   fgUrl: string;
   buyPointsUrl: string;
-  applicationDeadlines: {
-    elk?: { open: string; close: string };
-    mule_deer?: { open: string; close: string };
-    bear?: { open: string; close: string };
-    moose?: { open: string; close: string };
-    whitetail?: { open: string; close: string };
-  };
+  applicationDeadlines: Record<string, { open: string; close: string }>;
   // Legacy flat fees (still used for backwards compat)
   licenseFees: {
     qualifyingLicense?: number;
@@ -365,6 +361,7 @@ export interface UserGoal {
   seasonPreference?: SeasonPreference;
   huntStyle?: HuntStyle;
   trophyDescription?: string;
+  dreamTier?: DreamHuntTier;
 }
 
 // ============================================================================

@@ -4,6 +4,7 @@ import { useWizardStore } from "@/lib/store";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
 import { DollarSign, TrendingUp } from "lucide-react";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 const BUDGET_TIERS: Record<string, string> = {
   low: "At this level, focus on 2\u20133 states with the cheapest point costs. Every dollar counts.",
@@ -26,13 +27,13 @@ export function StepLetsTalkMoney() {
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 4 of 9</p>
           <h2 className="text-xl font-bold">Think of this like a financial portfolio.</h2>
-          <p className="text-sm text-muted-foreground mt-1">You have two modes: point-building years (low cost, maintaining positions) and hunt years (deploying capital when you draw a tag).</p>
+          <p className="text-sm text-muted-foreground mt-1">You have two modes: <HuntingTerm term="point year">point-building years</HuntingTerm> (low cost, maintaining positions) and <HuntingTerm term="hunt year">hunt years</HuntingTerm> (deploying capital when you <HuntingTerm term="draw">draw</HuntingTerm> a tag).</p>
         </div>
 
         <div className="space-y-6">
           <div>
-            <label htmlFor="point-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block">Point-Year Subscription</label>
-            <p className="text-xs text-muted-foreground mb-3">Your annual portfolio maintenance cost. In years you&apos;re only building points, what feels comfortable?</p>
+            <label htmlFor="point-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block"><HuntingTerm term="annual subscription">Point-Year Subscription</HuntingTerm></label>
+            <p className="text-xs text-muted-foreground mb-3">Your annual <HuntingTerm term="portfolio">portfolio</HuntingTerm> maintenance cost. In years you&apos;re only building <HuntingTerm term="preference points">points</HuntingTerm>, what feels comfortable?</p>
             <div className="flex items-center gap-4 mb-2">
               <input id="point-year-budget" type="range" min={500} max={5000} step={100} value={wizard.pointYearBudget} onChange={(e) => wizard.setField("pointYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
               <span className="text-2xl font-bold text-primary w-28 text-right">${wizard.pointYearBudget.toLocaleString()}</span>
@@ -43,8 +44,8 @@ export function StepLetsTalkMoney() {
           </div>
 
           <div>
-            <label htmlFor="hunt-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block">Hunt-Year Deployment</label>
-            <p className="text-xs text-muted-foreground mb-3">When you draw the tag and it&apos;s go-time, what can you deploy? Tags, flights, gear, processing &mdash; the full mission.</p>
+            <label htmlFor="hunt-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block"><HuntingTerm term="hunt year">Hunt-Year Deployment</HuntingTerm></label>
+            <p className="text-xs text-muted-foreground mb-3">When you <HuntingTerm term="draw">draw</HuntingTerm> the <HuntingTerm term="tag">tag</HuntingTerm> and it&apos;s go-time, what can you deploy? Tags, flights, gear, processing &mdash; the full mission.</p>
             <div className="flex items-center gap-4 mb-2">
               <input id="hunt-year-budget" type="range" min={2000} max={15000} step={500} value={wizard.huntYearBudget} onChange={(e) => wizard.setField("huntYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
               <span className="text-2xl font-bold text-chart-2 w-28 text-right">${wizard.huntYearBudget.toLocaleString()}</span>

@@ -72,6 +72,11 @@ export const HUNTING_AIRPORTS: Record<string, { primary: string; alternatives: s
   OR: { primary: "PDX", alternatives: ["RDM", "MFR"] },
   ID: { primary: "BOI", alternatives: ["IDA", "SUN", "LWS"] },
   KS: { primary: "MCI", alternatives: ["ICT", "GCK"] },
+  WA: { primary: "SEA", alternatives: ["GEG", "PSC"] },
+  NE: { primary: "OMA", alternatives: ["LNK", "RAP"] },
+  SD: { primary: "RAP", alternatives: ["FSD", "PIR"] },
+  ND: { primary: "BIS", alternatives: ["FAR", "MOT"] },
+  AK: { primary: "ANC", alternatives: ["FAI", "JNU"] },
 };
 
 // Common hunting flight routes with pricing
@@ -122,6 +127,20 @@ export const HUNTING_ROUTES: FlightRoute[] = [
   { from: "MSP", to: "DEN", targetState: "CO", avgCost: 130, flightTime: "2h30m", direct: true, airlines: "Delta/Frontier/Sun Country", notes: "Cheap and frequent direct flights." },
   { from: "MSP", to: "BZN", targetState: "MT", avgCost: 180, flightTime: "2h30m", direct: true, airlines: "Delta", notes: "Quick hop to Montana. Drive to hunting areas same day." },
   { from: "MCI", to: "DEN", targetState: "CO", avgCost: 120, flightTime: "2h", direct: true, airlines: "Southwest/Frontier", notes: "Very cheap direct flights. Can even drive to CO in 8 hours." },
+
+  // Routes to new Phase 2 states
+  { from: "MCO", to: "SEA", targetState: "WA", avgCost: 250, flightTime: "5h30m", direct: true, airlines: "Alaska/Delta/JetBlue", notes: "Direct flights available. SEA hub for WA and Pacific NW hunting." },
+  { from: "MCO", to: "ANC", targetState: "AK", avgCost: 400, flightTime: "8h+", direct: false, airlines: "Alaska/Delta", notes: "Connect through SEA. Book early for Aug-Sep hunting season." },
+  { from: "DFW", to: "SEA", targetState: "WA", avgCost: 200, flightTime: "4h", direct: true, airlines: "Alaska/American/Delta", notes: "Multiple daily directs. 2-3 hrs to eastern WA elk country." },
+  { from: "DFW", to: "ANC", targetState: "AK", avgCost: 380, flightTime: "7h+", direct: false, airlines: "Alaska/Delta", notes: "Connect through SEA. Alaska Airlines has best connections." },
+  { from: "DFW", to: "RAP", targetState: "SD", avgCost: 250, flightTime: "3h", direct: false, airlines: "United/American", notes: "Connect through DEN. Gateway to Black Hills elk and badlands deer." },
+  { from: "ATL", to: "SEA", targetState: "WA", avgCost: 220, flightTime: "5h", direct: true, airlines: "Delta/Alaska", notes: "Delta direct. Good connection to all WA hunting areas." },
+  { from: "ORD", to: "SEA", targetState: "WA", avgCost: 170, flightTime: "4h15m", direct: true, airlines: "Alaska/United/American", notes: "Multiple directs daily." },
+  { from: "ORD", to: "ANC", targetState: "AK", avgCost: 350, flightTime: "7h", direct: false, airlines: "Alaska/United", notes: "Connect through SEA. Book early for peak moose season." },
+  { from: "ORD", to: "RAP", targetState: "SD", avgCost: 220, flightTime: "2h30m", direct: false, airlines: "United/American", notes: "Connect through DEN. Rapid City is gateway to Black Hills." },
+  { from: "MSP", to: "RAP", targetState: "SD", avgCost: 180, flightTime: "1h45m", direct: true, airlines: "Delta/United", notes: "Short hop. Drive to Black Hills same day." },
+  { from: "MSP", to: "BIS", targetState: "ND", avgCost: 160, flightTime: "1h30m", direct: true, airlines: "Delta/United", notes: "Quick flight to ND. Drive to badlands hunting in 2 hrs." },
+  { from: "MSP", to: "ANC", targetState: "AK", avgCost: 320, flightTime: "6h+", direct: false, airlines: "Alaska/Delta", notes: "Connect through SEA. Good option for Midwest hunters heading to AK." },
 ];
 
 /**

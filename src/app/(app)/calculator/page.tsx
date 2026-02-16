@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { STATES } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
+import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 export default function CalculatorPage() {
@@ -77,38 +78,46 @@ export default function CalculatorPage() {
                 {STATES.map((s) => {
                   const cost = s.pointCost[selectedSpecies];
                   const isSelected = selectedState === s.id;
+                  const visual = STATE_VISUALS[s.id];
                   return (
                     <button
                       key={s.id}
                       onClick={() => setSelectedState(s.id)}
-                      className={`relative p-4 rounded-xl border text-left transition-all duration-200 ${
+                      className={`group relative p-4 rounded-xl border text-left overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                         isSelected
-                          ? "border-primary bg-primary/10 ring-1 ring-primary"
-                          : "border-border bg-secondary/50 hover:border-primary/30"
+                          ? "border-primary ring-1 ring-primary"
+                          : "border-border hover:border-primary/30"
                       }`}
                     >
-                      {isSelected && (
-                        <div className="absolute top-2 right-2">
-                          <Check className="w-4 h-4 text-primary" />
+                      {/* Terrain gradient background */}
+                      <div className={`absolute inset-0 bg-gradient-to-br ${visual?.gradient ?? "from-slate-800 to-slate-900"} ${isSelected ? "opacity-60" : "opacity-30"} group-hover:opacity-50 transition-opacity duration-300`} />
+                      <div className="relative z-10">
+                        {isSelected && (
+                          <div className="absolute top-0 right-0">
+                            <Check className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white"
+                            style={{ backgroundColor: s.color }}
+                          >
+                            {s.abbreviation}
+                          </div>
+                          {visual && <span className="text-sm">{visual.emoji}</span>}
                         </div>
-                      )}
-                      <div
-                        className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white mb-2"
-                        style={{ backgroundColor: s.color }}
-                      >
-                        {s.abbreviation}
+                        <p className="text-lg font-bold">
+                          ${cost ?? 0}
+                          <span className="text-xs text-muted-foreground font-normal">
+                            /pt
+                          </span>
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
+                          {s.pointSystem === "random"
+                            ? "No points"
+                            : s.pointSystemDetails.description.split(".")[0]}
+                        </p>
                       </div>
-                      <p className="text-lg font-bold">
-                        ${cost ?? 0}
-                        <span className="text-xs text-muted-foreground font-normal">
-                          /pt
-                        </span>
-                      </p>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-                        {s.pointSystem === "random"
-                          ? "No points"
-                          : s.pointSystemDetails.description.split(".")[0]}
-                      </p>
                     </button>
                   );
                 })}

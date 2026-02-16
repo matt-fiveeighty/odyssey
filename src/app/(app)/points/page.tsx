@@ -35,6 +35,7 @@ export default function PointsPage() {
   const [newPointType, setNewPointType] = useState<"preference" | "bonus">(
     "preference"
   );
+  const [newYearStarted, setNewYearStarted] = useState(new Date().getFullYear());
 
   // Edit state
   const [editPoints, setEditPoints] = useState(0);
@@ -69,12 +70,14 @@ export default function PointsPage() {
       speciesId: newSpeciesId,
       points: newPoints,
       pointType: newPointType,
+      yearStarted: newYearStarted,
     });
     setShowAddModal(false);
     setNewStateId("");
     setNewSpeciesId("");
     setNewPoints(0);
     setNewPointType("preference");
+    setNewYearStarted(new Date().getFullYear());
   }
 
   function handleSaveEdit(id: string) {
@@ -231,6 +234,11 @@ export default function PointsPage() {
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
                             {pt.pointType}
                           </span>
+                          {pt.yearStarted && (
+                            <span className="text-[10px] text-muted-foreground/60">
+                              since {pt.yearStarted}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-1">
                           {editingId === pt.id ? (
@@ -362,10 +370,10 @@ export default function PointsPage() {
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div
-            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay"
             onClick={() => setShowAddModal(false)}
           />
-          <Card role="dialog" aria-modal="true" aria-labelledby="points-dialog-title" className="relative z-10 w-full max-w-md bg-card border-border shadow-2xl">
+          <Card role="dialog" aria-modal="true" aria-labelledby="points-dialog-title" className="relative z-10 w-full max-w-md bg-card border-border shadow-2xl modal-content">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle id="points-dialog-title" className="text-base">Add Points</CardTitle>
               <button
@@ -470,6 +478,33 @@ export default function PointsPage() {
                     +
                   </button>
                 </div>
+              </div>
+
+              {/* Year Started */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Year Started Applying
+                </label>
+                <div className="flex items-center gap-3 justify-center">
+                  <button
+                    onClick={() => setNewYearStarted(Math.max(2000, newYearStarted - 1))}
+                    className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                  >
+                    -
+                  </button>
+                  <span className="w-16 text-center text-xl font-bold font-mono">
+                    {newYearStarted}
+                  </span>
+                  <button
+                    onClick={() => setNewYearStarted(Math.min(new Date().getFullYear(), newYearStarted + 1))}
+                    className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground text-center mt-1">
+                  {new Date().getFullYear() - newYearStarted} year{new Date().getFullYear() - newYearStarted !== 1 ? "s" : ""} in the system
+                </p>
               </div>
 
               <Button

@@ -21,7 +21,7 @@ const HOME_INSIGHTS: Record<string, string> = {
 function getHomeInsight(state: string): string | null {
   if (HOME_INSIGHTS[state]) return HOME_INSIGHTS[state];
   const airport = getPrimaryAirport(state);
-  const western = ["CO", "WY", "MT", "ID", "UT", "NV", "OR", "NM", "AZ"];
+  const western = ["CO", "WY", "MT", "ID", "UT", "NV", "OR", "NM", "AZ", "WA", "AK"];
   if (western.includes(state)) {
     return `Based in ${state} \u2014 you\u2019re already in western hunting country. Your proximity is a major advantage for scouting, extending hunts, and saving on travel.`;
   }
@@ -133,7 +133,7 @@ export function StepAboutYou() {
         <div>
           <label className="text-sm font-medium text-muted-foreground mb-3 block">Which western states have you hunted before?</label>
           <div className="flex flex-wrap gap-2">
-            {["CO", "WY", "MT", "ID", "NV", "AZ", "UT", "NM", "OR", "KS"].map((s) => (
+            {["CO", "WY", "MT", "ID", "NV", "AZ", "UT", "NM", "OR", "KS", "WA", "NE", "SD", "ND", "AK"].map((s) => (
               <ToggleChip key={s} selected={wizard.hasHuntedStates.includes(s)} onClick={() => wizard.toggleArrayField("hasHuntedStates", s)} label={s} />
             ))}
             <button onClick={() => wizard.setField("hasHuntedStates", [] as string[])} className="px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground transition-colors">None</button>

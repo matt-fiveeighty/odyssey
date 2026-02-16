@@ -52,4 +52,29 @@ export const STATE_VISUALS: Record<string, { gradient: string; terrain: string; 
     terrain: "Agricultural edges, creek bottoms, and Flint Hills prairie",
     emoji: "🦌",
   },
+  WA: {
+    gradient: "from-green-950 via-teal-900 to-blue-900",
+    terrain: "Rainforest coast, Cascade volcanoes, and eastern sage steppe",
+    emoji: "🌧️",
+  },
+  NE: {
+    gradient: "from-amber-950 via-lime-900 to-stone-800",
+    terrain: "Pine Ridge bluffs, Sandhills prairie, and river breaks",
+    emoji: "🌾",
+  },
+  SD: {
+    gradient: "from-amber-950 via-slate-700 to-blue-900",
+    terrain: "Black Hills ponderosa, badlands buttes, and prairie grasslands",
+    emoji: "🦬",
+  },
+  ND: {
+    gradient: "from-yellow-950 via-amber-800 to-slate-900",
+    terrain: "Theodore Roosevelt badlands, prairie coulees, and river bottoms",
+    emoji: "🏜️",
+  },
+  AK: {
+    gradient: "from-emerald-950 via-blue-900 to-slate-800",
+    terrain: "Tundra, boreal forest, glaciers, and coastal mountains",
+    emoji: "🐻‍❄️",
+  },
 };

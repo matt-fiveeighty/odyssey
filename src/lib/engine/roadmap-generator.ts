@@ -1,32 +1,15 @@
 /**
- * Strategic Roadmap Generator v2
+ * Strategic Roadmap Generator
  *
- * Generates a personalized 10-year strategic assessment based on the user's
- * consultation intake. Thinks like a veteran hunting advisor — considers the
- * hunter's location, experience, budget, physical capabilities, and goals
- * to recommend specific states, units, and a phased timeline.
- *
- * v2 Additions:
- * - Dual budget (point-year vs hunt-year)
- * - Mixed hunt style (primarily DIY + open to guided)
- * - State score breakdowns (visible factor-by-factor reasoning)
- * - Itemized cost breakdowns per action
- * - Macro summary data (chart-ready)
- * - Milestone generation for goals page
- * - Dream hunt recommendations
- *
- * Portfolio management philosophy:
- * - Years 1-3: Building phase (accumulate points, take OTC/random hunts)
- * - Years 4-5: First burn (spend mid-tier points on quality hunts)
- * - Year 6: Gap year (rebuild, reassess, scout)
- * - Years 7-10: Trophy phase (burn premium points on bucket-list hunts)
+ * Generates a personalized 10-year strategic assessment based on consultation
+ * intake. Scores states, recommends units, builds phased timelines, and
+ * produces itemized cost breakdowns.
  */
 
 import type {
   RoadmapYear,
   RoadmapAction,
   HuntStyle,
-  PlanFocus,
   CostLineItem,
   Milestone,
   DreamHunt,
@@ -40,16 +23,16 @@ import type {
   TravelLogisticsRoute,
   SeasonCalendarEntry,
   PointOnlyGuideEntry,
+  UserGoal,
 } from "@/lib/types";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { findBestRoutes, getPrimaryAirport, HUNTING_AIRPORTS } from "@/lib/constants/flight-hubs";
-import { calculateDrawOdds } from "./draw-odds";
 import {
   estimateCreepRate,
   yearsToDrawWithCreep,
 } from "./point-creep";
-import { calculateAnnualSubscription, calculatePointYearCost } from "./roi-calculator";
+import { calculateAnnualSubscription, calculatePointYearCost, getEstimatedTagCost } from "./roi-calculator";
 import type {
   PhysicalComfort,
   HuntFrequency,
@@ -59,9 +42,7 @@ import type {
   TimeAvailable,
 } from "@/lib/store";
 
-// ============================================================================
-// Consultation Input (from store)
-// ============================================================================
+// --- Consultation Input (from store)
 
 export interface ConsultationInput {
   homeState: string;
@@ -87,14 +68,96 @@ export interface ConsultationInput {
   importantFactors: string[];
 }
 
-// ============================================================================
-// State Recommendation Engine with Visible Scoring
-// ============================================================================
+// --- Shared Helpers ---
+
+const fmtSpecies = (id: string) => id.replace("_", " ");
+
+const getRelevantSpecies = (species: string[], state: { availableSpecies: string[] }) =>
+  species.filter(s => state.availableSpecies.includes(s));
+
+const getDeadline = (state: { applicationDeadlines: Record<string, { open: string; close: string }> }, speciesId: string) =>
+  state.applicationDeadlines[speciesId as keyof typeof state.applicationDeadlines];
+
+const fmtFlight = (routes: ReturnType<typeof findBestRoutes>) =>
+  routes[0] ? ` Fly ${routes[0].from}→${routes[0].to} (~$${routes[0].avgCost} RT).` : "";
+
+/** Build itemized cost line items for a state + species (license + app fee + point cost). */
+function buildStateCostItems(
+  state: typeof STATES_MAP[string],
+  stateId: string,
+  speciesId: string
+): CostLineItem[] {
+  if (!state) return [];
+  const items: CostLineItem[] = [];
+  if (state.licenseFees.qualifyingLicense && state.licenseFees.qualifyingLicense > 0) {
+    items.push({
+      label: `${state.abbreviation} ${state.feeSchedule.find(f => f.name.includes("License"))?.name ?? "Qualifying License"}`,
+      amount: state.licenseFees.qualifyingLicense,
+      category: "license",
+      stateId,
+      url: state.fgUrl,
+    });
+  }
+  if (state.licenseFees.appFee && state.licenseFees.appFee > 0) {
+    items.push({
+      label: `${state.abbreviation} ${fmtSpecies(speciesId)} application fee`,
+      amount: state.licenseFees.appFee,
+      category: "application",
+      stateId,
+      speciesId,
+    });
+  }
+  const pointCost = state.pointCost[speciesId] ?? 0;
+  if (pointCost > 0) {
+    items.push({
+      label: `${state.abbreviation} ${fmtSpecies(speciesId)} preference point`,
+      amount: pointCost,
+      category: "points",
+      stateId,
+      speciesId,
+      url: state.buyPointsUrl,
+    });
+  }
+  return items;
+}
+
+const sumItems = (items: CostLineItem[]) => items.reduce((s, i) => s + i.amount, 0);
+
+/** Lookup unit object + tactical notes for a unit code + state. */
+function lookupUnit(unitCode: string, stateId: string) {
+  const unitObj = SAMPLE_UNITS.find(u => u.unitCode === unitCode && u.stateId === stateId);
+  return { unitObj, tNotes: unitObj?.tacticalNotes };
+}
+
+// Role metadata (hoisted from repeated inline maps)
+const ROLE_DESCRIPTIONS: Record<string, string> = {
+  primary: "Core state in your portfolio — consistent annual investment with predictable returns",
+  secondary: "Supporting state — builds medium-term value and diversifies your portfolio",
+  wildcard: "Lottery play — no points needed, apply every year for bonus opportunity",
+  long_term: "Trophy investment — points compound exponentially for a high-reward payoff",
+};
+
+const ROLE_INTROS: Record<string, (name: string) => string> = {
+  primary: (name) => `${name} is your anchor state.`,
+  secondary: (name) => `${name} rounds out your portfolio as a strong supporting state.`,
+  wildcard: (name) => `${name} is your wild card — a free lottery ticket every year.`,
+  long_term: (name) => `${name} is your long-game trophy investment.`,
+};
+
+const STYLE_LABELS: Record<string, { short: string; long: string }> = {
+  diy_truck: { short: "truck-camp", long: "truck-camp, glass-from-roads style" },
+  diy_backpack: { short: "backcountry", long: "backcountry, pack-in-and-stay style" },
+  guided: { short: "guided", long: "guided hunt approach" },
+  drop_camp: { short: "drop-camp", long: "drop-camp approach" },
+};
+
+// --- State Distance & Scoring ---
 
 function getStateDistance(homeState: string, targetState: string): "close" | "medium" | "far" {
   const regions: Record<string, string[]> = {
-    west: ["CO", "WY", "MT", "ID", "UT", "NV", "OR", "NM", "AZ", "KS"],
-    midwest: ["NE", "SD", "ND", "MN", "IA", "MO", "WI", "IL", "IN", "OH", "MI"],
+    west: ["CO", "WY", "MT", "ID", "UT", "NV", "OR", "NM", "AZ", "WA", "AK"],
+    plains: ["KS", "NE", "SD", "ND"],
+    midwest: ["MN", "IA", "MO", "WI", "IL", "IN", "OH", "MI"],
     south: ["FL", "GA", "AL", "SC", "NC", "TN", "MS", "LA", "AR", "TX", "OK"],
     northeast: ["NY", "PA", "NJ", "CT", "MA", "VT", "NH", "ME", "MD", "VA", "WV", "DE", "RI"],
   };
@@ -102,9 +165,14 @@ function getStateDistance(homeState: string, targetState: string): "close" | "me
   const homeRegion = Object.entries(regions).find(([, states]) => states.includes(homeState))?.[0] ?? "far";
   const targetRegion = Object.entries(regions).find(([, states]) => states.includes(targetState))?.[0] ?? "west";
 
+  // AK is far from everything except AK and WA
+  if (targetState === "AK" && !["AK", "WA"].includes(homeState)) return "far";
   if (homeRegion === targetRegion) return "close";
-  if (homeRegion === "west" || (homeRegion === "midwest" && targetRegion === "west")) return "close";
-  if (homeRegion === "midwest" || homeRegion === "south") return "medium";
+  if (homeRegion === "west" && targetRegion === "plains") return "close";
+  if (homeRegion === "plains" && targetRegion === "west") return "close";
+  if (homeRegion === "west" || (homeRegion === "midwest" && (targetRegion === "west" || targetRegion === "plains"))) return "close";
+  if (homeRegion === "plains" && targetRegion === "midwest") return "close";
+  if (homeRegion === "midwest" || homeRegion === "south" || homeRegion === "plains") return "medium";
   return "far";
 }
 
@@ -121,7 +189,8 @@ export function scoreStateForHunter(
   const stateElevations: Record<string, [number, number]> = {
     CO: [6000, 11000], WY: [5000, 11000], MT: [4500, 10000], NV: [5000, 10000],
     AZ: [5000, 9000], UT: [5000, 11000], NM: [6000, 10000], OR: [3000, 7500],
-    ID: [3000, 10000], KS: [2500, 4500],
+    ID: [3000, 10000], KS: [2500, 4500], WA: [2500, 7000], NE: [3000, 5000],
+    SD: [2500, 7200], ND: [2000, 3500], AK: [500, 6000],
   };
   const [lo, hi] = stateElevations[stateId] ?? [5000, 9000];
   let elevScore = 10;
@@ -147,7 +216,7 @@ export function scoreStateForHunter(
   const stateUnits = SAMPLE_UNITS.filter(
     (u) => u.stateId === stateId && input.species.some(s => state.availableSpecies.includes(s))
   );
-  const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+  const relevantSpecies = getRelevantSpecies(input.species, state);
   const pointYearResult = calculatePointYearCost(stateId, relevantSpecies);
   const annualCostPerState = pointYearResult.total;
 
@@ -334,7 +403,7 @@ export function scoreStateForHunter(
   factors.push({ label: "Existing Investment", score: investScore, maxScore: 10, explanation: investExplanation });
 
   // --- Factor 9: Species Availability (max 5) ---
-  const speciesMatch = input.species.filter(s => state.availableSpecies.includes(s));
+  const speciesMatch = getRelevantSpecies(input.species, state);
   const speciesScore = Math.min(5, Math.round((speciesMatch.length / Math.max(input.species.length, 1)) * 5));
   const speciesExplanation = speciesMatch.length === input.species.length
     ? `Offers all ${speciesMatch.length} of your target species`
@@ -363,9 +432,7 @@ function getStateRole(
   return "secondary";
 }
 
-// ============================================================================
-// Core Generator
-// ============================================================================
+// --- Core Generator
 
 export function generateStrategicAssessment(
   input: ConsultationInput
@@ -382,13 +449,14 @@ export function generateStrategicAssessment(
   const selectedScores = stateScores.slice(0, maxStates);
 
   // Build state recommendations
-  const stateRecommendations: StateRecommendation[] = selectedScores.map(
+  const stateRecommendations = selectedScores.map(
     (scoreBreakdown) => {
       const { stateId } = scoreBreakdown;
-      const state = STATES_MAP[stateId]!;
+      const state = STATES_MAP[stateId];
+      if (!state) return null;
       const role = getStateRole(stateId, scoreBreakdown.totalScore, scoreBreakdown.maxPossibleScore);
 
-      const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+      const relevantSpecies = getRelevantSpecies(input.species, state);
       const stateUnits = SAMPLE_UNITS.filter(
         (u) => u.stateId === stateId && relevantSpecies.includes(u.speciesId)
       );
@@ -396,7 +464,6 @@ export function generateStrategicAssessment(
       const bestUnits = stateUnits
         .map((unit) => {
           const userPts = input.existingPoints[stateId]?.[unit.speciesId] ?? 0;
-          calculateDrawOdds({ stateId, userPoints: userPts, unit });
           const creepRate = estimateCreepRate(unit.trophyRating);
           const years = yearsToDrawWithCreep(userPts, unit.pointsRequiredNonresident, creepRate);
 
@@ -421,25 +488,13 @@ export function generateStrategicAssessment(
 
       // Itemized annual cost
       const costResult = calculatePointYearCost(stateId, relevantSpecies);
-
-      // Role description
-      const roleDescriptions: Record<string, string> = {
-        primary: "Core state in your portfolio — consistent annual investment with predictable returns",
-        secondary: "Supporting state — builds medium-term value and diversifies your portfolio",
-        wildcard: "Lottery play — no points needed, apply every year for bonus opportunity",
-        long_term: "Trophy investment — points compound exponentially for a high-reward payoff",
-      };
-
-      // Point strategy — quantified with specific codes and costs
       const pointStrategy = buildPointStrategy(stateId, role, state, costResult.total, bestUnits, input);
-
-      // Reason — narrative paragraph referencing the hunter's profile
       const reason = buildStateReason(stateId, role, scoreBreakdown, input, bestUnits, state);
 
       return {
         stateId,
         role,
-        roleDescription: roleDescriptions[role] ?? "",
+        roleDescription: ROLE_DESCRIPTIONS[role] ?? "",
         reason,
         annualCost: costResult.total,
         annualCostItems: costResult.items,
@@ -448,7 +503,7 @@ export function generateStrategicAssessment(
         scoreBreakdown,
       };
     }
-  );
+  ).filter((r) => r !== null);
 
   // Calculate subscription
   const subscription = calculateAnnualSubscription(
@@ -519,11 +574,9 @@ export function generateStrategicAssessment(
   };
 }
 
-// ============================================================================
-// Milestone Generator
-// ============================================================================
+// --- Milestone Generator
 
-export function generateMilestonesFromPlan(
+function generateMilestonesFromPlan(
   recs: StateRecommendation[],
   input: ConsultationInput,
   year: number
@@ -535,17 +588,17 @@ export function generateMilestonesFromPlan(
     const state = STATES_MAP[rec.stateId];
     if (!state) continue;
 
-    const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+    const relevantSpecies = getRelevantSpecies(input.species, state);
 
     for (const speciesId of relevantSpecies) {
-      const deadline = state.applicationDeadlines[speciesId as keyof typeof state.applicationDeadlines];
+      const deadline = getDeadline(state, speciesId);
       const drawDate = state.drawResultDates?.[speciesId];
 
       if (state.pointSystem === "random") {
-        // Random draw states: just apply
+        const costs = rec.annualCostItems.filter(i => i.speciesId === speciesId || i.category === "license");
         milestones.push({
           id: `ms-${year}-${rec.stateId}-${speciesId}-apply-${idx++}`,
-          title: `Apply for ${state.name} ${speciesId.replace("_", " ")} draw`,
+          title: `Apply for ${state.name} ${fmtSpecies(speciesId)} draw`,
           description: `Submit application through ${state.name} Fish & Game portal. Pure random draw — no points needed.`,
           type: "apply",
           stateId: rec.stateId,
@@ -554,53 +607,20 @@ export function generateMilestonesFromPlan(
           dueDate: deadline?.close,
           drawResultDate: drawDate,
           url: state.buyPointsUrl,
-          costs: rec.annualCostItems.filter(i => i.speciesId === speciesId || i.category === "license"),
-          totalCost: rec.annualCostItems
-            .filter(i => i.speciesId === speciesId || i.category === "license")
-            .reduce((s, i) => s + i.amount, 0),
+          costs,
+          totalCost: sumItems(costs),
           completed: false,
           applicationApproach: state.applicationApproach,
           applicationTip: state.applicationTips[0],
         });
       } else {
-        // Point states: buy points
         const pointCost = state.pointCost[speciesId] ?? 0;
         if (pointCost > 0) {
-          const costs: CostLineItem[] = [];
-
-          // License (shared, but include for visibility)
-          if (state.licenseFees.qualifyingLicense && state.licenseFees.qualifyingLicense > 0) {
-            costs.push({
-              label: `${state.abbreviation} ${state.feeSchedule.find(f => f.name.includes("License"))?.name ?? "Qualifying License"}`,
-              amount: state.licenseFees.qualifyingLicense,
-              category: "license",
-              stateId: rec.stateId,
-              url: state.fgUrl,
-            });
-          }
-
-          if (state.licenseFees.appFee && state.licenseFees.appFee > 0) {
-            costs.push({
-              label: `${state.abbreviation} ${speciesId.replace("_", " ")} application fee`,
-              amount: state.licenseFees.appFee,
-              category: "application",
-              stateId: rec.stateId,
-              speciesId,
-            });
-          }
-
-          costs.push({
-            label: `${state.abbreviation} ${speciesId.replace("_", " ")} preference point`,
-            amount: pointCost,
-            category: "points",
-            stateId: rec.stateId,
-            speciesId,
-            url: state.buyPointsUrl,
-          });
+          const costs = buildStateCostItems(state, rec.stateId, speciesId);
 
           milestones.push({
             id: `ms-${year}-${rec.stateId}-${speciesId}-points-${idx++}`,
-            title: `Buy ${state.name} ${speciesId.replace("_", " ")} preference point`,
+            title: `Buy ${state.name} ${fmtSpecies(speciesId)} preference point`,
             description: `Purchase through ${state.name} Fish & Game online portal. ${state.applicationTips[0] ?? ""}`,
             type: "buy_points",
             stateId: rec.stateId,
@@ -610,7 +630,7 @@ export function generateMilestonesFromPlan(
             drawResultDate: drawDate,
             url: state.buyPointsUrl,
             costs,
-            totalCost: costs.reduce((s, c) => s + c.amount, 0),
+            totalCost: sumItems(costs),
             completed: false,
             applicationApproach: state.applicationApproach,
             applicationTip: state.applicationTips[0],
@@ -630,9 +650,83 @@ export function generateMilestonesFromPlan(
   return milestones;
 }
 
-// ============================================================================
-// Macro Summary Generator
-// ============================================================================
+// --- Goal-Driven Milestone Generator
+
+/** Generate milestones for a single user goal (buy points / apply each year → hunt). */
+export function generateMilestonesForGoal(goal: UserGoal): Milestone[] {
+  const state = STATES_MAP[goal.stateId];
+  if (!state) return [];
+
+  const currentYear = new Date().getFullYear();
+  const milestones: Milestone[] = [];
+  const isRandom = state.pointSystem === "random";
+  const deadline = getDeadline(state, goal.speciesId);
+
+  // Adjust deadline year: constants store "2026-XX-XX", shift to target year
+  const shiftDeadline = (dateStr: string | undefined, year: number): string | undefined => {
+    if (!dateStr) return undefined;
+    return `${year}${dateStr.slice(4)}`;
+  };
+
+  const drawDate = state.drawResultDates?.[goal.speciesId];
+
+  // Point-building / apply years: currentYear → targetYear - 1
+  for (let year = currentYear; year < goal.targetYear; year++) {
+    const type = isRandom ? "apply" : "buy_points";
+    const costs = buildStateCostItems(state, goal.stateId, goal.speciesId);
+    milestones.push({
+      id: `goal-ms-${goal.id}-${year}-${type}`,
+      planId: goal.id,
+      title: isRandom
+        ? `Apply for ${state.name} ${fmtSpecies(goal.speciesId)} draw`
+        : `Buy ${state.name} ${fmtSpecies(goal.speciesId)} preference point`,
+      description: isRandom
+        ? `Submit application through ${state.name} F&G. Pure random draw — apply every year.`
+        : `Purchase through ${state.name} F&G portal. ${state.applicationTips[0] ?? ""}`,
+      type,
+      stateId: goal.stateId,
+      speciesId: goal.speciesId,
+      year,
+      dueDate: shiftDeadline(deadline?.close, year),
+      drawResultDate: drawDate ? shiftDeadline(drawDate, year) : undefined,
+      url: state.buyPointsUrl,
+      costs,
+      totalCost: sumItems(costs),
+      completed: false,
+      applicationApproach: state.applicationApproach,
+      applicationTip: state.applicationTips[0],
+    });
+  }
+
+  // Hunt year milestone
+  const tagCost = getEstimatedTagCost(goal.stateId, goal.speciesId);
+  const huntCosts: CostLineItem[] = [{
+    label: `${state.abbreviation} ${fmtSpecies(goal.speciesId)} tag`,
+    amount: tagCost,
+    category: "tag",
+    stateId: goal.stateId,
+    speciesId: goal.speciesId,
+  }];
+  milestones.push({
+    id: `goal-ms-${goal.id}-${goal.targetYear}-hunt`,
+    planId: goal.id,
+    title: `Hunt ${state.name} ${fmtSpecies(goal.speciesId)}`,
+    description: `Draw and hunt ${fmtSpecies(goal.speciesId)} in ${state.name}. ${goal.trophyDescription ?? ""}`.trim(),
+    type: "hunt",
+    stateId: goal.stateId,
+    speciesId: goal.speciesId,
+    year: goal.targetYear,
+    dueDate: shiftDeadline(deadline?.close, goal.targetYear),
+    url: state.fgUrl,
+    costs: huntCosts,
+    totalCost: tagCost,
+    completed: false,
+  });
+
+  return milestones;
+}
+
+// --- Macro Summary Generator
 
 function generateMacroSummary(
   roadmap: RoadmapYear[],
@@ -688,9 +782,7 @@ function generateMacroSummary(
   };
 }
 
-// ============================================================================
-// Budget Breakdown Generator
-// ============================================================================
+// --- Budget Breakdown Generator
 
 function generateBudgetBreakdown(
   input: ConsultationInput,
@@ -699,7 +791,7 @@ function generateBudgetBreakdown(
 ): BudgetBreakdown {
   // Point-year items = all state subscription costs
   const pointYearItems: CostLineItem[] = recs.flatMap(r => r.annualCostItems);
-  const pointYearCost = pointYearItems.reduce((s, i) => s + i.amount, 0);
+  const pointYearCost = sumItems(pointYearItems);
 
   // Hunt-year adds tag costs for a typical hunt
   const huntYearItems: CostLineItem[] = [...pointYearItems];
@@ -710,7 +802,7 @@ function generateBudgetBreakdown(
       const primarySpecies = input.species.find(s => state.availableSpecies.includes(s)) ?? input.species[0];
       if (primarySpecies) {
         huntYearItems.push({
-          label: `${state.abbreviation} ${primarySpecies.replace("_", " ")} tag (estimated)`,
+          label: `${state.abbreviation} ${fmtSpecies(primarySpecies)} tag (estimated)`,
           amount: 700,
           category: "tag",
           stateId: primaryRec.stateId,
@@ -725,7 +817,7 @@ function generateBudgetBreakdown(
       }
     }
   }
-  const huntYearCost = huntYearItems.reduce((s, i) => s + i.amount, 0);
+  const huntYearCost = sumItems(huntYearItems);
 
   const tenYearProjection = roadmap.map(yr => ({
     year: yr.year,
@@ -743,9 +835,7 @@ function generateBudgetBreakdown(
   };
 }
 
-// ============================================================================
-// Dream Hunt Recommendations
-// ============================================================================
+// --- Dream Hunt Recommendations
 
 function generateDreamHuntRecs(input: ConsultationInput): DreamHunt[] {
   const recs: DreamHunt[] = [];
@@ -787,9 +877,7 @@ function generateDreamHuntRecs(input: ConsultationInput): DreamHunt[] {
   return recs;
 }
 
-// ============================================================================
-// Insight Generator
-// ============================================================================
+// --- Insight Generator
 
 function generateInsights(
   input: ConsultationInput,
@@ -850,9 +938,7 @@ function generateInsights(
   return insights;
 }
 
-// ============================================================================
-// Key Years Generator
-// ============================================================================
+// --- Key Years Generator
 
 function generateKeyYears(
   recs: StateRecommendation[],
@@ -898,9 +984,7 @@ function generateKeyYears(
   return keyYears;
 }
 
-// ============================================================================
-// Yearly Plan Generator
-// ============================================================================
+// --- Yearly Plan Generator
 
 function generateYearlyPlan(
   input: ConsultationInput,
@@ -927,45 +1011,18 @@ function generateYearlyPlan(
       const state = STATES_MAP[rec.stateId];
       if (!state || state.pointSystem === "random") continue;
 
-      const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+      const relevantSpecies = getRelevantSpecies(input.species, state);
       for (const speciesId of relevantSpecies) {
         const cost = state.pointCost[speciesId] ?? 0;
         if (cost > 0) {
-          const itemCosts: CostLineItem[] = [];
-          if (state.licenseFees.qualifyingLicense && state.licenseFees.qualifyingLicense > 0) {
-            itemCosts.push({
-              label: `${state.abbreviation} Qualifying License`,
-              amount: state.licenseFees.qualifyingLicense,
-              category: "license",
-              stateId: rec.stateId,
-              url: state.fgUrl,
-            });
-          }
-          if (state.licenseFees.appFee && state.licenseFees.appFee > 0) {
-            itemCosts.push({
-              label: `${state.abbreviation} ${speciesId.replace("_", " ")} app fee`,
-              amount: state.licenseFees.appFee,
-              category: "application",
-              stateId: rec.stateId,
-              speciesId,
-            });
-          }
-          itemCosts.push({
-            label: `${state.abbreviation} ${speciesId.replace("_", " ")} point`,
-            amount: cost,
-            category: "points",
-            stateId: rec.stateId,
-            speciesId,
-            url: state.buyPointsUrl,
-          });
-
-          const deadline = state.applicationDeadlines[speciesId as keyof typeof state.applicationDeadlines];
-
-          const totalPointCost = itemCosts.reduce((s, c) => s + c.amount, 0);
+          const itemCosts = buildStateCostItems(state, rec.stateId, speciesId);
+          const deadline = getDeadline(state, speciesId);
+          const totalPointCost = sumItems(itemCosts);
           const pointApp = state.pointOnlyApplication;
+          const sp = fmtSpecies(speciesId);
           const pointDesc = pointApp
-            ? `Buy ${state.abbreviation} ${speciesId.replace("_", " ")} preference point via ${state.name} portal${pointApp.huntCode ? ` (code: ${pointApp.huntCode})` : ""}. Total: $${Math.round(totalPointCost)}.${pointApp.secondChoiceTactic ? ` Pro tip: ${pointApp.secondChoiceTactic}` : ""}${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`
-            : `${phase === "building" ? "Build" : "Maintain"} ${state.abbreviation} ${speciesId.replace("_", " ")} points — $${Math.round(totalPointCost)}/yr.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`;
+            ? `Buy ${state.abbreviation} ${sp} preference point via ${state.name} portal${pointApp.huntCode ? ` (code: ${pointApp.huntCode})` : ""}. Total: $${Math.round(totalPointCost)}.${pointApp.secondChoiceTactic ? ` Pro tip: ${pointApp.secondChoiceTactic}` : ""}${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`
+            : `${phase === "building" ? "Build" : "Maintain"} ${state.abbreviation} ${sp} points — $${Math.round(totalPointCost)}/yr.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`;
 
           actions.push({
             type: "buy_points",
@@ -987,22 +1044,17 @@ function generateYearlyPlan(
       const state = STATES_MAP[wc.stateId];
       if (!state) continue;
 
-      const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+      const relevantSpecies = getRelevantSpecies(input.species, state);
       for (const speciesId of relevantSpecies) {
-        const deadline = state.applicationDeadlines[speciesId as keyof typeof state.applicationDeadlines];
+        const deadline = getDeadline(state, speciesId);
         const appCost = state.licenseFees.appFee ?? 0;
         const licenseCost = state.licenseFees.qualifyingLicense ?? 0;
-
         const itemCosts: CostLineItem[] = [];
-        if (licenseCost > 0) {
-          itemCosts.push({ label: `${state.abbreviation} License`, amount: licenseCost, category: "license", stateId: wc.stateId });
-        }
-        if (appCost > 0) {
-          itemCosts.push({ label: `${state.abbreviation} ${speciesId.replace("_", " ")} app fee`, amount: appCost, category: "application", stateId: wc.stateId, speciesId });
-        }
+        if (licenseCost > 0) itemCosts.push({ label: `${state.abbreviation} License`, amount: licenseCost, category: "license", stateId: wc.stateId });
+        if (appCost > 0) itemCosts.push({ label: `${state.abbreviation} ${fmtSpecies(speciesId)} app fee`, amount: appCost, category: "application", stateId: wc.stateId, speciesId });
 
         const applyTotal = appCost + licenseCost;
-        const applyDesc = `Apply for ${state.name} ${speciesId.replace("_", " ")} — pure random draw, same odds every year. Cost: $${Math.round(applyTotal)}.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""} ${state.statePersonality ? state.name + " is a wild-card play worth taking every year." : ""}`.trim();
+        const applyDesc = `Apply for ${state.name} ${fmtSpecies(speciesId)} — pure random draw, same odds every year. Cost: $${Math.round(applyTotal)}.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""} ${state.statePersonality ? state.name + " is a wild-card play worth taking every year." : ""}`.trim();
 
         actions.push({
           type: "apply",
@@ -1018,32 +1070,25 @@ function generateYearlyPlan(
     }
 
     // Hunt actions based on phase
+    const sp = input.species[0] ?? "elk";
+    const defaultState = recs[0]?.stateId ?? "CO";
+
     if (phase === "building" && i <= 1) {
-      // Early hunts: OTC or immediate-draw units
       for (const rec of recs) {
         const immediateUnit = rec.bestUnits.find(u => u.drawTimeline === "Drawable now");
         if (immediateUnit) {
           const huntState = STATES_MAP[rec.stateId];
-          const speciesId = input.species[0] ?? "elk";
-          const unitObj = SAMPLE_UNITS.find(u => u.unitCode === immediateUnit.unitCode && u.stateId === rec.stateId);
-          const tNotes = unitObj?.tacticalNotes;
-          const routes = findBestRoutes(input.homeState, rec.stateId);
-          const flightNote = routes.length > 0 ? ` Fly ${routes[0].from}→${routes[0].to} (~$${routes[0].avgCost} RT).` : "";
-          const seasonNote = tNotes?.bestSeasonTier ? ` Best season: ${tNotes.bestSeasonTier}.` : "";
-          const arrivalNote = tNotes?.bestArrivalDate ? ` ${tNotes.bestArrivalDate}.` : "";
-          const huntLength = tNotes?.typicalHuntLength ? ` Plan ${tNotes.typicalHuntLength}.` : "";
+          const { tNotes } = lookupUnit(immediateUnit.unitCode, rec.stateId);
+          const flight = fmtFlight(findBestRoutes(input.homeState, rec.stateId));
+          const season = tNotes?.bestSeasonTier ? ` Best season: ${tNotes.bestSeasonTier}.` : "";
+          const arrival = tNotes?.bestArrivalDate ? ` ${tNotes.bestArrivalDate}.` : "";
+          const length = tNotes?.typicalHuntLength ? ` Plan ${tNotes.typicalHuntLength}.` : "";
 
           actions.push({
-            type: "hunt",
-            stateId: rec.stateId,
-            speciesId,
-            unitCode: immediateUnit.unitCode,
-            description: `Hunt ${speciesId.replace("_", " ")} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flightNote}${seasonNote}${arrivalNote}${huntLength} ${Math.round(immediateUnit.successRate * 100)}% success rate.`,
-            estimatedDrawOdds: immediateUnit.successRate,
-            cost: 600,
-            costs: [
-              { label: "Estimated tag + travel", amount: 600, category: "tag", stateId: rec.stateId, speciesId },
-            ],
+            type: "hunt", stateId: rec.stateId, speciesId: sp, unitCode: immediateUnit.unitCode,
+            description: `Hunt ${fmtSpecies(sp)} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flight}${season}${arrival}${length} ${Math.round(immediateUnit.successRate * 100)}% success rate.`,
+            estimatedDrawOdds: immediateUnit.successRate, cost: 600,
+            costs: [{ label: "Estimated tag + travel", amount: 600, category: "tag", stateId: rec.stateId, speciesId: sp }],
           });
           break;
         }
@@ -1051,85 +1096,45 @@ function generateYearlyPlan(
     }
 
     if (phase === "building" && i === 2) {
-      actions.push({
-        type: "scout",
-        stateId: recs[0]?.stateId ?? "CO",
-        speciesId: input.species[0] ?? "elk",
-        description: "E-scout top units for burn phase. Identify glassing spots, camp locations, access routes.",
-        cost: 0,
-        costs: [],
-      });
+      actions.push({ type: "scout", stateId: defaultState, speciesId: sp, description: "E-scout top units for burn phase. Identify glassing spots, camp locations, access routes.", cost: 0, costs: [] });
     }
 
     if (phase === "burn") {
-      const burnTarget = recs
-        .flatMap(r => r.bestUnits)
-        .find(u => u.drawTimeline.includes("Year") && u.trophyRating >= 6);
-
+      const burnTarget = recs.flatMap(r => r.bestUnits).find(u => u.drawTimeline.includes("Year") && u.trophyRating >= 6);
       if (burnTarget) {
-        const burnStateId = recs.find(r => r.bestUnits.includes(burnTarget))?.stateId ?? recs[0]?.stateId ?? "CO";
-        const burnState = STATES_MAP[burnStateId];
-        const speciesId = input.species[0] ?? "elk";
-        const unitObj = SAMPLE_UNITS.find(u => u.unitCode === burnTarget.unitCode && u.stateId === burnStateId);
-        const tNotes = unitObj?.tacticalNotes;
-        const routes = findBestRoutes(input.homeState, burnStateId);
-        const flightNote = routes.length > 0 ? ` Fly ${routes[0].from}→${routes[0].to} (~$${routes[0].avgCost} RT).` : "";
-        const trophyNote = tNotes?.trophyExpectation ? ` Trophy expectation: ${tNotes.trophyExpectation}` : "";
-        const seasonNote = tNotes?.bestSeasonTier ? ` Target ${tNotes.bestSeasonTier}.` : "";
+        const sid = recs.find(r => r.bestUnits.includes(burnTarget))?.stateId ?? defaultState;
+        const { tNotes } = lookupUnit(burnTarget.unitCode, sid);
+        const flight = fmtFlight(findBestRoutes(input.homeState, sid));
+        const trophy = tNotes?.trophyExpectation ? ` Trophy expectation: ${tNotes.trophyExpectation}` : "";
+        const season = tNotes?.bestSeasonTier ? ` Target ${tNotes.bestSeasonTier}.` : "";
 
         actions.push({
-          type: "hunt",
-          stateId: burnStateId,
-          speciesId,
-          unitCode: burnTarget.unitCode,
-          description: `Burn points — ${speciesId.replace("_", " ")} in ${burnState?.abbreviation ?? burnStateId} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flightNote}${seasonNote}${trophyNote} This is where your years of point-building pay off.`,
-          estimatedDrawOdds: 0.75,
-          cost: 1200,
-          costs: [
-            { label: "Tag + travel (burn year)", amount: 1200, category: "tag", stateId: burnStateId, speciesId },
-          ],
+          type: "hunt", stateId: sid, speciesId: sp, unitCode: burnTarget.unitCode,
+          description: `Burn points — ${fmtSpecies(sp)} in ${STATES_MAP[sid]?.abbreviation ?? sid} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flight}${season}${trophy} This is where your years of point-building pay off.`,
+          estimatedDrawOdds: 0.75, cost: 1200,
+          costs: [{ label: "Tag + travel (burn year)", amount: 1200, category: "tag", stateId: sid, speciesId: sp }],
         });
       }
     }
 
     if (phase === "gap") {
-      actions.push({
-        type: "scout",
-        stateId: recs[0]?.stateId ?? "CO",
-        speciesId: input.species[0] ?? "elk",
-        description: "Gap year: Reassess portfolio. Deep e-scout for trophy phase. Review point totals vs. creep.",
-        cost: 0,
-        costs: [],
-      });
+      actions.push({ type: "scout", stateId: defaultState, speciesId: sp, description: "Gap year: Reassess portfolio. Deep e-scout for trophy phase. Review point totals vs. creep.", cost: 0, costs: [] });
     }
 
     if (phase === "trophy") {
-      const trophyTarget = recs
-        .flatMap(r => r.bestUnits)
-        .find(u => u.trophyRating >= 8);
-
+      const trophyTarget = recs.flatMap(r => r.bestUnits).find(u => u.trophyRating >= 8);
       if (trophyTarget) {
-        const trophyStateId = recs.find(r => r.bestUnits.includes(trophyTarget))?.stateId ?? recs[0]?.stateId ?? "CO";
-        const trophyState = STATES_MAP[trophyStateId];
-        const speciesId = input.species[0] ?? "elk";
-        const unitObj = SAMPLE_UNITS.find(u => u.unitCode === trophyTarget.unitCode && u.stateId === trophyStateId);
-        const tNotes = unitObj?.tacticalNotes;
-        const routes = findBestRoutes(input.homeState, trophyStateId);
-        const flightNote = routes.length > 0 ? ` Fly ${routes[0].from}→${routes[0].to} (~$${routes[0].avgCost} RT).` : "";
-        const trophyNote = tNotes?.trophyExpectation ? ` Trophy potential: ${tNotes.trophyExpectation}` : "";
-        const guidedNote = input.openToGuided ? " Consider hiring a local guide for this caliber of hunt." : "";
+        const sid = recs.find(r => r.bestUnits.includes(trophyTarget))?.stateId ?? defaultState;
+        const { tNotes } = lookupUnit(trophyTarget.unitCode, sid);
+        const flight = fmtFlight(findBestRoutes(input.homeState, sid));
+        const trophy = tNotes?.trophyExpectation ? ` Trophy potential: ${tNotes.trophyExpectation}` : "";
+        const guided = input.openToGuided ? " Consider hiring a local guide for this caliber of hunt." : "";
 
         actions.push({
-          type: "hunt",
-          stateId: trophyStateId,
-          speciesId,
-          unitCode: trophyTarget.unitCode,
-          description: `Trophy hunt — ${speciesId.replace("_", " ")} in ${trophyState?.abbreviation ?? trophyStateId} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flightNote}${trophyNote}${guidedNote} This is the payoff for years of disciplined point-building.`,
-          estimatedDrawOdds: 0.85,
-          cost: 1800,
-          costs: [
-            { label: "Trophy tag + travel + gear", amount: 1800, category: "tag", stateId: trophyStateId, speciesId },
-          ],
+          type: "hunt", stateId: sid, speciesId: sp, unitCode: trophyTarget.unitCode,
+          description: `Trophy hunt — ${fmtSpecies(sp)} in ${STATES_MAP[sid]?.abbreviation ?? sid} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flight}${trophy}${guided} This is the payoff for years of disciplined point-building.`,
+          estimatedDrawOdds: 0.85, cost: 1800,
+          costs: [{ label: "Trophy tag + travel + gear", amount: 1800, category: "tag", stateId: sid, speciesId: sp }],
         });
       }
     }
@@ -1156,9 +1161,7 @@ function generateYearlyPlan(
   return roadmap;
 }
 
-// ============================================================================
-// Helpers
-// ============================================================================
+// --- Helpers
 
 function buildProfileSummary(
   input: ConsultationInput,
@@ -1178,13 +1181,7 @@ function buildProfileSummary(
     veteran: `As a veteran western hunter based in ${loc}, this portfolio is tuned for efficiency — maximizing the return on every dollar and every point. We've prioritized high-value units where your experience gives you an edge over the first-timers.`,
   };
 
-  const styleMap: Record<string, string> = {
-    diy_truck: "truck-camp, glass-from-roads style",
-    diy_backpack: "backcountry, pack-in-and-stay style",
-    guided: "guided hunt approach",
-    drop_camp: "drop-camp approach",
-  };
-  const styleName = styleMap[input.huntStylePrimary ?? "diy_truck"] ?? "DIY approach";
+  const styleName = STYLE_LABELS[input.huntStylePrimary ?? "diy_truck"]?.long ?? "DIY approach";
 
   const trophyNarrative: Record<string, string> = {
     trophy_focused: `You're chasing quality over quantity — this means we weight toward states with predictable preference point systems (CO, WY) where you can plan exactly when you'll draw a premium unit, and long-term investments (NV, AZ) where patience pays off with the biggest animals.`,
@@ -1216,9 +1213,7 @@ function buildProfileSummary(
   return `${para1}\n\n${para2}\n\n${para3}`;
 }
 
-// ============================================================================
-// v3: Narrative Builders — Advisor-Quality Text
-// ============================================================================
+// --- v3: Narrative Builders — Advisor-Quality Text
 
 function buildPointStrategy(
   stateId: string,
@@ -1306,23 +1301,9 @@ function buildStateReason(
   const topUnit = bestUnits[0];
   const unitNames = bestUnits.map(u => `${u.unitCode} (${u.unitName})`).join(", ");
 
-  const styleLabel: Record<string, string> = {
-    diy_truck: "truck-camp",
-    diy_backpack: "backcountry",
-    guided: "guided",
-    drop_camp: "drop-camp",
-  };
-  const hunterStyle = styleLabel[input.huntStylePrimary ?? "diy_truck"] ?? "DIY";
+  const hunterStyle = STYLE_LABELS[input.huntStylePrimary ?? "diy_truck"]?.short ?? "DIY";
 
-  // Role-based intro
-  const roleIntro: Record<string, string> = {
-    primary: `${state.name} is your anchor state.`,
-    secondary: `${state.name} rounds out your portfolio as a strong supporting state.`,
-    wildcard: `${state.name} is your wild card — a free lottery ticket every year.`,
-    long_term: `${state.name} is your long-game trophy investment.`,
-  };
-
-  let reason = roleIntro[role] ?? `${state.name} fits well in your portfolio.`;
+  let reason = ROLE_INTROS[role]?.(state.name) ?? `${state.name} fits well in your portfolio.`;
 
   // Point system narrative
   if (state.pointSystem === "preference" || state.pointSystem === "hybrid") {
@@ -1385,9 +1366,7 @@ function buildStateReason(
   return reason;
 }
 
-// ============================================================================
-// v3: Travel Logistics Generator
-// ============================================================================
+// --- v3: Travel Logistics Generator
 
 function generateTravelLogistics(
   input: ConsultationInput,
@@ -1439,9 +1418,7 @@ function generateTravelLogistics(
   };
 }
 
-// ============================================================================
-// v3: Season Calendar Generator
-// ============================================================================
+// --- v3: Season Calendar Generator
 
 function generateSeasonCalendar(
   input: ConsultationInput,
@@ -1453,7 +1430,7 @@ function generateSeasonCalendar(
     const state = STATES_MAP[rec.stateId];
     if (!state?.seasonTiers || state.seasonTiers.length === 0) continue;
 
-    const relevantSpecies = input.species.filter(s => state.availableSpecies.includes(s));
+    const relevantSpecies = getRelevantSpecies(input.species, state);
 
     for (const speciesId of relevantSpecies) {
       const tiers = state.seasonTiers.map(tier => {
@@ -1500,9 +1477,7 @@ function generateSeasonCalendar(
   return calendar;
 }
 
-// ============================================================================
-// v3: Point-Only Application Guide Generator
-// ============================================================================
+// --- v3: Point-Only Application Guide Generator
 
 function generatePointOnlyGuide(
   recs: StateRecommendation[]
@@ -1537,7 +1512,6 @@ function generatePointOnlyGuide(
   return guide;
 }
 
-// ============================================================================
 
 function buildStrategyOverview(
   recs: StateRecommendation[],
@@ -1566,41 +1540,3 @@ function buildStrategyOverview(
   return overview;
 }
 
-// Legacy wrapper for backward compat
-interface RoadmapInput {
-  species: string[];
-  targetStates: string[];
-  currentPoints: Record<string, Record<string, number>>;
-  huntStyle: HuntStyle;
-  focus: PlanFocus;
-  budgetMin: number;
-  budgetMax: number;
-  durationYears?: number;
-}
-
-export function generateRoadmap(input: RoadmapInput): RoadmapYear[] {
-  const assessment = generateStrategicAssessment({
-    homeState: "",
-    homeCity: "",
-    experienceLevel: "3_5_trips",
-    physicalComfort: "any",
-    hasHuntedStates: [],
-    species: input.species,
-    trophyVsMeat: input.focus === "trophy" ? "trophy_focused" : input.focus === "opportunity" ? "meat_focused" : "balanced",
-    bucketListDescription: "",
-    dreamHunts: [],
-    pointYearBudget: input.budgetMax * 0.4,
-    huntYearBudget: input.budgetMax,
-    huntFrequency: "every_year",
-    timeAvailable: "full_week",
-    travelWillingness: "will_fly_anywhere",
-    hasExistingPoints: Object.keys(input.currentPoints).length > 0,
-    existingPoints: input.currentPoints,
-    huntStylePrimary: input.huntStyle,
-    openToGuided: false,
-    guidedForSpecies: [],
-    preferredTerrain: [],
-    importantFactors: [],
-  });
-  return assessment.roadmap;
-}

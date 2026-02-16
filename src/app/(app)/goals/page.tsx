@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -16,15 +16,18 @@ import {
   ExternalLink,
   Check,
   Calendar,
+  ArrowRight,
 } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES, SPECIES_MAP } from "@/lib/constants/species";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
-import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle } from "@/lib/types";
+import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
+import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier } from "@/lib/types";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const currentYear = new Date().getFullYear();
 const ROADMAP_YEARS = Array.from({ length: 10 }, (_, i) => currentYear + i);
@@ -55,6 +58,20 @@ const HUNT_STYLE_OPTIONS: { value: HuntStyle; label: string }[] = [
   { value: "drop_camp", label: "Drop Camp" },
 ];
 
+const DREAM_TIER_OPTIONS: { value: DreamHuntTier; label: string; desc: string; icon: string }[] = [
+  { value: "attainable", label: "Attainable", desc: "Draw within 1-3 years", icon: "🎯" },
+  { value: "bucket_list", label: "Bucket List", desc: "Worth the 3-7 year wait", icon: "📋" },
+  { value: "trophy", label: "Trophy Hunt", desc: "Premium unit, premium animal", icon: "🏆" },
+  { value: "once_in_a_lifetime", label: "Once-in-a-Lifetime", desc: "10+ years, one shot ever", icon: "⭐" },
+];
+
+const DREAM_TIER_STYLES: Record<DreamHuntTier, { bg: string; text: string; label: string }> = {
+  attainable: { bg: "bg-chart-2/15", text: "text-chart-2", label: "Attainable" },
+  bucket_list: { bg: "bg-chart-1/15", text: "text-chart-1", label: "Bucket List" },
+  trophy: { bg: "bg-chart-4/15", text: "text-chart-4", label: "Trophy" },
+  once_in_a_lifetime: { bg: "bg-primary/15", text: "text-primary", label: "Once-in-a-Lifetime" },
+};
+
 const HUNT_STYLE_LABELS: Record<string, string> = {
   diy_backpack: "DIY Backpack",
   diy_truck: "DIY Truck",
@@ -84,11 +101,33 @@ const TROPHY_PREFIX: Record<string, string> = {
 export default function GoalsPage() {
   const {
     userGoals, addUserGoal, updateUserGoal, removeUserGoal,
-    milestones, completeMilestone, uncompleteMilestone,
+    milestones, completeMilestone, uncompleteMilestone, addMilestones,
     confirmedAssessment,
   } = useAppStore();
+  const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
-  const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
+  const [filter, setFilter] = useState<"all" | "active" | "dream" | "completed">("all");
+
+  // Backfill: generate milestones for existing goals that have none
+  const backfilled = useRef(false);
+  useEffect(() => {
+    if (backfilled.current) return;
+    backfilled.current = true;
+    const goalIds = new Set(userGoals.map((g) => g.id));
+    const goalMsIds = new Set(milestones.filter((m) => m.planId && goalIds.has(m.planId)).map((m) => m.planId));
+    const goalsWithoutMs = userGoals.filter((g) => !goalMsIds.has(g.id));
+    if (goalsWithoutMs.length > 0) {
+      const newMs = goalsWithoutMs.flatMap((g) => generateMilestonesForGoal(g));
+      if (newMs.length > 0) addMilestones(newMs);
+    }
+  }, [userGoals, milestones, addMilestones]);
+
+  // Goal → Plan integration
+  const hasGoalsNoStrategy = userGoals.length > 0 && !confirmedAssessment;
+  function handleBuildFromGoals() {
+    useWizardStore.getState().prefillFromGoals(userGoals);
+    router.push("/plan-builder");
+  }
 
   // Add modal state
   const [newStateId, setNewStateId] = useState("");
@@ -102,6 +141,7 @@ export default function GoalsPage() {
   const [newTitle, setNewTitle] = useState("");
   const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [newUnitId, setNewUnitId] = useState("");
+  const [newDreamTier, setNewDreamTier] = useState<DreamHuntTier | "">("");
 
   // Auto-generate title from selections
   const autoTitle = useMemo(() => {
@@ -238,7 +278,7 @@ export default function GoalsPage() {
   // Filter milestones
   const filteredMilestones = milestones.filter(m => {
     if (filter === "all") return true;
-    if (filter === "pending") return !m.completed;
+    if (filter === "active") return !m.completed;
     if (filter === "completed") return m.completed;
     return true;
   });
@@ -272,6 +312,7 @@ export default function GoalsPage() {
     setNewStatus("active");
     setTitleManuallyEdited(false);
     setNewUnitId("");
+    setNewDreamTier("");
   }
 
   function handleAdd() {
@@ -303,6 +344,7 @@ export default function GoalsPage() {
       ...(newSeasonPref ? { seasonPreference: newSeasonPref as SeasonPreference } : {}),
       ...(newHuntStyle ? { huntStyle: newHuntStyle as HuntStyle } : {}),
       ...(newTrophyDesc.trim() ? { trophyDescription: newTrophyDesc.trim() } : {}),
+      ...(newDreamTier ? { dreamTier: newDreamTier as DreamHuntTier } : {}),
     });
     resetModal();
   }
@@ -341,6 +383,35 @@ export default function GoalsPage() {
       </div>
 
       {/* ================================================================ */}
+      {/* GOAL → PLAN INTEGRATION CTA */}
+      {/* ================================================================ */}
+      {hasGoalsNoStrategy && (
+        <Card className="bg-gradient-to-r from-primary/5 via-chart-2/5 to-chart-4/5 border-primary/20 overflow-hidden">
+          <CardContent className="p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                <Crosshair className="w-6 h-6 text-primary" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="font-semibold text-sm">
+                  Turn {userGoals.length} goal{userGoals.length > 1 ? "s" : ""} into a full strategy
+                </h3>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  We&apos;ll pre-fill the consultation with your {[...new Set(userGoals.map(g => g.speciesId))].length} species,
+                  {userGoals.some(g => g.huntStyle) ? " hunt style," : ""}
+                  {userGoals.some(g => g.trophyDescription) ? " dream descriptions," : ""}
+                  {" "}and build a 10-year roadmap with timelines, costs, and milestones.
+                </p>
+              </div>
+              <Button onClick={handleBuildFromGoals} className="gap-2 shrink-0">
+                Build Strategy <ArrowRight className="w-4 h-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================================================================ */}
       {/* MILESTONE-FIRST LAYOUT (from confirmed plan) */}
       {/* ================================================================ */}
       {hasMilestones && (
@@ -358,9 +429,9 @@ export default function GoalsPage() {
 
           {/* Filters */}
           <div className="flex gap-2">
-            {(["all", "pending", "completed"] as const).map((f) => (
+            {(["all", "active", "completed"] as const).map((f) => (
               <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                {f === "all" ? `All (${milestones.length})` : f === "pending" ? `Pending (${milestones.length - completedCount})` : `Done (${completedCount})`}
+                {f === "all" ? `All (${milestones.length})` : f === "active" ? `Active (${milestones.length - completedCount})` : `Done (${completedCount})`}
               </button>
             ))}
           </div>
@@ -400,6 +471,11 @@ export default function GoalsPage() {
                                 <div className="w-6 h-6 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: state.color }}>
                                   {state.abbreviation}
                                 </div>
+                              )}
+                              {milestone.planId && userGoals.some((g) => g.id === milestone.planId) && (
+                                <span className="px-1.5 py-0.5 rounded text-[9px] font-semibold bg-chart-4/15 text-chart-4 shrink-0">
+                                  Goal
+                                </span>
                               )}
                               <h3 className={`font-semibold text-sm ${milestone.completed ? "line-through text-muted-foreground" : ""}`}>
                                 {milestone.title}
@@ -572,7 +648,7 @@ export default function GoalsPage() {
           <div className="lg:col-span-2 space-y-4">
             <div className="flex gap-2">
               {(["all", "active", "dream", "completed"] as const).map((f) => (
-                <button key={f} onClick={() => setFilter(f as typeof filter)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
                   {f === "all" ? "All Goals" : f}
                 </button>
               ))}
@@ -600,7 +676,7 @@ export default function GoalsPage() {
               </Card>
             ) : (
               <div className="space-y-3">
-                {userGoals.map((goal) => {
+                {userGoals.filter(g => filter === "all" || g.status === filter).map((goal) => {
                   const state = STATES_MAP[goal.stateId];
                   const statusStyle = STATUS_STYLES[goal.status];
                   const attachedUnit = goal.unitId ? SAMPLE_UNITS.find(u => u.id === goal.unitId) : null;
@@ -657,6 +733,11 @@ export default function GoalsPage() {
 
                               <div className="flex items-center gap-3 mt-2">
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
+                                {goal.dreamTier && (
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DREAM_TIER_STYLES[goal.dreamTier].bg} ${DREAM_TIER_STYLES[goal.dreamTier].text}`}>
+                                    {DREAM_TIER_STYLES[goal.dreamTier].label}
+                                  </span>
+                                )}
                                 <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Target: {goal.targetYear}</span>
                               </div>
                             </div>
@@ -719,8 +800,8 @@ export default function GoalsPage() {
       {/* ================================================================ */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetModal} />
-          <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-lg bg-card border-border shadow-2xl max-h-[90vh] flex flex-col">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onClick={resetModal} />
+          <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-lg bg-card border-border shadow-2xl max-h-[90vh] flex flex-col modal-content">
             <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
               <CardTitle id="goals-dialog-title" className="text-base">Add Hunt Goal</CardTitle>
               <button onClick={resetModal} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"><X className="w-4 h-4" /></button>
@@ -731,7 +812,7 @@ export default function GoalsPage() {
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">State</label>
                 <div className="grid grid-cols-5 gap-2">
                   {STATES.map((s) => (
-                    <button key={s.id} onClick={() => { setNewStateId(s.id); setNewUnitId(""); }} className={`p-2 rounded-lg border text-xs font-bold transition-all ${newStateId === s.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-secondary/50 hover:border-primary/30"}`}>
+                    <button key={s.id} onClick={() => { setNewStateId(s.id); setNewUnitId(""); const avail = s.availableSpecies; if (!avail.includes(newSpeciesId)) setNewSpeciesId(avail[0] ?? "elk"); }} className={`p-2 rounded-lg border text-xs font-bold transition-all ${newStateId === s.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-secondary/50 hover:border-primary/30"}`}>
                       <div className="w-6 h-6 rounded mx-auto mb-1 flex items-center justify-center text-[10px] text-white" style={{ backgroundColor: s.color }}>{s.abbreviation}</div>
                       {s.abbreviation}
                     </button>
@@ -789,6 +870,30 @@ export default function GoalsPage() {
                   {HUNT_STYLE_OPTIONS.map((opt) => (
                     <button key={opt.value} onClick={() => setNewHuntStyle(newHuntStyle === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newHuntStyle === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
                       {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dream Hunt Tier */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Hunt Tier</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {DREAM_TIER_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setNewDreamTier(newDreamTier === opt.value ? "" : opt.value)}
+                      className={`p-2.5 rounded-lg border text-left transition-all ${
+                        newDreamTier === opt.value
+                          ? "border-primary bg-primary/5 ring-1 ring-primary"
+                          : "border-border bg-secondary/30 hover:border-primary/30"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-0.5">
+                        <span className="text-sm">{opt.icon}</span>
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
