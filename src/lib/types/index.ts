@@ -1,5 +1,5 @@
 // ============================================================================
-// Core Domain Types for Hunt Planner v3
+// Core Domain Types for Odyssey Outdoors
 // ============================================================================
 
 export type PointSystemType =

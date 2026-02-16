@@ -14,11 +14,11 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Hunt Planner | Strategic Western Big Game Portfolio",
-    template: "%s | Hunt Planner",
+    default: "Odyssey Outdoors | Strategic Western Big Game Portfolio",
+    template: "%s | Odyssey Outdoors",
   },
   description:
-    "Plan your western big game hunting strategy like a financial portfolio. Track preference points, calculate draw investments, and build your personalized 10-year roadmap across CO, WY, MT, and 7 more states.",
+    "Plan your western big game hunting strategy like a financial portfolio. Track preference points, calculate draw investments, and build your personalized multi-year roadmap across the top western states.",
   keywords: [
     "western hunting",
     "big game",
@@ -26,10 +26,10 @@ export const metadata: Metadata = {
     "draw strategy",
     "elk hunting",
     "mule deer",
-    "hunt planner",
+    "odyssey outdoors",
   ],
   openGraph: {
-    title: "Hunt Planner | Strategic Western Big Game Portfolio",
+    title: "Odyssey Outdoors | Strategic Western Big Game Portfolio",
     description:
       "Plan your western big game hunting strategy like a financial portfolio.",
     type: "website",

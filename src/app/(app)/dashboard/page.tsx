@@ -256,7 +256,7 @@ export default function DashboardPage() {
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">State Investment Overview</CardTitle>
-          <p className="text-sm text-muted-foreground">Annual point costs and draw system types across all 10 states</p>
+          <p className="text-sm text-muted-foreground">Annual point costs and draw system types across all states</p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">

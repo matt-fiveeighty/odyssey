@@ -18,7 +18,7 @@ export function Header() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut } = useAuth();
-  const pageTitle = pageTitles[pathname] ?? "Hunt Planner";
+  const pageTitle = pageTitles[pathname] ?? "Odyssey Outdoors";
 
   const displayName =
     user?.user_metadata?.full_name ??
@@ -44,13 +44,13 @@ export function Header() {
         {/* Mobile brand header */}
         <div className="md:hidden flex items-center gap-2">
           <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-            HP
+            OO
           </div>
-          <span className="text-sm font-semibold">Hunt Planner</span>
+          <span className="text-sm font-semibold">Odyssey Outdoors</span>
         </div>
         {/* Desktop breadcrumb / page title */}
         <div className="hidden md:flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Hunt Planner</span>
+          <span className="text-muted-foreground">Odyssey Outdoors</span>
           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
           <span className="font-medium text-foreground">{pageTitle}</span>
         </div>

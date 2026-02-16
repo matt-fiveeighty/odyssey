@@ -13,10 +13,10 @@ export default function MarketingLayout({
         <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
           <Link href="/" className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-              HP
+              OO
             </div>
             <span className="text-sm font-semibold text-foreground">
-              Hunt Planner
+              Odyssey Outdoors
             </span>
           </Link>
           <div className="flex items-center gap-3">
@@ -40,10 +40,10 @@ export default function MarketingLayout({
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded bg-primary text-primary-foreground font-bold text-[10px] flex items-center justify-center">
-              HP
+              OO
             </div>
             <span className="text-xs text-muted-foreground">
-              Hunt Planner — Strategic Western Big Game Portfolio
+              Odyssey Outdoors — Strategic Western Big Game Portfolio
             </span>
           </div>
           <p className="text-xs text-muted-foreground">

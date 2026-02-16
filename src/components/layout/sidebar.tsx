@@ -39,12 +39,12 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
         <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-          HP
+          OO
         </div>
         {!collapsed && (
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-sidebar-foreground">
-              Hunt Planner
+              Odyssey Outdoors
             </span>
             <span className="text-[10px] text-muted-foreground">
               Strategic Portfolio

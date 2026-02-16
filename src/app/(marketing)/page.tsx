@@ -18,13 +18,13 @@ const steps = [
     icon: Crosshair,
     title: "Profile Your Hunt",
     description:
-      "Answer 9 questions about your experience, species targets, budget, and hunting DNA. The consultation adapts to who you are as a hunter.",
+      "Answer a few questions about your experience, species targets, budget, and hunting DNA. The consultation adapts to who you are as a hunter.",
   },
   {
     icon: BarChart3,
     title: "Get Your Strategy",
     description:
-      "Our scoring engine evaluates 10 western states across 8 weighted factors and builds a personalized 10-year roadmap with phased milestones.",
+      "Our scoring engine evaluates every western state across multiple weighted factors and builds a personalized multi-year roadmap with phased milestones.",
   },
   {
     icon: Calendar,
@@ -45,7 +45,7 @@ const features = [
     icon: Map,
     title: "State Scoring",
     description:
-      "10 western states scored against your specific profile. Not generic advice — strategy tuned to your budget, fitness, and goals.",
+      "Every western state scored against your specific profile. Not generic advice — strategy tuned to your budget, fitness, and goals.",
   },
   {
     icon: Calendar,
@@ -57,13 +57,13 @@ const features = [
     icon: Wallet,
     title: "Budget Intelligence",
     description:
-      "Year-one costs, 10-year projections, application fees, guided hunt estimates — all calculated per state.",
+      "Year-one costs, long-term projections, application fees, guided hunt estimates — all calculated per state.",
   },
   {
     icon: Compass,
     title: "Unit Database",
     description:
-      "Browse units across all 10 states with success rates, point requirements, and species breakdowns.",
+      "Browse units across every state with success rates, point requirements, and species breakdowns.",
   },
   {
     icon: Shield,
@@ -86,7 +86,7 @@ export default function LandingPage() {
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <Mountain className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">
-              10 States. 1 Strategy. Your Roadmap.
+              Every State. One Strategy. Your Roadmap.
             </span>
           </div>
 
@@ -96,9 +96,9 @@ export default function LandingPage() {
           </h1>
 
           <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Stop guessing where to apply. Hunt Planner builds a personalized
-            multi-year strategy across Colorado, Wyoming, Montana, and 7 more
-            western states — optimized for your budget, experience, and goals.
+            Stop guessing where to apply. Odyssey Outdoors builds a personalized
+            multi-year strategy across the top western states — optimized for
+            your budget, experience, and goals.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
@@ -206,7 +206,7 @@ export default function LandingPage() {
           </h2>
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
             Create your free account and run the strategic consultation. Your
-            personalized 10-year roadmap is 9 questions away.
+            personalized multi-year roadmap is just a few questions away.
           </p>
           <Link href="/auth/sign-up">
             <Button size="lg" className="gap-2 text-base px-8 mt-8">

@@ -1,5 +1,5 @@
 /**
- * Flight Hub Data for Hunt Planner v3
+ * Flight Hub Data for Odyssey Outdoors
  *
  * Maps home states to departure airports and provides common hunting
  * flight routes with estimated costs. Used by the travel logistics
