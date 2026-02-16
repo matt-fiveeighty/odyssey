@@ -26,12 +26,17 @@ export default function CalculatorPage() {
   const licenseFee = state?.licenseFees.qualifyingLicense ?? 0;
   const appFee = state?.licenseFees.appFee ?? 0;
   const annualCost = pointCost + appFee + (licenseFee > 0 ? licenseFee : 0);
-  const estimatedTagCost = selectedSpecies === "elk" ? 600 : 400;
+  // Estimated NR tag costs by species (approximations across western states)
+  const TAG_COST_ESTIMATES: Record<string, number> = {
+    elk: 600, mule_deer: 400, whitetail: 350, bear: 350, moose: 800,
+    pronghorn: 300, bighorn_sheep: 2000, mountain_goat: 1500, bison: 1500, mountain_lion: 400,
+  };
+  const estimatedTagCost = TAG_COST_ESTIMATES[selectedSpecies] ?? 400;
   const totalCost =
     totalPointCost + pointsNeeded * appFee + licenseFee + estimatedTagCost;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 fade-in-up">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <Calculator className="w-6 h-6 text-primary" />

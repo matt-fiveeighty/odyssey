@@ -74,6 +74,11 @@ const TROPHY_PREFIX: Record<string, string> = {
   whitetail: "Buck",
   bear: "",
   moose: "Bull",
+  pronghorn: "Buck",
+  bighorn_sheep: "Ram",
+  mountain_goat: "Billy",
+  bison: "Bull",
+  mountain_lion: "Tom",
 };
 
 export default function GoalsPage() {
@@ -207,7 +212,7 @@ export default function GoalsPage() {
   const hasMilestones = milestones.length > 0;
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

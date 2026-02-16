@@ -82,7 +82,7 @@ export default function PointsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -381,7 +381,7 @@ export default function PointsPage() {
                   State
                 </label>
                 <div className="grid grid-cols-5 gap-2">
-                  {STATES.filter((s) => s.pointSystem !== "random").map((s) => (
+                  {STATES.map((s) => (
                     <button
                       key={s.id}
                       onClick={() => setNewStateId(s.id)}

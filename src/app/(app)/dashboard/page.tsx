@@ -18,9 +18,10 @@ import {
 import Link from "next/link";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { useAppStore } from "@/lib/store";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 export default function DashboardPage() {
-  const { milestones, confirmedAssessment, userPoints } = useAppStore();
+  const { milestones, confirmedAssessment, userPoints, userGoals } = useAppStore();
 
   const hasPlan = confirmedAssessment !== null;
   const completedMilestones = milestones.filter(m => m.completed).length;
@@ -45,7 +46,7 @@ export default function DashboardPage() {
     .slice(0, 8);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 fade-in-up">
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -72,7 +73,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalPoints}</p>
-                <p className="text-xs text-muted-foreground">Total Points</p>
+                <p className="text-xs text-muted-foreground"><HuntingTerm term="preference points">Total Points</HuntingTerm></p>
               </div>
             </div>
           </CardContent>
@@ -192,24 +193,58 @@ export default function DashboardPage() {
               <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-chart-4" />
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Active Plan</CardTitle>
-                  <Badge variant="secondary" className="bg-primary/15 text-primary border-0">No Active Plan</Badge>
+                  <CardTitle className="text-lg">Getting Started</CardTitle>
+                  <Badge variant="secondary" className="bg-primary/15 text-primary border-0">New Here?</Badge>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-                    <Crosshair className="w-8 h-8 text-muted-foreground" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">Build Your Hunt Strategy</h3>
-                  <p className="text-sm text-muted-foreground max-w-md mb-6">
-                    Create a personalized multi-year plan. Our strategic consultation will recommend states, units, and a phased timeline optimized for your goals.
-                  </p>
-                  <Link href="/plan-builder">
-                    <Button className="gap-2">
-                      <Plus className="w-4 h-4" /> Start Consultation <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
+              <CardContent className="space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  Welcome to Odyssey Outdoors. Here&apos;s how to get the most out of your hunt planning:
+                </p>
+                <div className="space-y-3">
+                  {[
+                    {
+                      step: 1,
+                      title: "Run the Strategic Consultation",
+                      description: "Answer a few questions about your experience, budget, and goals. We'll build a custom multi-year strategy.",
+                      href: "/plan-builder",
+                      done: false,
+                    },
+                    {
+                      step: 2,
+                      title: "Set Your Hunt Goals",
+                      description: "Define what you're chasing — species, state, weapon, season, and your dream trophy.",
+                      href: "/goals",
+                      done: userGoals.length > 0,
+                    },
+                    {
+                      step: 3,
+                      title: "Track Your Points",
+                      description: "Enter your current preference and bonus points across states to get accurate draw timelines.",
+                      href: "/points",
+                      done: userPoints.length > 0,
+                    },
+                    {
+                      step: 4,
+                      title: "Explore Units",
+                      description: "Browse the unit database to research success rates, trophy quality, and points required.",
+                      href: "/units",
+                      done: false,
+                    },
+                  ].map((item) => (
+                    <Link key={item.step} href={item.href}>
+                      <div className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${item.done ? "opacity-60" : ""}`}>
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${item.done ? "bg-chart-2/15 text-chart-2" : "bg-primary/15 text-primary"}`}>
+                          {item.done ? "✓" : item.step}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{item.title}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                        </div>
+                        <ArrowRight className="w-4 h-4 text-muted-foreground mt-0.5 ml-auto shrink-0" />
+                      </div>
+                    </Link>
+                  ))}
                 </div>
               </CardContent>
             </Card>

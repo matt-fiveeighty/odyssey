@@ -71,7 +71,7 @@ export default function UnitsPage() {
   }, [search, stateFilter, speciesFilter, sortBy]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 fade-in-up">
       <div>
         <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
           <MapPin className="w-6 h-6 text-primary" />

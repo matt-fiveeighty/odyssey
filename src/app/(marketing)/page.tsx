@@ -39,7 +39,7 @@ const features = [
     icon: Target,
     title: "Point Strategy",
     description:
-      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most.",
+      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most. Track elk, deer, sheep, goat, bison, and more.",
   },
   {
     icon: Map,
@@ -123,6 +123,20 @@ export default function LandingPage() {
                   className="px-3 py-1 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground"
                 >
                   {state}
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Species badges */}
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+            {["Elk", "Mule Deer", "Whitetail", "Bear", "Moose", "Pronghorn", "Bighorn Sheep", "Mountain Goat", "Bison", "Mountain Lion"].map(
+              (species) => (
+                <span
+                  key={species}
+                  className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70"
+                >
+                  {species}
                 </span>
               )
             )}
