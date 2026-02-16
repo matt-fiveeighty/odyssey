@@ -127,14 +127,113 @@ export default function GoalsPage() {
 
   const displayTitle = titleManuallyEdited ? newTitle : autoTitle;
 
-  // Suggested units based on state + species selection
+  // Smart unit suggestions — scored against ALL inputs including dream description
   const suggestedUnits = useMemo(() => {
     if (!newStateId || !newSpeciesId) return [];
-    return SAMPLE_UNITS
-      .filter((u) => u.stateId === newStateId && u.speciesId === newSpeciesId)
-      .sort((a, b) => b.trophyRating - a.trophyRating)
-      .slice(0, 3);
-  }, [newStateId, newSpeciesId]);
+    const candidates = SAMPLE_UNITS.filter(
+      (u) => u.stateId === newStateId && u.speciesId === newSpeciesId
+    );
+    if (candidates.length === 0) return [];
+
+    const dream = newTrophyDesc.toLowerCase();
+    const dreamTokens = dream.split(/\s+/).filter(Boolean);
+
+    const trophyKeywords = ["big", "giant", "trophy", "monster", "mature", "old", "crusty", "heavy", "wide", "deep", "tall", "record", "book", "boone", "pope", "6x6", "6x7", "7x7", "360", "380", "400"];
+    const opportunityKeywords = ["first", "easy", "otc", "opportunity", "beginner", "meat", "experience", "any", "cow", "doe"];
+    const wantsTrophy = dreamTokens.some((t) => trophyKeywords.includes(t));
+    const wantsOpportunity = dreamTokens.some((t) => opportunityKeywords.includes(t));
+
+    const scored = candidates.map((unit) => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      // Trophy vs opportunity intent
+      if (wantsTrophy) {
+        score += unit.trophyRating * 3;
+        if (unit.trophyRating >= 7) reasons.push("High trophy potential matches your dream");
+      } else if (wantsOpportunity) {
+        score += unit.successRate * 30;
+        score += (10 - unit.pointsRequiredNonresident) * 2;
+        if (unit.successRate >= 0.25) reasons.push("Strong success rate for your first hunt");
+      } else {
+        score += unit.trophyRating * 2;
+        score += unit.successRate * 15;
+      }
+
+      // Terrain from dream text
+      const terrainMap: Record<string, string[]> = {
+        timber: ["Timber"], dark: ["Timber"],
+        alpine: ["Alpine"], mountain: ["Alpine"], high: ["Alpine"],
+        desert: ["Desert"], sage: ["Sagebrush"], sagebrush: ["Sagebrush"],
+        prairie: ["Prairie"], flat: ["Prairie"],
+      };
+      for (const token of dreamTokens) {
+        const matched = terrainMap[token];
+        if (matched && unit.terrainType.some((t) => matched.includes(t))) {
+          score += 5;
+          reasons.push(`${unit.terrainType.join("/")} terrain matches your "${token}" preference`);
+          break;
+        }
+      }
+
+      // Season alignment
+      if (newSeasonPref !== "any" && unit.tacticalNotes?.bestSeasonTier) {
+        const tier = unit.tacticalNotes.bestSeasonTier.toLowerCase();
+        const match =
+          (newSeasonPref === "early" && (tier.includes("archery") || tier.includes("1st"))) ||
+          (newSeasonPref === "mid" && (tier.includes("2nd") || tier.includes("muzzle"))) ||
+          (newSeasonPref === "late" && (tier.includes("3rd") || tier.includes("4th") || tier.includes("late")));
+        if (match) {
+          score += 4;
+          reasons.push(`Best in ${unit.tacticalNotes.bestSeasonTier} — fits your ${newSeasonPref} season`);
+        }
+      }
+
+      // Hunt style alignment
+      if (newHuntStyle) {
+        if (newHuntStyle === "diy_backpack" && unit.pressureLevel === "Low") {
+          score += 3;
+          reasons.push("Low pressure — ideal for DIY backpack");
+        }
+        if (newHuntStyle === "diy_truck" && unit.tacticalNotes?.accessMethod?.toLowerCase().includes("truck")) {
+          score += 3;
+          reasons.push("Truck-accessible for your style");
+        }
+        if ((newHuntStyle === "guided" || newHuntStyle === "drop_camp") && unit.trophyRating >= 7) {
+          score += 2;
+          reasons.push("Premium unit worth the outfitter investment");
+        }
+      }
+
+      // Public land bonus for DIY
+      if ((newHuntStyle === "diy_backpack" || newHuntStyle === "diy_truck") && unit.publicLandPct >= 0.5) {
+        score += 2;
+        reasons.push(`${Math.round(unit.publicLandPct * 100)}% public land`);
+      }
+
+      if (unit.pressureLevel === "Low") score += 2;
+
+      // Trophy expectation from tactical notes matching dream
+      if (unit.tacticalNotes?.trophyExpectation && dream) {
+        const expectation = unit.tacticalNotes.trophyExpectation.toLowerCase();
+        if (dreamTokens.some((t) => expectation.includes(t))) {
+          score += 3;
+          reasons.push(unit.tacticalNotes.trophyExpectation.split(".")[0]);
+        }
+      }
+
+      // Fallback reason
+      if (reasons.length === 0) {
+        if (unit.trophyRating >= 7) reasons.push(`Trophy ${unit.trophyRating}/10 — quality opportunity`);
+        else if (unit.successRate >= 0.25) reasons.push(`${Math.round(unit.successRate * 100)}% success rate — solid odds`);
+        else reasons.push(`${unit.pointsRequiredNonresident} pts to draw — ${unit.pointsRequiredNonresident <= 2 ? "accessible" : "worth the wait"}`);
+      }
+
+      return { unit, score, reasons };
+    });
+
+    return scored.sort((a, b) => b.score - a.score).slice(0, 3);
+  }, [newStateId, newSpeciesId, newTrophyDesc, newSeasonPref, newHuntStyle]);
 
   // Filter milestones
   const filteredMilestones = milestones.filter(m => {
@@ -702,25 +801,26 @@ export default function GoalsPage() {
                 <p className="text-[10px] text-muted-foreground mt-1 text-right">{newTrophyDesc.length}/200</p>
               </div>
 
-              {/* Suggested Units */}
+              {/* AI-Matched Units — scored against all inputs */}
               {suggestedUnits.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Suggested Units</label>
+                  <label className="text-sm font-medium text-muted-foreground mb-1 block">Recommended Units</label>
+                  <p className="text-[10px] text-muted-foreground mb-3">Matched to your species, style, season{newTrophyDesc.trim() ? ", and dream" : ""}</p>
                   <div className="space-y-2">
-                    {suggestedUnits.map((unit) => (
+                    {suggestedUnits.map(({ unit, reasons }) => (
                       <button
                         key={unit.id}
                         onClick={() => setNewUnitId(newUnitId === unit.id ? "" : unit.id)}
                         className={`w-full text-left p-3 rounded-lg border transition-all ${newUnitId === unit.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-secondary/30 hover:border-primary/30"}`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold">Unit {unit.unitCode}</span>
-                            {unit.unitName && <span className="text-xs text-muted-foreground ml-2">{unit.unitName}</span>}
+                            {unit.unitName && <span className="text-xs text-muted-foreground">{unit.unitName}</span>}
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 shrink-0">
                             <span className="text-[10px] text-muted-foreground">
-                              {Math.round(unit.successRate * 100)}% success
+                              {Math.round(unit.successRate * 100)}%
                             </span>
                             <div className="flex items-center gap-0.5">
                               {Array.from({ length: 10 }, (_, i) => (
@@ -729,9 +829,24 @@ export default function GoalsPage() {
                             </div>
                           </div>
                         </div>
-                        {unit.tacticalNotes?.trophyExpectation && (
-                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{unit.tacticalNotes.trophyExpectation}</p>
-                        )}
+                        {/* Why this unit — AI reasoning */}
+                        <div className="space-y-0.5 mt-1.5">
+                          {reasons.slice(0, 2).map((reason, i) => (
+                            <p key={i} className="text-[10px] text-primary/80 flex items-start gap-1.5">
+                              <span className="text-primary mt-px shrink-0">&#x2192;</span>
+                              <span>{reason}</span>
+                            </p>
+                          ))}
+                        </div>
+                        {/* Stats row */}
+                        <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-border/50">
+                          <span className="text-[9px] text-muted-foreground">{unit.pointsRequiredNonresident} pts NR</span>
+                          <span className="text-[9px] text-muted-foreground">{unit.pressureLevel} pressure</span>
+                          <span className="text-[9px] text-muted-foreground">{Math.round(unit.publicLandPct * 100)}% public</span>
+                          {unit.terrainType.length > 0 && (
+                            <span className="text-[9px] text-muted-foreground">{unit.terrainType.join("/")}</span>
+                          )}
+                        </div>
                       </button>
                     ))}
                   </div>
