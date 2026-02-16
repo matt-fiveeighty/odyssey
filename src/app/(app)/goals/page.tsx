@@ -89,7 +89,7 @@ export default function GoalsPage() {
   const [newStateId, setNewStateId] = useState("");
   const [newSpeciesId, setNewSpeciesId] = useState("elk");
   const [newWeaponType, setNewWeaponType] = useState<WeaponType | "">("");
-  const [newSeasonPref, setNewSeasonPref] = useState<SeasonPreference | "">("");
+  const [newSeasonPref, setNewSeasonPref] = useState<SeasonPreference>("any");
   const [newHuntStyle, setNewHuntStyle] = useState<HuntStyle | "">("");
   const [newTrophyDesc, setNewTrophyDesc] = useState("");
   const [newTargetYear, setNewTargetYear] = useState(currentYear + 3);
@@ -161,7 +161,7 @@ export default function GoalsPage() {
     setNewStateId("");
     setNewSpeciesId("elk");
     setNewWeaponType("");
-    setNewSeasonPref("");
+    setNewSeasonPref("any");
     setNewHuntStyle("");
     setNewTrophyDesc("");
     setNewTargetYear(currentYear + 3);
@@ -664,7 +664,7 @@ export default function GoalsPage() {
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">Season</label>
                 <div className="flex flex-wrap gap-2">
                   {SEASON_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => setNewSeasonPref(newSeasonPref === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSeasonPref === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                    <button key={opt.value} onClick={() => setNewSeasonPref(newSeasonPref === opt.value ? "any" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSeasonPref === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
                       {opt.label}
                     </button>
                   ))}
