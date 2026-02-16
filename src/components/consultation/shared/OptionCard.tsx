@@ -19,12 +19,12 @@ export function OptionCard({ selected, onClick, icon: Icon, title, description, 
       aria-checked={selected}
       aria-label={title}
       onClick={onClick}
-      className={`relative text-left transition-all duration-200 ${
+      className={`relative text-left transition-all duration-200 cursor-pointer ${
         compact ? "p-3 rounded-xl" : "p-5 rounded-xl"
       } border-2 ${
         selected
-          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
-          : "border-border hover:border-primary/30 hover:bg-secondary/30 active:scale-[0.98]"
+          ? "border-primary bg-primary/5 ring-1 ring-primary/30 glow-primary"
+          : "border-border hover:border-primary/30 hover:bg-secondary/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
       } ${gradient ? "overflow-hidden" : ""}`}
     >
       {gradient && (

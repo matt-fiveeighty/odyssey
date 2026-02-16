@@ -78,32 +78,34 @@ export default function LandingPage() {
     <div className="flex flex-col">
       {/* Hero */}
       <section className="relative overflow-hidden">
-        {/* Background gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/8 rounded-full blur-3xl pointer-events-none" />
+        {/* Layered background: aurora + topo grid + radial glow */}
+        <div className="absolute inset-0 aurora-bg pointer-events-none" />
+        <div className="absolute inset-0 topo-grid pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8">
+          <div className="hero-stagger-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8 glow-primary">
             <Mountain className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">
               Every State. One Strategy. Your Roadmap.
             </span>
           </div>
 
-          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+          <h1 className="hero-stagger-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
             Your Western Hunt Strategy,{" "}
             <span className="text-primary">Engineered</span>
           </h1>
 
-          <p className="mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             Stop guessing where to apply. Odyssey Outdoors builds a personalized
             multi-year strategy across the top western states — optimized for
             your budget, experience, and goals.
           </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+          <div className="hero-stagger-4 flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
             <Link href="/auth/sign-up">
-              <Button size="lg" className="gap-2 text-base px-8">
+              <Button size="lg" className="gap-2 text-base px-8 glow-pulse shimmer-sweep">
                 Start Planning <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -115,12 +117,12 @@ export default function LandingPage() {
           </div>
 
           {/* State badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-12">
+          <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-12">
             {["CO", "WY", "MT", "NV", "AZ", "UT", "NM", "OR", "ID", "KS"].map(
               (state) => (
                 <span
                   key={state}
-                  className="px-3 py-1 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground"
+                  className="px-3 py-1 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground badge-shimmer"
                 >
                   {state}
                 </span>
@@ -129,12 +131,12 @@ export default function LandingPage() {
           </div>
 
           {/* Species badges */}
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-3">
+          <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-3">
             {["Elk", "Mule Deer", "Whitetail", "Bear", "Moose", "Pronghorn", "Bighorn Sheep", "Mountain Goat", "Bison", "Mountain Lion"].map(
               (species) => (
                 <span
                   key={species}
-                  className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70"
+                  className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer"
                 >
                   {species}
                 </span>
@@ -160,7 +162,7 @@ export default function LandingPage() {
             {steps.map((step, i) => (
               <div
                 key={step.title}
-                className="relative p-6 rounded-xl bg-card border border-border"
+                className="relative p-6 rounded-xl bg-card border border-border card-lift"
               >
                 <div className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                   {i + 1}
@@ -195,7 +197,7 @@ export default function LandingPage() {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="p-5 rounded-xl bg-background border border-border hover:border-primary/30 transition-colors"
+                className="p-5 rounded-xl bg-background border border-border hover:border-primary/30 transition-all duration-200 card-lift"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                   <feature.icon className="w-4.5 h-4.5 text-primary" />

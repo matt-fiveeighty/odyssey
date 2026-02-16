@@ -2,15 +2,18 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import dynamic from "next/dynamic";
 import type { StrategicAssessment } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
-import { PortfolioOverview } from "./sections/PortfolioOverview";
-import { StatePortfolio } from "./sections/StatePortfolio";
-import { TimelineRoadmap } from "./sections/TimelineRoadmap";
-import { LogisticsTab } from "./sections/LogisticsTab";
 import { Button } from "@/components/ui/button";
 import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw } from "lucide-react";
+
+// Lazy load tab content — only HeroSummary is above the fold
+const PortfolioOverview = dynamic(() => import("./sections/PortfolioOverview").then(m => ({ default: m.PortfolioOverview })));
+const StatePortfolio = dynamic(() => import("./sections/StatePortfolio").then(m => ({ default: m.StatePortfolio })));
+const TimelineRoadmap = dynamic(() => import("./sections/TimelineRoadmap").then(m => ({ default: m.TimelineRoadmap })));
+const LogisticsTab = dynamic(() => import("./sections/LogisticsTab").then(m => ({ default: m.LogisticsTab })));
 
 interface ResultsShellProps {
   assessment: StrategicAssessment;
@@ -72,7 +75,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
             id={`tab-${tab.id}`}
             tabIndex={activeTab === tab.id ? 0 : -1}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${
               activeTab === tab.id
                 ? "bg-background text-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground"

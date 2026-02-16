@@ -19,7 +19,7 @@ export function CollapsibleSection({ title, icon: Icon, defaultOpen = false, bad
       <button
         onClick={() => setOpen(!open)}
         aria-expanded={open}
-        className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors"
+        className="w-full flex items-center justify-between p-4 hover:bg-secondary/30 transition-colors duration-200 cursor-pointer"
       >
         <div className="flex items-center gap-2">
           {Icon && <Icon className="w-4 h-4 text-primary" />}

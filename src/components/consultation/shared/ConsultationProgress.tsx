@@ -36,7 +36,7 @@ export function ConsultationProgress({ currentStep, onStepClick }: ConsultationP
               disabled={!isComplete}
               className={`flex items-center gap-1 px-1.5 py-2 rounded-lg text-[10px] font-medium transition-all w-full ${
                 isActive
-                  ? "bg-primary text-primary-foreground"
+                  ? "bg-primary text-primary-foreground step-glow"
                   : isComplete
                     ? "bg-primary/15 text-primary cursor-pointer hover:bg-primary/25"
                     : "bg-secondary/50 text-muted-foreground/50"

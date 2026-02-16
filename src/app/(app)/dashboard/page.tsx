@@ -16,13 +16,16 @@ import {
   ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
+import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
 
 export default function DashboardPage() {
   const { milestones, confirmedAssessment, userPoints, userGoals } = useAppStore();
+  const router = useRouter();
 
   const hasPlan = confirmedAssessment !== null;
   const completedMilestones = milestones.filter(m => m.completed).length;
@@ -66,33 +69,33 @@ export default function DashboardPage() {
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border count-up card-lift hover:glow-primary">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalPoints}</p>
+                <p className="text-2xl font-bold"><AnimatedCounter value={totalPoints} /></p>
                 <p className="text-xs text-muted-foreground"><HuntingTerm term="preference points">Total Points</HuntingTerm></p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border count-up-delay-1 card-lift hover:glow-amber">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
                 <TrendingUp className="w-5 h-5 text-chart-2" />
               </div>
               <div>
-                <p className="text-2xl font-bold">${totalInvested.toLocaleString()}</p>
+                <p className="text-2xl font-bold"><AnimatedCounter value={totalInvested} prefix="$" /></p>
                 <p className="text-xs text-muted-foreground">Year 1 Cost</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border count-up-delay-2 card-lift hover:glow-orange">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-chart-4/15 flex items-center justify-center">
@@ -100,14 +103,14 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {completedMilestones}/{milestones.length}
+                  <AnimatedCounter value={completedMilestones} />/{milestones.length}
                 </p>
                 <p className="text-xs text-muted-foreground">Milestones</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-card border-border">
+        <Card className="bg-card border-border count-up-delay-3 card-lift hover:glow-blue">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-chart-5/15 flex items-center justify-center">
@@ -115,7 +118,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="text-2xl font-bold">
-                  {hasPlan ? confirmedAssessment.stateRecommendations.length : activeStates}
+                  <AnimatedCounter value={hasPlan ? confirmedAssessment.stateRecommendations.length : activeStates} />
                 </p>
                 <p className="text-xs text-muted-foreground">States Active</p>
               </div>
@@ -203,39 +206,59 @@ export default function DashboardPage() {
                   Welcome to Odyssey Outdoors. Here&apos;s how to get the most out of your hunt planning:
                 </p>
                 <div className="space-y-3">
-                  {[
-                    {
-                      step: 1,
-                      title: "Run the Strategic Consultation",
-                      description: "Answer a few questions about your experience, budget, and goals. We'll build a custom multi-year strategy.",
-                      href: "/plan-builder",
-                      done: false,
-                    },
-                    {
-                      step: 2,
-                      title: "Set Your Hunt Goals",
-                      description: "Define what you're chasing — species, state, weapon, season, and your dream trophy.",
-                      href: "/goals",
-                      done: userGoals.length > 0,
-                    },
-                    {
-                      step: 3,
-                      title: "Track Your Points",
-                      description: "Enter your current preference and bonus points across states to get accurate draw timelines.",
-                      href: "/points",
-                      done: userPoints.length > 0,
-                    },
-                    {
-                      step: 4,
-                      title: "Explore Units",
-                      description: "Browse the unit database to research success rates, trophy quality, and points required.",
-                      href: "/units",
-                      done: false,
-                    },
-                  ].map((item) => (
-                    <Link key={item.step} href={item.href}>
-                      <div className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${item.done ? "opacity-60" : ""}`}>
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${item.done ? "bg-chart-2/15 text-chart-2" : "bg-primary/15 text-primary"}`}>
+                  {(() => {
+                    const hasGoals = userGoals.length > 0;
+                    const speciesFromGoals = [...new Set(userGoals.map(g => g.speciesId))];
+                    const items = [
+                      {
+                        step: 1,
+                        title: hasGoals
+                          ? `Build Strategy from ${userGoals.length} Goal${userGoals.length > 1 ? "s" : ""}`
+                          : "Run the Strategic Consultation",
+                        description: hasGoals
+                          ? `We'll pre-fill the consultation with your ${speciesFromGoals.length} species and build a custom 10-year roadmap.`
+                          : "Answer a few questions about your experience, budget, and goals. We'll build a custom multi-year strategy.",
+                        href: "/plan-builder",
+                        done: false,
+                        prefill: hasGoals,
+                      },
+                      {
+                        step: 2,
+                        title: "Set Your Hunt Goals",
+                        description: "Define what you're chasing — species, state, weapon, season, and your dream trophy.",
+                        href: "/goals",
+                        done: hasGoals,
+                        prefill: false,
+                      },
+                      {
+                        step: 3,
+                        title: "Track Your Points",
+                        description: "Enter your current preference and bonus points across states to get accurate draw timelines.",
+                        href: "/points",
+                        done: userPoints.length > 0,
+                        prefill: false,
+                      },
+                      {
+                        step: 4,
+                        title: "Explore Units",
+                        description: "Browse the unit database to research success rates, trophy quality, and points required.",
+                        href: "/units",
+                        done: false,
+                        prefill: false,
+                      },
+                    ];
+                    return items.map((item) => (
+                      <div
+                        key={item.step}
+                        onClick={() => {
+                          if (item.prefill) {
+                            useWizardStore.getState().prefillFromGoals(userGoals);
+                          }
+                          router.push(item.href);
+                        }}
+                        className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${item.done ? "opacity-60" : ""}`}
+                      >
+                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${item.done ? "bg-chart-2/15 text-chart-2" : item.prefill ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"}`}>
                           {item.done ? "✓" : item.step}
                         </div>
                         <div>
@@ -244,49 +267,169 @@ export default function DashboardPage() {
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground mt-0.5 ml-auto shrink-0" />
                       </div>
-                    </Link>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Upcoming Deadlines */}
+        {/* Upcoming Deadlines — Visual Timeline */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <Calendar className="w-5 h-5 text-primary" />
-              Upcoming Deadlines
+              Deadline Timeline
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {upcomingDeadlines.map((d, idx) => {
-                const state = STATES_MAP[d.stateId];
-                if (!state) return null;
-                return (
-                  <div key={idx} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: state.color }}>
-                        {state.abbreviation}
+            {(() => {
+              // Group deadlines by month
+              const byMonth: Record<string, typeof upcomingDeadlines> = {};
+              upcomingDeadlines.forEach(d => {
+                const key = new Date(d.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                if (!byMonth[key]) byMonth[key] = [];
+                byMonth[key].push(d);
+              });
+              return (
+                <div className="relative space-y-4">
+                  {/* Vertical timeline line */}
+                  <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
+                  {Object.entries(byMonth).map(([month, deadlines]) => {
+                    const isCurrentMonth = month === now.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                    return (
+                      <div key={month} className="relative">
+                        {/* Month marker */}
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className={`w-[23px] h-[23px] rounded-full border-2 border-background z-10 flex items-center justify-center ${isCurrentMonth ? "bg-primary" : "bg-muted"}`}>
+                            <Calendar className={`w-2.5 h-2.5 ${isCurrentMonth ? "text-primary-foreground" : "text-muted-foreground"}`} />
+                          </div>
+                          <span className={`text-xs font-semibold uppercase tracking-wider ${isCurrentMonth ? "text-primary" : "text-muted-foreground"}`}>
+                            {month}
+                          </span>
+                        </div>
+                        {/* Deadline items */}
+                        <div className="ml-9 space-y-2">
+                          {deadlines.map((d, idx) => {
+                            const state = STATES_MAP[d.stateId];
+                            if (!state) return null;
+                            const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            return (
+                              <div key={idx} className={`flex items-center justify-between p-2 rounded-lg transition-all ${daysLeft <= 14 ? "bg-chart-4/5 border border-chart-4/15" : "bg-secondary/30"}`}>
+                                <div className="flex items-center gap-2.5">
+                                  <div className="w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: state.color }}>
+                                    {state.abbreviation}
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium capitalize">{d.species.replace("_", " ")}</p>
+                                    <p className="text-[10px] text-muted-foreground">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                                  </div>
+                                </div>
+                                {daysLeft <= 14 ? (
+                                  <span className="text-[10px] font-bold text-chart-4">{daysLeft}d left</span>
+                                ) : (
+                                  <span className="text-[10px] text-muted-foreground">{daysLeft}d</span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{state.name}</p>
-                        <p className="text-xs text-muted-foreground capitalize">{d.species.replace("_", " ")} Draw</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="w-3 h-3" />
-                      {new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
       </div>
+
+      {/* ================================================================ */}
+      {/* APPLY THIS YEAR — smart view based on goals + points + deadlines */}
+      {/* ================================================================ */}
+      {(userGoals.length > 0 || userPoints.length > 0) && (() => {
+        const currentYear = new Date().getFullYear();
+        const relevantStates = new Set([
+          ...userGoals.map(g => g.stateId),
+          ...userPoints.map(p => p.stateId),
+        ]);
+        const applyItems = STATES
+          .filter(s => relevantStates.has(s.id))
+          .flatMap(s => {
+            const items: { stateId: string; species: string; deadline: string; action: string; cost: number; url: string }[] = [];
+            Object.entries(s.applicationDeadlines).forEach(([species, dates]) => {
+              if (!dates?.close) return;
+              const closeDate = new Date(dates.close);
+              if (closeDate < now) return;
+              // Check if user has goals or points for this species+state combo
+              const hasGoal = userGoals.some(g => g.stateId === s.id && g.speciesId === species);
+              const hasPoints = userPoints.some(p => p.stateId === s.id && p.speciesId === species);
+              if (hasGoal || hasPoints) {
+                const pts = userPoints.find(p => p.stateId === s.id && p.speciesId === species)?.points ?? 0;
+                const cost = (s.pointCost[species] ?? 0) + (s.licenseFees.appFee ?? 0);
+                items.push({
+                  stateId: s.id,
+                  species,
+                  deadline: dates.close,
+                  action: hasGoal ? (pts > 0 ? "Apply" : "Buy Point or Apply") : "Buy Point",
+                  cost,
+                  url: s.buyPointsUrl,
+                });
+              }
+            });
+            return items;
+          })
+          .sort((a, b) => a.deadline.localeCompare(b.deadline));
+
+        if (applyItems.length === 0) return null;
+
+        return (
+          <Card className="bg-card border-border overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-chart-2 to-primary" />
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Crosshair className="w-5 h-5 text-chart-2" />
+                  Apply This Year ({currentYear})
+                </CardTitle>
+                <Badge variant="secondary" className="bg-chart-2/15 text-chart-2 border-0">
+                  {applyItems.length} action{applyItems.length > 1 ? "s" : ""}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">Based on your goals and points, here&apos;s what needs attention</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {applyItems.map((item, idx) => {
+                  const state = STATES_MAP[item.stateId];
+                  if (!state) return null;
+                  const daysLeft = Math.ceil((new Date(item.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                  const urgent = daysLeft <= 30;
+                  return (
+                    <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer" className={`p-3 rounded-lg border transition-all hover:border-primary/30 hover:bg-secondary/30 ${urgent ? "border-chart-4/30 bg-chart-4/5" : "border-border"}`}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-7 h-7 rounded flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: state.color }}>
+                          {state.abbreviation}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold capitalize truncate">{item.species.replace("_", " ")}</p>
+                        </div>
+                        {urgent && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-4/15 text-chart-4 font-bold shrink-0">URGENT</span>}
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(item.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
+                        <span className="font-medium text-primary">${item.cost}</span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-1.5">{item.action}</p>
+                    </a>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* State Investment Overview */}
       <Card className="bg-card border-border">

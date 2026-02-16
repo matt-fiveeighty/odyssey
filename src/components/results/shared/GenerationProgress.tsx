@@ -1,7 +1,6 @@
 "use client";
 
 import { useWizardStore } from "@/lib/store";
-import { Progress } from "@/components/ui/progress";
 import { Sparkles } from "lucide-react";
 
 const HUNTING_TIPS = [
@@ -18,8 +17,8 @@ export function GenerationProgress() {
   const tip = HUNTING_TIPS[Math.floor(progress / 20) % HUNTING_TIPS.length];
 
   return (
-    <div className="fade-in-up rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-primary/20 p-8 md:p-12 text-center">
-      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+    <div className="fade-in-up rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-primary/20 p-8 md:p-12 text-center glow-primary-lg">
+      <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 orbital-glow">
         <Sparkles className="w-8 h-8 text-primary animate-pulse" />
       </div>
 
@@ -27,7 +26,9 @@ export function GenerationProgress() {
       <p className="text-sm text-primary font-medium mb-6">{phase || "Initializing..."}</p>
 
       <div className="max-w-md mx-auto mb-6">
-        <Progress value={progress} className="h-2" />
+        <div className="h-2 rounded-full bg-secondary overflow-hidden">
+          <div className="h-full rounded-full progress-glow transition-all duration-500 ease-out" style={{ width: `${progress}%` }} />
+        </div>
         <p className="text-[10px] text-muted-foreground mt-2 text-right">{Math.round(progress)}%</p>
       </div>
 

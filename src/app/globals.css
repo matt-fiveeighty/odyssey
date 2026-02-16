@@ -138,10 +138,229 @@
 .fade-in-up-delay-4 { animation: fadeInUp 0.5s ease-out 0.4s both; }
 .bar-fill { animation: barFill 0.8s ease-out both; }
 .count-pulse { animation: countPulse 0.4s ease-out; }
+@keyframes modalOverlayIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes modalContentIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes countUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-overlay { animation: modalOverlayIn 0.2s ease-out; }
+.modal-content { animation: modalContentIn 0.25s ease-out; }
+.count-up { animation: countUp 0.6s ease-out both; }
+.count-up-delay-1 { animation: countUp 0.6s ease-out 0.1s both; }
+.count-up-delay-2 { animation: countUp 0.6s ease-out 0.2s both; }
+.count-up-delay-3 { animation: countUp 0.6s ease-out 0.3s both; }
 .shimmer-bg {
   background: linear-gradient(90deg, transparent 25%, oklch(0.65 0.18 145 / 0.08) 50%, transparent 75%);
   background-size: 200% 100%;
   animation: shimmer 2s infinite;
+}
+
+/* ============================== */
+/* Premium Visual System           */
+/* ============================== */
+
+/* Aurora gradient mesh — slow-moving ambient background */
+@keyframes auroraShift {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.aurora-bg {
+  background: linear-gradient(
+    135deg,
+    oklch(0.65 0.18 145 / 0.08) 0%,
+    oklch(0.55 0.15 260 / 0.06) 25%,
+    oklch(0.70 0.15 55 / 0.05) 50%,
+    oklch(0.60 0.12 200 / 0.06) 75%,
+    oklch(0.65 0.18 145 / 0.08) 100%
+  );
+  background-size: 300% 300%;
+  animation: auroraShift 12s ease-in-out infinite;
+}
+
+/* Topographic grid pattern overlay */
+.topo-grid {
+  background-image:
+    linear-gradient(oklch(0.65 0.18 145 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, oklch(0.65 0.18 145 / 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+
+/* Glow utilities */
+.glow-primary {
+  box-shadow: 0 0 20px oklch(0.65 0.18 145 / 0.15), 0 0 60px oklch(0.65 0.18 145 / 0.05);
+}
+.glow-primary-lg {
+  box-shadow: 0 0 30px oklch(0.65 0.18 145 / 0.2), 0 0 80px oklch(0.65 0.18 145 / 0.08);
+}
+.glow-amber {
+  box-shadow: 0 0 20px oklch(0.70 0.15 55 / 0.15), 0 0 60px oklch(0.70 0.15 55 / 0.05);
+}
+.glow-orange {
+  box-shadow: 0 0 20px oklch(0.65 0.20 30 / 0.15), 0 0 60px oklch(0.65 0.20 30 / 0.05);
+}
+.glow-blue {
+  box-shadow: 0 0 20px oklch(0.60 0.12 200 / 0.15), 0 0 60px oklch(0.60 0.12 200 / 0.05);
+}
+
+/* Breathing glow — for CTAs and important actions */
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 20px oklch(0.65 0.18 145 / 0.2), 0 0 60px oklch(0.65 0.18 145 / 0.05); }
+  50%      { box-shadow: 0 0 30px oklch(0.65 0.18 145 / 0.35), 0 0 80px oklch(0.65 0.18 145 / 0.1); }
+}
+.glow-pulse {
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+/* Shimmer sweep — light streak across gradient surfaces */
+@keyframes shimmerSweep {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+.shimmer-sweep {
+  position: relative;
+  overflow: hidden;
+}
+.shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, oklch(1 0 0 / 0.06) 50%, transparent 100%);
+  width: 50%;
+  animation: shimmerSweep 3s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Card lift — subtle hover elevation */
+.card-lift {
+  transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 30px oklch(0 0 0 / 0.3), 0 0 20px oklch(0.65 0.18 145 / 0.05);
+}
+
+/* Active step glow for progress indicators */
+@keyframes stepGlow {
+  0%, 100% { box-shadow: 0 0 8px oklch(0.65 0.18 145 / 0.3); }
+  50%      { box-shadow: 0 0 16px oklch(0.65 0.18 145 / 0.5); }
+}
+.step-glow {
+  animation: stepGlow 2s ease-in-out infinite;
+}
+
+/* Orbital loader — rotating glow for generation state */
+@keyframes orbitalSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.orbital-glow {
+  position: relative;
+}
+.orbital-glow::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: inherit;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0%,
+    oklch(0.65 0.18 145 / 0.4) 25%,
+    transparent 50%,
+    oklch(0.70 0.15 55 / 0.3) 75%,
+    transparent 100%
+  );
+  animation: orbitalSpin 3s linear infinite;
+  z-index: -1;
+}
+
+/* Gradient sweep behind progress bars */
+@keyframes gradientSweep {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.progress-glow {
+  background: linear-gradient(
+    90deg,
+    oklch(0.65 0.18 145) 0%,
+    oklch(0.70 0.15 55) 50%,
+    oklch(0.65 0.18 145) 100%
+  );
+  background-size: 200% 100%;
+  animation: gradientSweep 2s linear infinite;
+}
+
+/* Staggered hero entrance */
+.hero-stagger-1 { animation: fadeInUp 0.6s ease-out 0.1s both; }
+.hero-stagger-2 { animation: fadeInUp 0.6s ease-out 0.25s both; }
+.hero-stagger-3 { animation: fadeInUp 0.6s ease-out 0.4s both; }
+.hero-stagger-4 { animation: fadeInUp 0.6s ease-out 0.55s both; }
+.hero-stagger-5 { animation: fadeInUp 0.6s ease-out 0.7s both; }
+
+/* Badge shimmer on hover */
+.badge-shimmer {
+  transition: all 0.2s ease-out;
+}
+.badge-shimmer:hover {
+  background: oklch(0.65 0.18 145 / 0.12);
+  border-color: oklch(0.65 0.18 145 / 0.3);
+  box-shadow: 0 0 12px oklch(0.65 0.18 145 / 0.1);
+}
+
+/* Reduced motion: disable all custom animations for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .step-enter-forward,
+  .step-enter-backward,
+  .fade-in-up,
+  .fade-in-up-delay-1,
+  .fade-in-up-delay-2,
+  .fade-in-up-delay-3,
+  .fade-in-up-delay-4,
+  .bar-fill,
+  .count-pulse,
+  .modal-overlay,
+  .modal-content,
+  .count-up,
+  .count-up-delay-1,
+  .count-up-delay-2,
+  .count-up-delay-3,
+  .hero-stagger-1,
+  .hero-stagger-2,
+  .hero-stagger-3,
+  .hero-stagger-4,
+  .hero-stagger-5,
+  .glow-pulse,
+  .step-glow {
+    animation: none !important;
+  }
+  .shimmer-bg,
+  .aurora-bg {
+    animation: none !important;
+    background: transparent;
+  }
+  .shimmer-sweep::after,
+  .orbital-glow::before {
+    animation: none !important;
+  }
+  .progress-glow {
+    animation: none !important;
+  }
+  .card-lift:hover {
+    transform: none !important;
+  }
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 ::-webkit-scrollbar {

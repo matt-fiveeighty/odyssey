@@ -126,7 +126,7 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
             <Button
               onClick={handleNext}
               disabled={isGenerating}
-              className="gap-1.5 bg-gradient-to-r from-primary to-chart-2 hover:opacity-90"
+              className="gap-1.5 bg-gradient-to-r from-primary to-chart-2 hover:opacity-90 glow-pulse shimmer-sweep"
             >
               <Sparkles className="w-4 h-4" />
               {isGenerating ? "Generating..." : "Generate My Strategy"}
