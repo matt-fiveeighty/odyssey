@@ -1,0 +1,135 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  Home,
+  Calculator,
+  Map,
+  Target,
+  Compass,
+  Wallet,
+  ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useState } from "react";
+
+const navItems = [
+  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/calculator", label: "Calculator", icon: Calculator },
+  { href: "/units", label: "Units", icon: Map },
+  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/plan-builder", label: "Plan Builder", icon: Compass },
+  { href: "/points", label: "Points", icon: Wallet },
+];
+
+export function Sidebar() {
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+
+  return (
+    <aside
+      className={cn(
+        "hidden md:flex flex-col border-r border-sidebar-border bg-sidebar transition-all duration-300",
+        collapsed ? "w-16" : "w-64"
+      )}
+    >
+      {/* Logo */}
+      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
+        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+          HP
+        </div>
+        {!collapsed && (
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-sidebar-foreground">
+              Hunt Planner
+            </span>
+            <span className="text-[10px] text-muted-foreground">
+              Strategic Portfolio
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Navigation */}
+      <nav aria-label="Main navigation" className="flex-1 flex flex-col gap-1 p-2 mt-2">
+        {navItems.map((item) => {
+          const isActive = pathname === item.href;
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
+                isActive
+                  ? "bg-primary/15 text-primary"
+                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              )}
+            >
+              <item.icon
+                className={cn("w-5 h-5 shrink-0", isActive && "text-primary")}
+              />
+              {!collapsed && <span>{item.label}</span>}
+              {isActive && !collapsed && (
+                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Quick Links */}
+      {!collapsed && (
+        <div className="p-3 mx-2 mb-2 rounded-lg bg-sidebar-accent/50">
+          <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+            Quick Links
+          </p>
+          <div className="flex flex-col gap-1">
+            <a
+              href="https://cpw.state.co.us"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
+            >
+              <span>CO Fish & Game</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <a
+              href="https://wgfd.wyo.gov"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
+            >
+              <span>WY Game & Fish</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+            <a
+              href="https://fwp.mt.gov"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
+            >
+              <span>MT Fish & Wildlife</span>
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Collapse toggle */}
+      <button
+        onClick={() => setCollapsed(!collapsed)}
+        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+        className="flex items-center justify-center h-10 border-t border-sidebar-border text-muted-foreground hover:text-sidebar-foreground transition-colors"
+      >
+        {collapsed ? (
+          <ChevronRight className="w-4 h-4" />
+        ) : (
+          <ChevronLeft className="w-4 h-4" />
+        )}
+      </button>
+    </aside>
+  );
+}

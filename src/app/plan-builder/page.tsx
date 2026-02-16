@@ -1,0 +1,123 @@
+"use client";
+
+import { useState } from "react";
+import { Compass } from "lucide-react";
+import { useWizardStore, useAppStore } from "@/lib/store";
+import { generateStrategicAssessment } from "@/lib/engine/roadmap-generator";
+import { ConsultationShell } from "@/components/consultation/ConsultationShell";
+import { ResultsShell } from "@/components/results/ResultsShell";
+import { GenerationProgress } from "@/components/results/shared/GenerationProgress";
+import type { StrategicAssessment } from "@/lib/types";
+
+function getInitialAssessment(): StrategicAssessment | null {
+  const state = useWizardStore.getState();
+  if (state.step === 10 && state.confirmedPlan) {
+    return state.confirmedPlan;
+  }
+  if (state.step === 10 || state.step > 10) {
+    state.setStep(1);
+  }
+  return null;
+}
+
+export default function PlanBuilderPage() {
+  const wizard = useWizardStore();
+  const appStore = useAppStore();
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [assessment, setAssessment] = useState<StrategicAssessment | null>(getInitialAssessment);
+
+  function handleGenerate() {
+    setIsGenerating(true);
+    wizard.setGenerationPhase("Analyzing your profile...");
+    wizard.setGenerationProgress(0);
+
+    const phases = [
+      { phase: "Scoring states against your profile...", pct: 20 },
+      { phase: "Selecting optimal state portfolio...", pct: 40 },
+      { phase: "Building 10-year roadmap...", pct: 60 },
+      { phase: "Calculating costs and budgets...", pct: 75 },
+      { phase: "Crafting personalized narrative...", pct: 90 },
+    ];
+
+    phases.forEach(({ phase, pct }, i) => {
+      setTimeout(() => {
+        wizard.setGenerationPhase(phase);
+        wizard.setGenerationProgress(pct);
+      }, (i + 1) * 300);
+    });
+
+    setTimeout(() => {
+      const result = generateStrategicAssessment({
+        homeState: wizard.homeState,
+        homeCity: wizard.homeCity,
+        experienceLevel: wizard.experienceLevel!,
+        physicalComfort: wizard.physicalComfort!,
+        hasHuntedStates: wizard.hasHuntedStates,
+        species: wizard.species,
+        trophyVsMeat: wizard.trophyVsMeat!,
+        bucketListDescription: wizard.bucketListDescription,
+        dreamHunts: wizard.dreamHunts,
+        pointYearBudget: wizard.pointYearBudget,
+        huntYearBudget: wizard.huntYearBudget,
+        huntFrequency: wizard.huntFrequency!,
+        timeAvailable: wizard.timeAvailable!,
+        travelWillingness: wizard.travelWillingness!,
+        hasExistingPoints: wizard.hasExistingPoints,
+        existingPoints: wizard.existingPoints,
+        huntStylePrimary: wizard.huntStylePrimary!,
+        openToGuided: wizard.openToGuided,
+        guidedForSpecies: wizard.guidedForSpecies,
+        preferredTerrain: wizard.preferredTerrain,
+        importantFactors: wizard.importantFactors,
+      });
+
+      Object.entries(wizard.existingPoints).forEach(([stateId, speciesMap]) => {
+        Object.entries(speciesMap).forEach(([speciesId, pts]) => {
+          if (pts > 0) {
+            appStore.addUserPoint({
+              id: crypto.randomUUID(),
+              userId: "local",
+              stateId,
+              speciesId,
+              points: pts,
+              pointType: "preference",
+            });
+          }
+        });
+      });
+
+      wizard.setGenerationProgress(100);
+      wizard.setGenerationPhase("Complete!");
+      setAssessment(result);
+      wizard.setStep(10);
+      setIsGenerating(false);
+    }, 2000);
+  }
+
+  const showConsultation = wizard.step >= 1 && wizard.step <= 9 && !isGenerating;
+  const showResults = wizard.step === 10 && assessment && !isGenerating;
+
+  return (
+    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+      <div className="text-center">
+        <h1 className="text-2xl font-bold tracking-tight flex items-center justify-center gap-2">
+          <Compass className="w-6 h-6 text-primary" />
+          Strategic Hunt Consultation
+        </h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          {showResults
+            ? "Your personalized 10-year western big game strategy"
+            : "Answer honestly \u2014 the best strategy comes from understanding who you are as a hunter."}
+        </p>
+      </div>
+
+      {showConsultation && (
+        <ConsultationShell onGenerate={handleGenerate} isGenerating={isGenerating} />
+      )}
+
+      {isGenerating && <GenerationProgress />}
+
+      {showResults && <ResultsShell assessment={assessment} />}
+    </div>
+  );
+}
