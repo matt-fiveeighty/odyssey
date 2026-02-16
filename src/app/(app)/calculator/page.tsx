@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { STATES } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 export default function CalculatorPage() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -185,7 +186,7 @@ export default function CalculatorPage() {
             <CardContent className="p-6 space-y-5">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  Cost to Build Points
+                  <HuntingTerm term="preference points">Cost to Build Points</HuntingTerm>
                 </p>
                 <p className="text-3xl font-bold text-primary">
                   ${totalPointCost.toLocaleString()}
@@ -194,7 +195,7 @@ export default function CalculatorPage() {
               <Separator className="bg-border/50" />
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  Total with Tag
+                  <HuntingTerm term="tag">Total with Tag</HuntingTerm>
                 </p>
                 <p className="text-3xl font-bold">
                   ${totalCost.toLocaleString()}
@@ -205,7 +206,7 @@ export default function CalculatorPage() {
                 <Clock className="w-4 h-4 text-chart-2" />
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    Est. Years to Draw
+                    <HuntingTerm term="draw">Est. Years to Draw</HuntingTerm>
                   </p>
                   <p className="text-lg font-bold text-chart-2">
                     {pointsNeeded} years
@@ -260,7 +261,7 @@ export default function CalculatorPage() {
                 <Separator />
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Annual subscription
+                    <HuntingTerm term="annual subscription">Annual subscription</HuntingTerm>
                   </span>
                   <span className="font-medium text-chart-2">
                     ${annualCost}/yr

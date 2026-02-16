@@ -739,16 +739,23 @@ export default function GoalsPage() {
                 </div>
               </div>
 
-              {/* Species */}
+              {/* Species — filtered by state availability */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">Species</label>
                 <div className="flex flex-wrap gap-2">
-                  {SPECIES.map((sp) => (
-                    <button key={sp.id} onClick={() => { setNewSpeciesId(sp.id); setNewUnitId(""); }} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSpeciesId === sp.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                      {sp.name}
-                    </button>
-                  ))}
+                  {(() => {
+                    const state = newStateId ? STATES_MAP[newStateId] : null;
+                    const available = state ? SPECIES.filter((sp) => state.availableSpecies.includes(sp.id)) : SPECIES;
+                    return available.map((sp) => (
+                      <button key={sp.id} onClick={() => { setNewSpeciesId(sp.id); setNewUnitId(""); }} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSpeciesId === sp.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                        {sp.name}
+                      </button>
+                    ));
+                  })()}
                 </div>
+                {newStateId && (
+                  <p className="text-[10px] text-muted-foreground mt-1">{STATES_MAP[newStateId]?.name} offers {STATES_MAP[newStateId]?.availableSpecies.length} species</p>
+                )}
               </div>
 
               {/* Weapon Type */}

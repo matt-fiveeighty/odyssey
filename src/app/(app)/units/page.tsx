@@ -147,7 +147,7 @@ export default function UnitsPage() {
           return (
             <Card
               key={unit.id}
-              className="bg-card border-border hover:border-primary/30 transition-all duration-200 group"
+              className="bg-card border-border hover:border-primary/30 hover:shadow-lg hover:shadow-primary/5 hover:scale-[1.01] transition-all duration-200 group cursor-default"
             >
               <CardContent className="p-5">
                 {/* Header */}

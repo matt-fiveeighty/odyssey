@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
+import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { useAppStore } from "@/lib/store";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
@@ -297,24 +298,32 @@ export default function DashboardPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {STATES.map((state) => {
               const isActive = hasPlan && confirmedAssessment.stateRecommendations.some(r => r.stateId === state.id);
+              const visual = STATE_VISUALS[state.id];
               return (
-                <a key={state.id} href={state.buyPointsUrl} target="_blank" rel="noopener noreferrer" className={`group relative p-4 rounded-xl bg-secondary/50 border transition-all duration-200 cursor-pointer ${isActive ? "border-primary/30 ring-1 ring-primary/10" : "border-border hover:border-primary/30"}`}>
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: state.color }}>
-                      {state.abbreviation}
+                <a key={state.id} href={state.buyPointsUrl} target="_blank" rel="noopener noreferrer" className={`group relative p-4 rounded-xl border overflow-hidden transition-all duration-200 cursor-pointer hover:scale-[1.02] hover:shadow-lg ${isActive ? "border-primary/30 ring-1 ring-primary/10" : "border-border hover:border-primary/30"}`}>
+                  {/* Terrain gradient background */}
+                  <div className={`absolute inset-0 bg-gradient-to-br ${visual?.gradient ?? "from-slate-800 to-slate-900"} opacity-40 group-hover:opacity-60 transition-opacity duration-300`} />
+                  <div className="relative z-10">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: state.color }}>
+                          {state.abbreviation}
+                        </div>
+                        {visual && <span className="text-sm">{visual.emoji}</span>}
+                      </div>
+                      <span className="text-lg font-bold">${state.pointCost.elk ?? state.pointCost.mule_deer ?? 0}</span>
                     </div>
-                    <span className="text-lg font-bold">${state.pointCost.elk ?? state.pointCost.mule_deer ?? 0}</span>
+                    <p className="text-xs text-foreground/80 truncate">{state.name}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {state.pointSystem === "preference" ? "Preference" : state.pointSystem === "hybrid" ? "Hybrid 75/25" : state.pointSystem === "bonus_squared" ? "Bonus²" : state.pointSystem === "bonus" ? "Bonus" : state.pointSystem === "dual" ? "Dual System" : state.pointSystem === "random" ? "Random Draw" : "Pref (NR)"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground/50 mt-1 truncate">{state.availableSpecies.length} species</p>
                   </div>
-                  <p className="text-xs text-muted-foreground truncate">{state.name}</p>
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    {state.pointSystem === "preference" ? "Preference" : state.pointSystem === "hybrid" ? "Hybrid 75/25" : state.pointSystem === "bonus_squared" ? "Bonus²" : state.pointSystem === "bonus" ? "Bonus" : state.pointSystem === "dual" ? "Dual System" : state.pointSystem === "random" ? "Random Draw" : "Pref (NR)"}
-                  </p>
                   {isActive && (
-                    <div className="absolute top-2 right-2">
+                    <div className="absolute top-2 right-2 z-10">
                       <div className="w-2 h-2 rounded-full bg-primary" />
                     </div>
                   )}
-                  <div className="absolute inset-0 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" style={{ background: `linear-gradient(135deg, ${state.color}10, transparent)` }} />
                 </a>
               );
             })}

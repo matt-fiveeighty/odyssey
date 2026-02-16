@@ -19,6 +19,7 @@ import {
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
 import { useAppStore } from "@/lib/store";
+import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import type { UserPoints } from "@/lib/types";
 
 export default function PointsPage() {
@@ -91,7 +92,7 @@ export default function PointsPage() {
             Points Portfolio
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Track your preference and bonus points across all states
+            Track your <HuntingTerm term="preference points">preference</HuntingTerm> and <HuntingTerm term="bonus points">bonus points</HuntingTerm> across all states
           </p>
         </div>
         <Button
@@ -324,10 +325,10 @@ export default function PointsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  Total Annual Subscription
+                  <HuntingTerm term="annual subscription">Total Annual Subscription</HuntingTerm>
                 </p>
                 <p className="text-sm text-muted-foreground">
-                  Your yearly investment to maintain all active points
+                  Your yearly investment to maintain all active <HuntingTerm term="preference points">points</HuntingTerm>
                 </p>
               </div>
               <div className="text-right">
