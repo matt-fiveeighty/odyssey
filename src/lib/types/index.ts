@@ -16,6 +16,8 @@ export type PressureLevel = "Low" | "Moderate" | "High";
 export type HuntStyle = "diy_truck" | "diy_backpack" | "guided" | "drop_camp";
 export type PlanFocus = "trophy" | "opportunity" | "balanced";
 export type GoalStatus = "active" | "dream" | "completed";
+export type WeaponType = "archery" | "rifle" | "muzzleloader";
+export type SeasonPreference = "early" | "mid" | "late" | "any";
 export type PlanStatus = "draft" | "active" | "completed";
 export type ApplicationApproach = "per_unit" | "per_state" | "per_region";
 
@@ -359,6 +361,10 @@ export interface UserGoal {
   status: GoalStatus;
   notes?: string;
   milestones: Milestone[];  // Actionable steps with due dates, costs, links
+  weaponType?: WeaponType;
+  seasonPreference?: SeasonPreference;
+  huntStyle?: HuntStyle;
+  trophyDescription?: string;
 }
 
 // ============================================================================

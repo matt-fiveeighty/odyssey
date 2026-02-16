@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -18,12 +18,12 @@ import {
   Calendar,
 } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
-import { SPECIES } from "@/lib/constants/species";
+import { SPECIES, SPECIES_MAP } from "@/lib/constants/species";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { useAppStore } from "@/lib/store";
 import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
-import type { GoalStatus } from "@/lib/types";
+import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle } from "@/lib/types";
 import Link from "next/link";
 
 const currentYear = new Date().getFullYear();
@@ -33,6 +33,47 @@ const STATUS_STYLES: Record<GoalStatus, { bg: string; text: string; label: strin
   active: { bg: "bg-primary/15", text: "text-primary", label: "Active" },
   dream: { bg: "bg-chart-4/15", text: "text-chart-4", label: "Dream" },
   completed: { bg: "bg-chart-2/15", text: "text-chart-2", label: "Completed" },
+};
+
+const WEAPON_OPTIONS: { value: WeaponType; label: string }[] = [
+  { value: "archery", label: "Archery" },
+  { value: "rifle", label: "Rifle" },
+  { value: "muzzleloader", label: "Muzzleloader" },
+];
+
+const SEASON_OPTIONS: { value: SeasonPreference; label: string }[] = [
+  { value: "early", label: "Early" },
+  { value: "mid", label: "Mid" },
+  { value: "late", label: "Late" },
+  { value: "any", label: "Any" },
+];
+
+const HUNT_STYLE_OPTIONS: { value: HuntStyle; label: string }[] = [
+  { value: "diy_backpack", label: "DIY Backpack" },
+  { value: "diy_truck", label: "DIY Truck" },
+  { value: "guided", label: "Guided" },
+  { value: "drop_camp", label: "Drop Camp" },
+];
+
+const HUNT_STYLE_LABELS: Record<string, string> = {
+  diy_backpack: "DIY Backpack",
+  diy_truck: "DIY Truck",
+  guided: "Guided",
+  drop_camp: "Drop Camp",
+};
+
+const WEAPON_LABELS: Record<string, string> = {
+  archery: "Archery",
+  rifle: "Rifle",
+  muzzleloader: "Muzzy",
+};
+
+const TROPHY_PREFIX: Record<string, string> = {
+  elk: "Bull",
+  mule_deer: "Buck",
+  whitetail: "Buck",
+  bear: "",
+  moose: "Bull",
 };
 
 export default function GoalsPage() {
@@ -45,11 +86,50 @@ export default function GoalsPage() {
   const [filter, setFilter] = useState<"all" | "pending" | "completed">("all");
 
   // Add modal state
-  const [newTitle, setNewTitle] = useState("");
   const [newStateId, setNewStateId] = useState("");
   const [newSpeciesId, setNewSpeciesId] = useState("elk");
+  const [newWeaponType, setNewWeaponType] = useState<WeaponType | "">("");
+  const [newSeasonPref, setNewSeasonPref] = useState<SeasonPreference | "">("");
+  const [newHuntStyle, setNewHuntStyle] = useState<HuntStyle | "">("");
+  const [newTrophyDesc, setNewTrophyDesc] = useState("");
   const [newTargetYear, setNewTargetYear] = useState(currentYear + 3);
   const [newStatus, setNewStatus] = useState<GoalStatus>("active");
+  const [newTitle, setNewTitle] = useState("");
+  const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
+  const [newUnitId, setNewUnitId] = useState("");
+
+  // Auto-generate title from selections
+  const autoTitle = useMemo(() => {
+    if (!newStateId || !newSpeciesId) return "";
+    const state = STATES_MAP[newStateId];
+    const species = SPECIES_MAP[newSpeciesId];
+    if (!state || !species) return "";
+
+    const prefix = TROPHY_PREFIX[newSpeciesId] ?? "";
+    const parts: string[] = [
+      state.abbreviation,
+      prefix ? `${prefix} ${species.name}` : species.name,
+    ];
+
+    if (newWeaponType) parts.push(WEAPON_LABELS[newWeaponType] ?? newWeaponType);
+    const seasonLabels: Record<string, string> = { early: "Early Season", mid: "Mid Season", late: "Late Season" };
+    if (newSeasonPref && seasonLabels[newSeasonPref]) parts.push(seasonLabels[newSeasonPref]);
+
+    const speciesPart = parts.slice(0, 2).join(" ");
+    const detailPart = parts.slice(2).join(", ");
+    return detailPart ? `${speciesPart} — ${detailPart}` : speciesPart;
+  }, [newStateId, newSpeciesId, newWeaponType, newSeasonPref]);
+
+  const displayTitle = titleManuallyEdited ? newTitle : autoTitle;
+
+  // Suggested units based on state + species selection
+  const suggestedUnits = useMemo(() => {
+    if (!newStateId || !newSpeciesId) return [];
+    return SAMPLE_UNITS
+      .filter((u) => u.stateId === newStateId && u.speciesId === newSpeciesId)
+      .sort((a, b) => b.trophyRating - a.trophyRating)
+      .slice(0, 3);
+  }, [newStateId, newSpeciesId]);
 
   // Filter milestones
   const filteredMilestones = milestones.filter(m => {
@@ -75,10 +155,28 @@ export default function GoalsPage() {
     return { year, goals: goalsThisYear, milestones: milestonesThisYear, isHuntYear, yearCost };
   });
 
+  function resetModal() {
+    setShowAddModal(false);
+    setNewTitle("");
+    setNewStateId("");
+    setNewSpeciesId("elk");
+    setNewWeaponType("");
+    setNewSeasonPref("");
+    setNewHuntStyle("");
+    setNewTrophyDesc("");
+    setNewTargetYear(currentYear + 3);
+    setNewStatus("active");
+    setTitleManuallyEdited(false);
+    setNewUnitId("");
+  }
+
   function handleAdd() {
-    if (!newTitle || !newStateId) return;
+    const finalTitle = titleManuallyEdited ? newTitle : autoTitle;
+    if (!finalTitle || !newStateId) return;
+
+    const selectedUnit = newUnitId ? SAMPLE_UNITS.find(u => u.id === newUnitId) : null;
     const units = SAMPLE_UNITS.filter((u) => u.stateId === newStateId && u.speciesId === newSpeciesId);
-    const bestUnit = units[0];
+    const bestUnit = selectedUnit ?? units[0];
     let projectedDrawYear = newTargetYear;
     if (bestUnit) {
       calculateDrawOdds({ stateId: newStateId, userPoints: 0, unit: bestUnit });
@@ -87,10 +185,22 @@ export default function GoalsPage() {
       projectedDrawYear = currentYear + years;
     }
     addUserGoal({
-      id: crypto.randomUUID(), userId: "local", title: newTitle, speciesId: newSpeciesId,
-      stateId: newStateId, targetYear: newTargetYear, projectedDrawYear, status: newStatus, milestones: [],
+      id: crypto.randomUUID(),
+      userId: "local",
+      title: finalTitle,
+      speciesId: newSpeciesId,
+      stateId: newStateId,
+      unitId: newUnitId || undefined,
+      targetYear: newTargetYear,
+      projectedDrawYear,
+      status: newStatus,
+      milestones: [],
+      ...(newWeaponType ? { weaponType: newWeaponType as WeaponType } : {}),
+      ...(newSeasonPref ? { seasonPreference: newSeasonPref as SeasonPreference } : {}),
+      ...(newHuntStyle ? { huntStyle: newHuntStyle as HuntStyle } : {}),
+      ...(newTrophyDesc.trim() ? { trophyDescription: newTrophyDesc.trim() } : {}),
     });
-    setShowAddModal(false); setNewTitle(""); setNewStateId(""); setNewSpeciesId("elk"); setNewTargetYear(currentYear + 3); setNewStatus("active");
+    resetModal();
   }
 
   // If we have milestones from a confirmed plan, show milestone-first layout
@@ -108,7 +218,7 @@ export default function GoalsPage() {
           <p className="text-sm text-muted-foreground mt-1">
             {hasMilestones
               ? `${completedCount} of ${milestones.length} completed · $${completedCost.toLocaleString()} of $${totalCost.toLocaleString()} spent`
-              : "Set hunt goals and visualize your 10-year strategic roadmap"}
+              : "Set hunt goals and visualize your strategic roadmap"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -389,6 +499,7 @@ export default function GoalsPage() {
                 {userGoals.map((goal) => {
                   const state = STATES_MAP[goal.stateId];
                   const statusStyle = STATUS_STYLES[goal.status];
+                  const attachedUnit = goal.unitId ? SAMPLE_UNITS.find(u => u.id === goal.unitId) : null;
                   return (
                     <Card key={goal.id} className="bg-card border-border hover:border-primary/20 transition-colors">
                       <CardContent className="p-4">
@@ -406,6 +517,40 @@ export default function GoalsPage() {
                                 <span className="text-muted-foreground">&middot;</span>
                                 <span className="text-xs text-muted-foreground">{state?.name}</span>
                               </div>
+
+                              {/* Detail badges */}
+                              {(goal.weaponType || goal.seasonPreference || goal.huntStyle) && (
+                                <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                  {goal.weaponType && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
+                                      {WEAPON_LABELS[goal.weaponType] ?? goal.weaponType}
+                                    </span>
+                                  )}
+                                  {goal.seasonPreference && goal.seasonPreference !== "any" && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium capitalize">
+                                      {goal.seasonPreference} Season
+                                    </span>
+                                  )}
+                                  {goal.huntStyle && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
+                                      {HUNT_STYLE_LABELS[goal.huntStyle] ?? goal.huntStyle}
+                                    </span>
+                                  )}
+                                  {attachedUnit && (
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                      Unit {attachedUnit.unitCode}
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Trophy description */}
+                              {goal.trophyDescription && (
+                                <p className="text-xs text-muted-foreground italic mt-1.5 line-clamp-1">
+                                  &ldquo;{goal.trophyDescription}&rdquo;
+                                </p>
+                              )}
+
                               <div className="flex items-center gap-3 mt-2">
                                 <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
                                 <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Target: {goal.targetYear}</span>
@@ -465,41 +610,130 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* Add Goal Modal */}
+      {/* ================================================================ */}
+      {/* ADD GOAL MODAL */}
+      {/* ================================================================ */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowAddModal(false)} />
-          <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-md bg-card border-border shadow-2xl">
-            <CardHeader className="flex flex-row items-center justify-between pb-3">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={resetModal} />
+          <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-lg bg-card border-border shadow-2xl max-h-[90vh] flex flex-col">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
               <CardTitle id="goals-dialog-title" className="text-base">Add Hunt Goal</CardTitle>
-              <button onClick={() => setShowAddModal(false)} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"><X className="w-4 h-4" /></button>
+              <button onClick={resetModal} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"><X className="w-4 h-4" /></button>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Goal Title</label>
-                <input type="text" value={newTitle} onChange={(e) => setNewTitle(e.target.value.slice(0, 100))} maxLength={100} placeholder="e.g., Trophy Bull Elk in Colorado" className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary" />
-              </div>
+            <CardContent className="space-y-5 overflow-y-auto">
+              {/* State */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">State</label>
                 <div className="grid grid-cols-5 gap-2">
                   {STATES.map((s) => (
-                    <button key={s.id} onClick={() => setNewStateId(s.id)} className={`p-2 rounded-lg border text-xs font-bold transition-all ${newStateId === s.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-secondary/50 hover:border-primary/30"}`}>
+                    <button key={s.id} onClick={() => { setNewStateId(s.id); setNewUnitId(""); }} className={`p-2 rounded-lg border text-xs font-bold transition-all ${newStateId === s.id ? "border-primary bg-primary/10 ring-1 ring-primary" : "border-border bg-secondary/50 hover:border-primary/30"}`}>
                       <div className="w-6 h-6 rounded mx-auto mb-1 flex items-center justify-center text-[10px] text-white" style={{ backgroundColor: s.color }}>{s.abbreviation}</div>
                       {s.abbreviation}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Species */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">Species</label>
                 <div className="flex flex-wrap gap-2">
                   {SPECIES.map((sp) => (
-                    <button key={sp.id} onClick={() => setNewSpeciesId(sp.id)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSpeciesId === sp.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                    <button key={sp.id} onClick={() => { setNewSpeciesId(sp.id); setNewUnitId(""); }} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSpeciesId === sp.id ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
                       {sp.name}
                     </button>
                   ))}
                 </div>
               </div>
+
+              {/* Weapon Type */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Weapon</label>
+                <div className="flex flex-wrap gap-2">
+                  {WEAPON_OPTIONS.map((opt) => (
+                    <button key={opt.value} onClick={() => setNewWeaponType(newWeaponType === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newWeaponType === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Season Preference */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Season</label>
+                <div className="flex flex-wrap gap-2">
+                  {SEASON_OPTIONS.map((opt) => (
+                    <button key={opt.value} onClick={() => setNewSeasonPref(newSeasonPref === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSeasonPref === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hunt Style */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Hunt Style</label>
+                <div className="flex flex-wrap gap-2">
+                  {HUNT_STYLE_OPTIONS.map((opt) => (
+                    <button key={opt.value} onClick={() => setNewHuntStyle(newHuntStyle === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newHuntStyle === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Trophy Description */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">The Dream</label>
+                <textarea
+                  value={newTrophyDesc}
+                  onChange={(e) => setNewTrophyDesc(e.target.value.slice(0, 200))}
+                  maxLength={200}
+                  rows={2}
+                  placeholder="Big ol crusty 6x6 bull, dark timber, bugling in your face..."
+                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+                />
+                <p className="text-[10px] text-muted-foreground mt-1 text-right">{newTrophyDesc.length}/200</p>
+              </div>
+
+              {/* Suggested Units */}
+              {suggestedUnits.length > 0 && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Suggested Units</label>
+                  <div className="space-y-2">
+                    {suggestedUnits.map((unit) => (
+                      <button
+                        key={unit.id}
+                        onClick={() => setNewUnitId(newUnitId === unit.id ? "" : unit.id)}
+                        className={`w-full text-left p-3 rounded-lg border transition-all ${newUnitId === unit.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-secondary/30 hover:border-primary/30"}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-semibold">Unit {unit.unitCode}</span>
+                            {unit.unitName && <span className="text-xs text-muted-foreground ml-2">{unit.unitName}</span>}
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] text-muted-foreground">
+                              {Math.round(unit.successRate * 100)}% success
+                            </span>
+                            <div className="flex items-center gap-0.5">
+                              {Array.from({ length: 10 }, (_, i) => (
+                                <div key={i} className={`w-1 h-3 rounded-sm ${i < unit.trophyRating ? "bg-primary" : "bg-secondary"}`} />
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        {unit.tacticalNotes?.trophyExpectation && (
+                          <p className="text-[10px] text-muted-foreground mt-1 line-clamp-1">{unit.tacticalNotes.trophyExpectation}</p>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Target Year */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">Target Year</label>
                 <div className="flex items-center gap-3 justify-center">
@@ -508,7 +742,24 @@ export default function GoalsPage() {
                   <button onClick={() => setNewTargetYear(Math.min(currentYear + 15, newTargetYear + 1))} className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors">+</button>
                 </div>
               </div>
-              <Button onClick={handleAdd} className="w-full" disabled={!newTitle || !newStateId}>Add Goal</Button>
+
+              {/* Auto-title preview */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Goal Title</label>
+                <input
+                  type="text"
+                  value={displayTitle}
+                  onChange={(e) => { setNewTitle(e.target.value.slice(0, 100)); setTitleManuallyEdited(true); }}
+                  maxLength={100}
+                  placeholder="Auto-generated from your selections"
+                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+                {!titleManuallyEdited && autoTitle && (
+                  <p className="text-[10px] text-muted-foreground mt-1">Auto-generated. Edit to customize.</p>
+                )}
+              </div>
+
+              <Button onClick={handleAdd} className="w-full" disabled={!displayTitle || !newStateId}>Add Goal</Button>
             </CardContent>
           </Card>
         </div>
