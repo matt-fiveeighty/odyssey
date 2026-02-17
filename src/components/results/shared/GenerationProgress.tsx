@@ -1,7 +1,7 @@
 "use client";
 
 import { useWizardStore } from "@/lib/store";
-import { Sparkles } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 
 const HUNTING_TIPS = [
   "The best scouting happens from your couch — Google Earth, onX, and state harvest data are your pre-season weapons.",
@@ -19,7 +19,7 @@ export function GenerationProgress() {
   return (
     <div className="fade-in-up rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-primary/20 p-8 md:p-12 text-center glow-primary-lg">
       <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6 orbital-glow">
-        <Sparkles className="w-8 h-8 text-primary animate-pulse" />
+        <Logo size={36} className="text-primary animate-pulse drop-shadow-[0_0_8px_hsl(var(--primary)/0.6)]" />
       </div>
 
       <h3 className="text-lg font-semibold mb-2">Building Your Strategy</h3>

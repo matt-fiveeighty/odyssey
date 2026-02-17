@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ChevronRight, LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/shared/Logo";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -47,9 +48,7 @@ export function Header() {
       <div className="flex items-center gap-4 flex-1">
         {/* Mobile brand header */}
         <div className="md:hidden flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-            OO
-          </div>
+          <Logo size={28} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
           <span className="text-sm font-semibold">Odyssey Outdoors</span>
         </div>
         {/* Desktop breadcrumb / page title */}

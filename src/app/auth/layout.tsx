@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/shared/Logo";
 
 export default function AuthLayout({
   children,
@@ -10,9 +11,7 @@ export default function AuthLayout({
       {/* Minimal header */}
       <header className="flex items-center justify-between h-16 px-6 border-b border-border">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-            OO
-          </div>
+          <Logo size={28} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
           <span className="text-sm font-semibold text-foreground">
             Odyssey Outdoors
           </span>

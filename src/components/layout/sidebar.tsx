@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import { Logo } from "@/components/shared/Logo";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -38,9 +39,7 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
-        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm">
-          OO
-        </div>
+        <Logo size={28} className="text-primary shrink-0 drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
         {!collapsed && (
           <div className="flex flex-col">
             <span className="text-sm font-semibold text-sidebar-foreground">

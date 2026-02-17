@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MobileMarketingNav } from "@/components/marketing/MobileMarketingNav";
+import { Logo } from "@/components/shared/Logo";
 
 const navItems = [
   { label: "Features", href: "#features" },
@@ -20,9 +21,7 @@ export default function MarketingLayout({
         <div className="max-w-6xl mx-auto flex items-center justify-between h-16 px-6">
           <div className="flex items-center gap-8">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-primary text-primary-foreground font-bold text-sm flex items-center justify-center">
-                OO
-              </div>
+              <Logo size={28} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
               <span className="text-sm font-semibold text-foreground">
                 Odyssey Outdoors
               </span>
@@ -67,9 +66,7 @@ export default function MarketingLayout({
             {/* Brand */}
             <div className="col-span-2 md:col-span-1">
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-md bg-primary text-primary-foreground font-bold text-[10px] flex items-center justify-center">
-                  OO
-                </div>
+                <Logo size={24} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
                 <span className="text-sm font-semibold">Odyssey Outdoors</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
