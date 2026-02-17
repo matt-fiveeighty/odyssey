@@ -4,6 +4,8 @@ import type { StrategicAssessment } from "@/lib/types";
 import { CollapsibleSection } from "../shared/CollapsibleSection";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
+import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { useWizardStore } from "@/lib/store";
 import { DollarSign, TrendingUp, Lightbulb, PieChart } from "lucide-react";
 
 interface PortfolioOverviewProps {
@@ -12,6 +14,7 @@ interface PortfolioOverviewProps {
 
 export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
   const { macroSummary, budgetBreakdown, stateRecommendations, insights } = assessment;
+  const userSpecies = useWizardStore((s) => s.species);
 
   return (
     <div className="space-y-4">
@@ -22,6 +25,7 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
             const state = STATES_MAP[cs.stateId];
             const vis = STATE_VISUALS[cs.stateId];
             if (!state) return null;
+            const stateSpecies = state.availableSpecies.filter((sp) => userSpecies.includes(sp));
             return (
               <div key={cs.stateId} className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-700 to-slate-900"}`}>
@@ -29,7 +33,14 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{state.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">{state.name}</span>
+                      <div className="flex gap-0.5">
+                        {stateSpecies.slice(0, 5).map((sp) => (
+                          <SpeciesAvatar key={sp} speciesId={sp} size={14} />
+                        ))}
+                      </div>
+                    </div>
                     <span className="text-xs text-muted-foreground">${cs.annualCost}/yr ({cs.pctOfTotal}%)</span>
                   </div>
                   <div className="h-1.5 rounded-full bg-secondary overflow-hidden">

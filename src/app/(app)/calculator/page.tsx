@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -13,7 +14,9 @@ import {
 import { STATES } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
+import { SPECIES_IMAGES } from "@/lib/constants/species-images";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
+import { StateOutline } from "@/components/shared/StateOutline";
 
 export default function CalculatorPage() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
@@ -28,10 +31,11 @@ export default function CalculatorPage() {
   const licenseFee = state?.licenseFees.qualifyingLicense ?? 0;
   const appFee = state?.licenseFees.appFee ?? 0;
   const annualCost = pointCost + appFee + (licenseFee > 0 ? licenseFee : 0);
-  // Estimated NR tag costs by species (approximations across western states)
   const TAG_COST_ESTIMATES: Record<string, number> = {
-    elk: 600, mule_deer: 400, whitetail: 350, bear: 350, moose: 800,
-    pronghorn: 300, bighorn_sheep: 2000, mountain_goat: 1500, bison: 1500, mountain_lion: 400,
+    elk: 600, mule_deer: 400, whitetail: 350, coues_deer: 250, blacktail: 300, sitka_blacktail: 600,
+    black_bear: 350, grizzly: 500, moose: 800, pronghorn: 300, bighorn_sheep: 2000,
+    dall_sheep: 1500, mountain_goat: 1500, bison: 1500, caribou: 800, mountain_lion: 400,
+    muskox: 2200, wolf: 250,
   };
   const estimatedTagCost = TAG_COST_ESTIMATES[selectedSpecies] ?? 400;
   const totalCost =
@@ -51,19 +55,27 @@ export default function CalculatorPage() {
 
       {/* Species Selector */}
       <div className="flex flex-wrap gap-2">
-        {SPECIES.map((sp) => (
-          <button
-            key={sp.id}
-            onClick={() => setSelectedSpecies(sp.id)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-              selectedSpecies === sp.id
-                ? "bg-primary text-primary-foreground"
-                : "bg-secondary text-secondary-foreground hover:bg-accent"
-            }`}
-          >
-            {sp.name}
-          </button>
-        ))}
+        {SPECIES.map((sp) => {
+          const img = SPECIES_IMAGES[sp.id];
+          return (
+            <button
+              key={sp.id}
+              onClick={() => setSelectedSpecies(sp.id)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                selectedSpecies === sp.id
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-accent"
+              }`}
+            >
+              {img && (
+                <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
+                  <Image src={img.src} alt={img.alt} width={20} height={20} className="object-cover w-full h-full" />
+                </div>
+              )}
+              {sp.name}
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
@@ -98,13 +110,14 @@ export default function CalculatorPage() {
                           </div>
                         )}
                         <div className="flex items-center gap-2 mb-2">
-                          <div
-                            className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white"
-                            style={{ backgroundColor: s.color }}
-                          >
-                            {s.abbreviation}
-                          </div>
-                          {visual && <span className="text-sm">{visual.emoji}</span>}
+                          <StateOutline
+                            stateId={s.id}
+                            size={24}
+                            strokeColor="hsl(var(--primary))"
+                            strokeWidth={3}
+                            fillColor="hsl(var(--primary) / 0.15)"
+                          />
+                          <span className="text-xs font-bold text-primary">{s.abbreviation}</span>
                         </div>
                         <p className="text-lg font-bold">
                           ${cost ?? 0}

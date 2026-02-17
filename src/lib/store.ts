@@ -195,7 +195,7 @@ export const useWizardStore = create<ConsultationState>()(
       },
       reset: () => set(consultationInitial as ConsultationState),
     }),
-    { name: "hunt-planner-wizard-v4" }
+    { name: "hunt-planner-wizard-v5" }
   )
 );
 

@@ -89,21 +89,21 @@ export function calculateItemizedCost(
  */
 export function getEstimatedTagCost(stateId: string, speciesId: string): number {
   const tagCosts: Record<string, Record<string, number>> = {
-    CO: { elk: 659, mule_deer: 434, bear: 350, moose: 2500, pronghorn: 434, bighorn_sheep: 2500, mountain_goat: 2500, mountain_lion: 350 },
-    WY: { elk: 707, mule_deer: 457, bear: 300, moose: 1750, pronghorn: 457, bighorn_sheep: 2250, mountain_goat: 2250, bison: 4500, mountain_lion: 300 },
-    MT: { elk: 1200, mule_deer: 1200, bear: 350, moose: 1250, whitetail: 1200, pronghorn: 200, bighorn_sheep: 1250, mountain_goat: 1250, bison: 1250, mountain_lion: 350 },
+    CO: { elk: 659, mule_deer: 434, black_bear: 350, moose: 2500, pronghorn: 434, bighorn_sheep: 2500, mountain_goat: 2500, mountain_lion: 350 },
+    WY: { elk: 707, mule_deer: 457, black_bear: 300, grizzly: 300, moose: 1750, pronghorn: 457, bighorn_sheep: 2250, mountain_goat: 2250, bison: 4500, mountain_lion: 300, wolf: 250 },
+    MT: { elk: 1200, mule_deer: 1200, black_bear: 350, grizzly: 350, moose: 1250, whitetail: 1200, pronghorn: 200, bighorn_sheep: 1250, mountain_goat: 1250, bison: 1250, mountain_lion: 350, wolf: 250 },
     NV: { elk: 1200, mule_deer: 300, pronghorn: 300, bighorn_sheep: 1500, mountain_lion: 300 },
-    AZ: { elk: 800, mule_deer: 300, bear: 250, pronghorn: 300, bighorn_sheep: 2000, bison: 2500, mountain_lion: 250 },
-    UT: { elk: 558, mule_deer: 400, bear: 250, moose: 1500, pronghorn: 400, bighorn_sheep: 1500, mountain_goat: 1500, bison: 1500, mountain_lion: 250 },
-    NM: { elk: 783, mule_deer: 350, bear: 250, pronghorn: 350, bighorn_sheep: 3100, mountain_lion: 250 },
-    OR: { elk: 576, mule_deer: 400, bear: 300, pronghorn: 400, bighorn_sheep: 1500, mountain_goat: 1500, mountain_lion: 300 },
-    ID: { elk: 600, mule_deer: 400, bear: 250, moose: 2000, whitetail: 400, pronghorn: 300, bighorn_sheep: 2000, mountain_goat: 2000, mountain_lion: 250 },
+    AZ: { elk: 800, mule_deer: 300, coues_deer: 300, black_bear: 250, pronghorn: 300, bighorn_sheep: 2000, bison: 2500, mountain_lion: 250 },
+    UT: { elk: 558, mule_deer: 400, black_bear: 250, moose: 1500, pronghorn: 400, bighorn_sheep: 1500, mountain_goat: 1500, bison: 1500, mountain_lion: 250 },
+    NM: { elk: 783, mule_deer: 350, coues_deer: 350, black_bear: 250, pronghorn: 350, bighorn_sheep: 3100, mountain_lion: 250 },
+    OR: { elk: 576, mule_deer: 400, blacktail: 400, black_bear: 300, pronghorn: 400, bighorn_sheep: 1500, mountain_goat: 1500, mountain_lion: 300 },
+    ID: { elk: 600, mule_deer: 400, black_bear: 250, grizzly: 250, moose: 2000, whitetail: 400, pronghorn: 300, bighorn_sheep: 2000, mountain_goat: 2000, mountain_lion: 250, wolf: 250 },
     KS: { mule_deer: 442, whitetail: 442, pronghorn: 442 },
-    WA: { elk: 450, mule_deer: 350, bear: 300, moose: 1500, mountain_goat: 1500, bighorn_sheep: 1500, mountain_lion: 300 },
+    WA: { elk: 450, mule_deer: 350, blacktail: 350, black_bear: 300, moose: 1500, mountain_goat: 1500, bighorn_sheep: 1500, mountain_lion: 300 },
     NE: { elk: 500, mule_deer: 300, whitetail: 300, pronghorn: 200, bighorn_sheep: 1500 },
     SD: { elk: 600, mule_deer: 350, whitetail: 300, pronghorn: 200, bighorn_sheep: 1500, mountain_goat: 1500, mountain_lion: 350 },
     ND: { elk: 500, mule_deer: 300, whitetail: 300, pronghorn: 200, moose: 1500, bighorn_sheep: 1500 },
-    AK: { moose: 800, bear: 650, elk: 600, mountain_goat: 600, dall_sheep: 850, bison: 1000, caribou: 650 },
+    AK: { moose: 800, black_bear: 400, grizzly: 650, elk: 600, sitka_blacktail: 600, mountain_goat: 600, dall_sheep: 850, bison: 1000, caribou: 650, muskox: 2200, wolf: 250 },
   };
 
   return tagCosts[stateId]?.[speciesId] ?? 400;

@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { StrategicAssessment } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
+import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { ChevronDown, Target } from "lucide-react";
 
 interface TimelineRoadmapProps {
@@ -101,6 +102,9 @@ export function TimelineRoadmap({ assessment }: TimelineRoadmapProps) {
                         <div className={`w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white shrink-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-700 to-slate-900"}`}>
                           {state.abbreviation}
                         </div>
+                      )}
+                      {action.speciesId && (
+                        <SpeciesAvatar speciesId={action.speciesId} size={20} />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium">{action.description}</p>

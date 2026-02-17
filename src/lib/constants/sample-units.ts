@@ -191,12 +191,12 @@ export const SAMPLE_UNITS: Unit[] = [
   },
 
   // ============================================================================
-  // Colorado Bear
+  // Colorado Black Bear
   // ============================================================================
   {
-    id: "co-bear-011",
+    id: "co-black_bear-011",
     stateId: "CO",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "11",
     unitName: "White River",
     successRate: 0.15,
@@ -223,9 +223,9 @@ export const SAMPLE_UNITS: Unit[] = [
     },
   },
   {
-    id: "co-bear-076",
+    id: "co-black_bear-076",
     stateId: "CO",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "76",
     unitName: "San Juan",
     successRate: 0.20,
@@ -450,12 +450,12 @@ export const SAMPLE_UNITS: Unit[] = [
   },
 
   // ============================================================================
-  // Montana Bear
+  // Montana Black Bear
   // ============================================================================
   {
-    id: "mt-bear-spring",
+    id: "mt-black_bear-spring",
     stateId: "MT",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "Spring",
     unitName: "Spring Bear General",
     successRate: 0.30,
@@ -618,12 +618,12 @@ export const SAMPLE_UNITS: Unit[] = [
   },
 
   // ============================================================================
-  // Idaho Bear
+  // Idaho Black Bear
   // ============================================================================
   {
-    id: "id-bear-spring",
+    id: "id-black_bear-spring",
     stateId: "ID",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "Spring",
     unitName: "Spring Controlled",
     successRate: 0.35,
@@ -750,12 +750,12 @@ export const SAMPLE_UNITS: Unit[] = [
   },
 
   // ============================================================================
-  // Arizona Bear
+  // Arizona Black Bear
   // ============================================================================
   {
-    id: "az-bear-023",
+    id: "az-black_bear-023",
     stateId: "AZ",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "23",
     unitName: "Mogollon Rim",
     successRate: 0.25,
@@ -1427,12 +1427,12 @@ export const SAMPLE_UNITS: Unit[] = [
   },
 
   // ============================================================================
-  // Alaska Bear
+  // Alaska Black Bear
   // ============================================================================
   {
-    id: "ak-bear-coastal",
+    id: "ak-black_bear-coastal",
     stateId: "AK",
-    speciesId: "bear",
+    speciesId: "black_bear",
     unitCode: "Coastal",
     unitName: "Coastal Brown Bear",
     successRate: 0.70,

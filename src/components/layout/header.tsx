@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronRight, LogOut, UserPlus } from "lucide-react";
+import { LogOut, UserPlus } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/Logo";
@@ -51,12 +51,10 @@ export function Header() {
           <Logo size={28} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
           <span className="text-sm font-semibold">Odyssey Outdoors</span>
         </div>
-        {/* Desktop breadcrumb / page title */}
-        <div className="hidden md:flex items-center gap-2 text-sm">
-          <span className="text-muted-foreground">Odyssey Outdoors</span>
-          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/60" />
-          <span className="font-medium text-foreground">{pageTitle}</span>
-        </div>
+        {/* Desktop page title */}
+        <h1 className="hidden md:block text-sm font-medium text-foreground">
+          {pageTitle}
+        </h1>
       </div>
       <div className="flex items-center gap-3">
         <span className="text-xs text-muted-foreground hidden sm:block">

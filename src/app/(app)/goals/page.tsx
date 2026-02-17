@@ -91,13 +91,21 @@ const TROPHY_PREFIX: Record<string, string> = {
   elk: "Bull",
   mule_deer: "Buck",
   whitetail: "Buck",
-  bear: "",
+  coues_deer: "Buck",
+  blacktail: "Buck",
+  sitka_blacktail: "Buck",
+  black_bear: "",
+  grizzly: "",
   moose: "Bull",
   pronghorn: "Buck",
   bighorn_sheep: "Ram",
+  dall_sheep: "Ram",
   mountain_goat: "Billy",
   bison: "Bull",
+  caribou: "Bull",
   mountain_lion: "Tom",
+  muskox: "Bull",
+  wolf: "",
 };
 
 export default function GoalsPage() {
@@ -170,31 +178,64 @@ export default function GoalsPage() {
 
   const displayTitle = titleManuallyEdited ? newTitle : autoTitle;
 
-  // Smart unit suggestions — scored against ALL inputs including dream description
-  const suggestedUnits = useMemo(() => {
+  // Check if any units exist for this state+species combo
+  const unitCandidates = useMemo(() => {
     if (!newStateId || !newSpeciesId) return [];
-    const candidates = SAMPLE_UNITS.filter(
+    return SAMPLE_UNITS.filter(
       (u) => u.stateId === newStateId && u.speciesId === newSpeciesId
     );
-    if (candidates.length === 0) return [];
+  }, [newStateId, newSpeciesId]);
+
+  const hasUnitData = unitCandidates.length > 0;
+  const dreamReady = newTrophyDesc.trim().length >= 3;
+
+  // Smart unit suggestions — scored against ALL inputs including dream description
+  // Only fires once the user has described their dream hunt
+  const suggestedUnits = useMemo(() => {
+    if (!hasUnitData || !dreamReady) return [];
 
     const dream = newTrophyDesc.toLowerCase();
     const dreamTokens = dream.split(/\s+/).filter(Boolean);
 
-    const trophyKeywords = ["big", "giant", "trophy", "monster", "mature", "old", "crusty", "heavy", "wide", "deep", "tall", "record", "book", "boone", "pope", "6x6", "6x7", "7x7", "360", "380", "400"];
-    const opportunityKeywords = ["first", "easy", "otc", "opportunity", "beginner", "meat", "experience", "any", "cow", "doe"];
-    const wantsTrophy = dreamTokens.some((t) => trophyKeywords.includes(t));
-    const wantsOpportunity = dreamTokens.some((t) => opportunityKeywords.includes(t));
+    // Colloquialism mapping: normalize hunter slang → scoring intent
+    const trophySlang: Record<string, string> = {
+      crusty: "mature", stud: "trophy", hog: "trophy", toad: "trophy",
+      slammer: "trophy", brute: "trophy", tank: "trophy", beast: "trophy",
+      bruiser: "trophy", booner: "boone", poper: "pope", nontypical: "trophy",
+      "non-typical": "trophy", raghorn: "opportunity", nontypial: "trophy",
+      gnarly: "mature", kicker: "trophy", cheater: "trophy",
+      "dark-horned": "mature", "dark horned": "mature", palmated: "trophy",
+      "main frame": "trophy", mainframe: "trophy",
+      "ol": "mature", "old": "mature",
+    };
+    const normalizedTokens = dreamTokens.map((t) => trophySlang[t] ?? t);
 
-    const scored = candidates.map((unit) => {
+    const trophyKeywords = ["big", "giant", "trophy", "monster", "mature", "old", "crusty", "heavy", "wide", "deep", "tall", "record", "book", "boone", "pope", "6x6", "6x7", "7x7", "360", "380", "400", "upper", "class", "stud", "hog", "toad", "slammer", "brute", "tank", "beast", "bruiser", "gnarly", "kicker", "palmated"];
+    const opportunityKeywords = ["first", "easy", "otc", "opportunity", "beginner", "meat", "experience", "cow", "doe", "raghorn", "fork", "forky", "spiker", "yearling", "any bull", "any buck", "fill the freezer", "freezer"];
+    const wantsTrophy = normalizedTokens.some((t) => trophyKeywords.includes(t)) || dreamTokens.some((t) => trophyKeywords.includes(t));
+    const wantsOpportunity = normalizedTokens.some((t) => opportunityKeywords.includes(t)) || dreamTokens.some((t) => opportunityKeywords.includes(t));
+
+    // Also check multi-word phrases in the raw dream text
+    const wantsTrophyPhrase = /big\s*(ol|old|ole)?\s*(crusty|gnarly|mature|heavy)?\s*(6x6|7x7|bull|buck|ram|billy|tom)/i.test(dream)
+      || /upper\s*(age|antler)\s*class/i.test(dream)
+      || /boone\s*(and|&)\s*crockett/i.test(dream)
+      || /pope\s*(and|&)\s*young/i.test(dream)
+      || /fill\s*(the|my)\s*tag/i.test(dream);
+    const wantsOppPhrase = /fill\s*(the|my)\s*freezer/i.test(dream)
+      || /any\s*(legal|bull|buck|ram)/i.test(dream);
+
+    const isTrophy = wantsTrophy || wantsTrophyPhrase;
+    const isOpportunity = !isTrophy && (wantsOpportunity || wantsOppPhrase);
+
+    const scored = unitCandidates.map((unit) => {
       let score = 0;
       const reasons: string[] = [];
 
       // Trophy vs opportunity intent
-      if (wantsTrophy) {
+      if (isTrophy) {
         score += unit.trophyRating * 3;
         if (unit.trophyRating >= 7) reasons.push("High trophy potential matches your dream");
-      } else if (wantsOpportunity) {
+      } else if (isOpportunity) {
         score += unit.successRate * 30;
         score += (10 - unit.pointsRequiredNonresident) * 2;
         if (unit.successRate >= 0.25) reasons.push("Strong success rate for your first hunt");
@@ -276,7 +317,7 @@ export default function GoalsPage() {
     });
 
     return scored.sort((a, b) => b.score - a.score).slice(0, 3);
-  }, [newStateId, newSpeciesId, newTrophyDesc, newSeasonPref, newHuntStyle]);
+  }, [unitCandidates, hasUnitData, dreamReady, newTrophyDesc, newSeasonPref, newHuntStyle]);
 
   // Filter milestones
   const filteredMilestones = milestones.filter(m => {
@@ -940,54 +981,76 @@ export default function GoalsPage() {
               </div>
 
               {/* AI-Matched Units — scored against all inputs */}
-              {suggestedUnits.length > 0 && (
+              {newStateId && newSpeciesId && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-1 block">Recommended Units</label>
-                  <p className="text-[10px] text-muted-foreground mb-3">Matched to your species, style, season{newTrophyDesc.trim() ? ", and dream" : ""}</p>
-                  <div className="space-y-2">
-                    {suggestedUnits.map(({ unit, reasons }) => (
-                      <button
-                        key={unit.id}
-                        onClick={() => setNewUnitId(newUnitId === unit.id ? "" : unit.id)}
-                        className={`w-full text-left p-3 rounded-lg border transition-all ${newUnitId === unit.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-secondary/30 hover:border-primary/30"}`}
-                      >
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold">Unit {unit.unitCode}</span>
-                            {unit.unitName && <span className="text-xs text-muted-foreground">{unit.unitName}</span>}
-                          </div>
-                          <div className="flex items-center gap-3 shrink-0">
-                            <span className="text-[10px] text-muted-foreground">
-                              {Math.round(unit.successRate * 100)}%
-                            </span>
-                            <div className="flex items-center gap-0.5">
-                              {Array.from({ length: 10 }, (_, i) => (
-                                <div key={i} className={`w-1 h-3 rounded-sm ${i < unit.trophyRating ? "bg-primary" : "bg-secondary"}`} />
+                  {!hasUnitData ? (
+                    <div className="p-4 rounded-lg border border-border bg-secondary/20 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        No unit data available for {STATES_MAP[newStateId]?.name} {SPECIES_MAP[newSpeciesId]?.name} yet.
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        Unit data is being expanded — you can still add this goal without a unit recommendation.
+                      </p>
+                    </div>
+                  ) : !dreamReady ? (
+                    <div className="p-4 rounded-lg border border-dashed border-primary/20 bg-primary/5 text-center">
+                      <p className="text-xs text-muted-foreground">
+                        Describe your dream hunt above and we&apos;ll match you to the best units.
+                      </p>
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        Try something like &ldquo;big ol crusty 6x6 in dark timber&rdquo; or &ldquo;first elk, good odds, any bull&rdquo;
+                      </p>
+                    </div>
+                  ) : suggestedUnits.length > 0 ? (
+                    <>
+                      <p className="text-[10px] text-muted-foreground mb-3">Matched to your species, style, season, and dream</p>
+                      <div className="space-y-2">
+                        {suggestedUnits.map(({ unit, reasons }) => (
+                          <button
+                            key={unit.id}
+                            onClick={() => setNewUnitId(newUnitId === unit.id ? "" : unit.id)}
+                            className={`w-full text-left p-3 rounded-lg border transition-all ${newUnitId === unit.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-border bg-secondary/30 hover:border-primary/30"}`}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold">Unit {unit.unitCode}</span>
+                                {unit.unitName && <span className="text-xs text-muted-foreground">{unit.unitName}</span>}
+                              </div>
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-[10px] text-muted-foreground">
+                                  {Math.round(unit.successRate * 100)}%
+                                </span>
+                                <div className="flex items-center gap-0.5">
+                                  {Array.from({ length: 10 }, (_, i) => (
+                                    <div key={i} className={`w-1 h-3 rounded-sm ${i < unit.trophyRating ? "bg-primary" : "bg-secondary"}`} />
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                            {/* Why this unit — AI reasoning */}
+                            <div className="space-y-0.5 mt-1.5">
+                              {reasons.slice(0, 2).map((reason, i) => (
+                                <p key={i} className="text-[10px] text-primary/80 flex items-start gap-1.5">
+                                  <span className="text-primary mt-px shrink-0">&#x2192;</span>
+                                  <span>{reason}</span>
+                                </p>
                               ))}
                             </div>
-                          </div>
-                        </div>
-                        {/* Why this unit — AI reasoning */}
-                        <div className="space-y-0.5 mt-1.5">
-                          {reasons.slice(0, 2).map((reason, i) => (
-                            <p key={i} className="text-[10px] text-primary/80 flex items-start gap-1.5">
-                              <span className="text-primary mt-px shrink-0">&#x2192;</span>
-                              <span>{reason}</span>
-                            </p>
-                          ))}
-                        </div>
-                        {/* Stats row */}
-                        <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-border/50">
-                          <span className="text-[9px] text-muted-foreground">{unit.pointsRequiredNonresident} pts NR</span>
-                          <span className="text-[9px] text-muted-foreground">{unit.pressureLevel} pressure</span>
-                          <span className="text-[9px] text-muted-foreground">{Math.round(unit.publicLandPct * 100)}% public</span>
-                          {unit.terrainType.length > 0 && (
-                            <span className="text-[9px] text-muted-foreground">{unit.terrainType.join("/")}</span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
+                            {/* Stats row */}
+                            <div className="flex items-center gap-3 mt-2 pt-1.5 border-t border-border/50">
+                              <span className="text-[9px] text-muted-foreground">{unit.pointsRequiredNonresident} pts NR</span>
+                              <span className="text-[9px] text-muted-foreground">{unit.pressureLevel} pressure</span>
+                              <span className="text-[9px] text-muted-foreground">{Math.round(unit.publicLandPct * 100)}% public</span>
+                              {unit.terrainType.length > 0 && (
+                                <span className="text-[9px] text-muted-foreground">{unit.terrainType.join("/")}</span>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               )}
 

@@ -3,6 +3,8 @@
 import type { StrategicAssessment } from "@/lib/types";
 import { CollapsibleSection } from "../shared/CollapsibleSection";
 import { STATES_MAP } from "@/lib/constants/states";
+import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { SPECIES } from "@/lib/constants/species";
 import { Plane, Calendar, Wallet, Heart, ExternalLink } from "lucide-react";
 
 interface LogisticsTabProps {
@@ -55,7 +57,13 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
               const state = STATES_MAP[entry.stateId];
               return (
                 <div key={i} className="p-3 rounded-lg bg-secondary/20 border border-border/50">
-                  <p className="text-sm font-semibold mb-2">{state?.name} &mdash; {entry.species}</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    {(() => {
+                      const match = SPECIES.find((s) => s.name.toLowerCase() === entry.species.toLowerCase());
+                      return match ? <SpeciesAvatar speciesId={match.id} size={22} /> : null;
+                    })()}
+                    <p className="text-sm font-semibold">{state?.name} &mdash; {entry.species}</p>
+                  </div>
                   <div className="space-y-1.5">
                     {entry.tiers.map((tier, ti) => (
                       <div key={ti} className="flex items-start gap-2 text-[10px]">

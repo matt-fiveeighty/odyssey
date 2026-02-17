@@ -21,27 +21,6 @@ import {
   Users,
 } from "lucide-react";
 
-const steps = [
-  {
-    icon: Crosshair,
-    title: "Profile Your Hunt",
-    description:
-      "Answer a few questions about your experience, species targets, budget, and hunting DNA. The consultation adapts to who you are as a hunter.",
-  },
-  {
-    icon: BarChart3,
-    title: "Get Your Strategy",
-    description:
-      "Our scoring engine evaluates every western state across weighted factors and builds a personalized multi-year roadmap with phased milestones.",
-  },
-  {
-    icon: Calendar,
-    title: "Execute With Confidence",
-    description:
-      "Track deadlines, manage point portfolios, and follow your timeline. Every recommendation comes with cost breakdowns and unit details.",
-  },
-];
-
 const features = [
   {
     icon: Target,
@@ -88,8 +67,8 @@ const rtbs = [
     icon: MapPin,
   },
   {
-    value: "10+ Species",
-    detail: "Elk, mule deer, moose, sheep, goat, bison, bear, pronghorn, mountain lion, and more.",
+    value: "18 Species",
+    detail: "Elk, mule deer, moose, grizzly, sheep, goat, bison, pronghorn, wolf, caribou, and more.",
     icon: Trophy,
   },
   {
@@ -219,7 +198,7 @@ export default function LandingPage() {
                     strokeWidth={3}
                     fillColor="hsl(var(--primary) / 0.15)"
                   />
-                  {state}
+                  <span className="text-primary">{state}</span>
                 </span>
               )
             )}
@@ -231,13 +210,21 @@ export default function LandingPage() {
               "Elk",
               "Mule Deer",
               "Whitetail",
-              "Bear",
+              "Coues Deer",
+              "Columbia Blacktail",
+              "Sitka Blacktail",
+              "Black Bear",
+              "Grizzly",
               "Moose",
               "Pronghorn",
               "Bighorn Sheep",
+              "Dall Sheep",
               "Mountain Goat",
               "Bison",
+              "Caribou",
               "Mountain Lion",
+              "Muskox",
+              "Wolf",
             ].map((species) => (
               <span
                 key={species}
@@ -268,42 +255,6 @@ export default function LandingPage() {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   {rtb.detail}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================================================================ */}
-      {/* HOW IT WORKS */}
-      {/* ================================================================ */}
-      <section id="how-it-works" className="border-t border-border scroll-mt-20">
-        <div className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-14">
-            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              How It Works
-            </h2>
-            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Three steps from first-time applicant to a fully mapped strategy.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {steps.map((step, i) => (
-              <div
-                key={step.title}
-                className="relative p-6 rounded-xl bg-card border border-border card-lift"
-              >
-                <div className="absolute -top-3 -left-3 w-7 h-7 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-                  {i + 1}
-                </div>
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <step.icon className="w-5 h-5 text-primary" />
-                </div>
-                <h3 className="text-lg font-semibold mb-2">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {step.description}
                 </p>
               </div>
             ))}
@@ -439,6 +390,14 @@ export default function LandingPage() {
       {/* BOTTOM CTA */}
       {/* ================================================================ */}
       <section className="border-t border-border relative overflow-hidden">
+        <Image
+          src="/images/species/moose.png"
+          alt=""
+          fill
+          className="object-cover opacity-15 pointer-events-none"
+          sizes="100vw"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-50" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 

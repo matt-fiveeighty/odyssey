@@ -5,7 +5,7 @@ import { Logo } from "@/components/shared/Logo";
 
 const navItems = [
   { label: "Features", href: "#features" },
-  { label: "How It Works", href: "#how-it-works" },
+  { label: "Pricing", href: "/pricing" },
   { label: "Testimonials", href: "#testimonials" },
 ];
 
@@ -86,8 +86,8 @@ export default function MarketingLayout({
                   </Link>
                 </li>
                 <li>
-                  <Link href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    How It Works
+                  <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                    Pricing
                   </Link>
                 </li>
                 <li>

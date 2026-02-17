@@ -5,6 +5,8 @@ import type { StrategicAssessment, StateRecommendation } from "@/lib/types";
 import { AnimatedBar } from "../shared/AnimatedBar";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
+import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { useWizardStore } from "@/lib/store";
 import { ChevronDown, Target, Mountain } from "lucide-react";
 
 interface StatePortfolioProps {
@@ -15,7 +17,10 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
   const [expanded, setExpanded] = useState(false);
   const state = STATES_MAP[rec.stateId];
   const vis = STATE_VISUALS[rec.stateId];
+  const userSpecies = useWizardStore((s) => s.species);
   if (!state) return null;
+
+  const stateSpecies = state.availableSpecies.filter((sp) => userSpecies.includes(sp));
 
   const roleColors: Record<string, string> = {
     primary: "bg-primary/15 text-primary",
@@ -41,6 +46,13 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
             </span>
             <span className="text-xs text-muted-foreground ml-auto">${rec.annualCost}/yr</span>
           </div>
+          {stateSpecies.length > 0 && (
+            <div className="flex gap-1 mb-1">
+              {stateSpecies.map((sp) => (
+                <SpeciesAvatar key={sp} speciesId={sp} size={18} />
+              ))}
+            </div>
+          )}
           <p className="text-xs text-muted-foreground line-clamp-2">{rec.reason}</p>
         </div>
         <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 mt-1 ${expanded ? "rotate-180" : ""}`} />
