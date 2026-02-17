@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -10,22 +11,25 @@ import {
   Crown,
 } from "lucide-react";
 
+export const metadata: Metadata = {
+  title: "Pricing | Odyssey Outdoors",
+  description: "Simple, transparent pricing for western big game hunt planning. Start free with the full strategy engine.",
+};
+
 const plans = [
   {
     name: "Basecamp",
     price: "Free",
     period: "forever",
     description:
-      "Build your strategy, see your state rankings, and start planning your hunts.",
+      "See how western states stack up for your goals. A quick snapshot to get started.",
     icon: Compass,
     featured: false,
     features: [
-      "Personalized state scoring & rankings",
-      "10-year phased roadmap",
-      "Budget breakdown & cost projections",
-      "Unit recommendations per state",
-      "Investment calculator",
-      "Goal tracking & hunt planning",
+      "State scoring overview",
+      "Top 3 state recommendations",
+      "Basic budget estimate",
+      "Species & state explorer",
     ],
     cta: "Get Started",
     href: "/auth/sign-up",
@@ -35,18 +39,21 @@ const plans = [
     price: "$12",
     period: "/month",
     description:
-      "Real-time portfolio tracking, deadline alerts, draw notifications, and deeper analytics.",
+      "The full strategy engine. Personalized roadmaps, unit recommendations, portfolio tracking, and alerts.",
     icon: Binoculars,
     featured: true,
     features: [
       "Everything in Basecamp",
-      "Points portfolio dashboard",
+      "Personalized state scoring & rankings",
+      "10-year phased roadmap",
+      "Budget breakdown & cost projections",
+      "Unit recommendations per state",
+      "Investment calculator",
+      "Goal tracking & hunt planning",
       "Application deadline reminders",
       "Draw result notifications",
-      "Historical draw odds & trends",
-      "Unit success rate analytics",
+      "Points portfolio dashboard",
       "Unlimited strategy re-runs",
-      "Priority support",
     ],
     cta: "Coming Soon",
     href: "#",
@@ -56,17 +63,19 @@ const plans = [
     price: "$29",
     period: "/month",
     description:
-      "For the serious multi-state hunter. Exports, team planning, and 1-on-1 strategy sessions.",
+      "For the serious multi-state hunter. Advanced analytics, team planning, and exports.",
     icon: Crown,
     featured: false,
     features: [
       "Everything in Scout",
+      "Historical draw odds & trends",
+      "Unit success rate analytics",
       "Hunt journal & harvest log",
       "Team portfolios (up to 5 hunters)",
       "CSV & PDF roadmap exports",
       "Multi-year strategy comparison",
-      "1-on-1 strategy call (quarterly)",
       "Early access to new features",
+      "Priority support",
     ],
     cta: "Coming Soon",
     href: "#",
@@ -182,22 +191,29 @@ export default function PricingPage() {
                   ))}
                 </ul>
 
-                <Link href={plan.href}>
+                {plan.cta === "Coming Soon" ? (
                   <Button
-                    className={`w-full gap-2 ${
-                      plan.featured
-                        ? "glow-pulse"
-                        : ""
-                    }`}
-                    variant={plan.featured ? "default" : "outline"}
-                    disabled={plan.cta === "Coming Soon"}
+                    className="w-full gap-2"
+                    variant="outline"
+                    disabled
                   >
                     {plan.cta}
-                    {plan.cta !== "Coming Soon" && (
-                      <ArrowRight className="w-4 h-4" />
-                    )}
                   </Button>
-                </Link>
+                ) : (
+                  <Link href={plan.href}>
+                    <Button
+                      className={`w-full gap-2 ${
+                        plan.featured
+                          ? "glow-pulse"
+                          : ""
+                      }`}
+                      variant={plan.featured ? "default" : "outline"}
+                    >
+                      {plan.cta}
+                      <ArrowRight className="w-4 h-4" />
+                    </Button>
+                  </Link>
+                )}
               </div>
             ))}
           </div>
@@ -208,18 +224,18 @@ export default function PricingPage() {
               Why is Basecamp free?
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Every hunter deserves a real strategy. The core engine &mdash;
-              state scoring, roadmap generation, and cost analysis &mdash; will
-              always be free. Paid plans add ongoing tracking, alerts, and
-              advanced tools for hunters managing multi-state portfolios year
-              over year.
+              Every hunter deserves a starting point. Basecamp gives you a
+              snapshot of which states fit your goals. When you&apos;re ready for
+              the full strategy engine &mdash; personalized roadmaps, unit
+              recommendations, portfolio tracking, and alerts &mdash; Scout
+              has everything you need.
             </p>
           </div>
 
-          {/* FPO notice */}
+          {/* Pricing subject to change */}
           <div className="mt-8 text-center">
             <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">
-              Pricing shown is for placement only and subject to change
+              Pricing subject to change
             </p>
           </div>
         </div>

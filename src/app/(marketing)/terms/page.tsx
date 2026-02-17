@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { FileText } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Terms of Service | Odyssey Outdoors",
+  description: "Terms of service for Odyssey Outdoors hunt planning platform.",
+};
 
 export default function TermsPage() {
   return (

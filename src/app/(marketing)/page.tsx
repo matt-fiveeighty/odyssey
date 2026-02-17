@@ -185,7 +185,7 @@ export default function LandingPage() {
 
           {/* State badges */}
           <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-12">
-            {["CO", "WY", "MT", "AK", "NV", "AZ", "UT", "NM", "OR", "ID", "KS"].map(
+            {["CO", "WY", "MT", "AK", "NV", "AZ", "UT", "NM", "OR", "ID", "KS", "WA", "NE", "SD", "ND"].map(
               (state) => (
                 <span
                   key={state}

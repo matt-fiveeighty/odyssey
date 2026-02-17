@@ -6,11 +6,13 @@ import { z } from "zod";
 
 const stateIds = [
   "CO", "WY", "MT", "NV", "AZ", "UT", "NM", "OR", "ID", "KS",
+  "WA", "NE", "SD", "ND", "AK",
 ] as const;
 
 const speciesIds = [
-  "elk", "mule_deer", "whitetail", "bear", "moose",
-  "pronghorn", "bighorn_sheep", "mountain_goat", "bison", "mountain_lion",
+  "elk", "mule_deer", "whitetail", "coues_deer", "blacktail", "sitka_blacktail",
+  "black_bear", "grizzly", "moose", "pronghorn", "bighorn_sheep", "dall_sheep",
+  "mountain_goat", "bison", "caribou", "mountain_lion", "muskox", "wolf",
 ] as const;
 
 const goalStatuses = ["active", "dream", "completed"] as const;

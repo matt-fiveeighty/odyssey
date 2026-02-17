@@ -1,4 +1,10 @@
+import type { Metadata } from "next";
 import { Shield } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Privacy Policy | Odyssey Outdoors",
+  description: "Privacy policy for Odyssey Outdoors hunt planning platform.",
+};
 
 export default function PrivacyPage() {
   return (

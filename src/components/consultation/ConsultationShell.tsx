@@ -129,7 +129,7 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
               className="gap-1.5 bg-gradient-to-r from-primary to-chart-2 hover:opacity-90 glow-pulse shimmer-sweep"
             >
               <Sparkles className="w-4 h-4" />
-              {isGenerating ? "Generating..." : "Generate My Strategy"}
+              {isGenerating ? "Generating..." : <><span className="hidden sm:inline">Generate My Strategy</span><span className="sm:hidden">Generate</span></>}
             </Button>
           )}
         </div>
