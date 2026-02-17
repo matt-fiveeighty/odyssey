@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
@@ -116,6 +117,8 @@ const showcaseSteps = [
     ],
     icon: Crosshair,
     label: "Strategic Consultation",
+    image: "/images/how-it-works/tell-us-about-you.png",
+    imageAlt: "Hunter glassing from a mountain ridge",
   },
   {
     step: "02",
@@ -129,6 +132,8 @@ const showcaseSteps = [
     ],
     icon: BarChart3,
     label: "Strategy & Roadmap",
+    image: "/images/how-it-works/receive-your-strategy.png",
+    imageAlt: "Bull elk at golden hour on a mountain ridgeline",
   },
   {
     step: "03",
@@ -142,6 +147,8 @@ const showcaseSteps = [
     ],
     icon: Target,
     label: "Dashboard & Tracking",
+    image: "/images/how-it-works/track-and-execute.png",
+    imageAlt: "Hunter packing out an elk through mountain terrain",
   },
 ];
 
@@ -152,9 +159,15 @@ export default function LandingPage() {
       {/* HERO */}
       {/* ================================================================ */}
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 aurora-bg pointer-events-none" />
-        <div className="absolute inset-0 topo-grid pointer-events-none" />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" />
+        <Image
+          src="/images/hero/tactical-map.jpg"
+          alt=""
+          fill
+          className="object-cover opacity-30 pointer-events-none"
+          sizes="100vw"
+          priority
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
@@ -343,14 +356,19 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex-1 w-full">
-                  <div className="aspect-[16/10] rounded-xl bg-gradient-to-br from-card to-secondary/30 border border-border flex items-center justify-center">
-                    <div className="text-center px-6">
-                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                        <item.icon className="w-7 h-7 text-primary" />
-                      </div>
-                      <p className="text-sm font-medium text-muted-foreground">
+                  <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-border group">
+                    <Image
+                      src={item.image}
+                      alt={item.imageAlt}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-105"
+                      sizes="(max-width: 768px) 100vw, 50vw"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+                    <div className="absolute bottom-4 left-4">
+                      <span className="text-xs font-bold text-primary bg-primary/10 backdrop-blur-md px-2.5 py-1 rounded-full border border-primary/20">
                         {item.label}
-                      </p>
+                      </span>
                     </div>
                   </div>
                 </div>
