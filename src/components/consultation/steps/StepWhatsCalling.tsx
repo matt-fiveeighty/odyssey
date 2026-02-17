@@ -21,6 +21,14 @@ const SPECIES_GRADIENTS: Record<string, string> = {
   mountain_lion: "from-orange-900 to-stone-950",
 };
 
+const SPECIES_IMAGES: Record<string, { src: string; alt: string }> = {
+  elk: { src: "/images/species/elk.png", alt: "Bull elk bugling at sunset" },
+  mule_deer: { src: "/images/species/mule-deer.png", alt: "Mule deer buck in sagebrush" },
+  whitetail: { src: "/images/species/whitetail.png", alt: "Whitetail buck in morning fog" },
+  bear: { src: "/images/species/bear.jpg", alt: "Black bear walking along a creek" },
+  moose: { src: "/images/species/moose.png", alt: "Bull moose head-on in timber" },
+};
+
 const SPECIES_DESCRIPTIONS: Record<string, string> = {
   elk: "The king of western big game. Bugling bulls, mountain meadows, and the hunt of a lifetime.",
   mule_deer: "Crafty high-country bucks that test your glassing and stalking skills.",
@@ -76,16 +84,21 @@ export function StepWhatsCalling() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {SPECIES.map((sp) => (
-            <OptionCard
-              key={sp.id}
-              selected={wizard.species.includes(sp.id)}
-              onClick={() => wizard.toggleArrayField("species", sp.id)}
-              title={`${sp.icon} ${sp.name}`}
-              description={SPECIES_DESCRIPTIONS[sp.id]}
-              gradient={SPECIES_GRADIENTS[sp.id]}
-            />
-          ))}
+          {SPECIES.map((sp) => {
+            const img = SPECIES_IMAGES[sp.id];
+            return (
+              <OptionCard
+                key={sp.id}
+                selected={wizard.species.includes(sp.id)}
+                onClick={() => wizard.toggleArrayField("species", sp.id)}
+                title={`${sp.icon} ${sp.name}`}
+                description={SPECIES_DESCRIPTIONS[sp.id]}
+                gradient={SPECIES_GRADIENTS[sp.id]}
+                imageSrc={img?.src}
+                imageAlt={img?.alt}
+              />
+            );
+          })}
         </div>
 
         {comboInsight && <AdvisorInsight text={comboInsight} />}
