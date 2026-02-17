@@ -196,11 +196,12 @@ export default function LandingPage() {
               (state) => (
                 <span
                   key={state}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground badge-shimmer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-primary/30 text-xs font-semibold text-muted-foreground badge-shimmer shadow-[0_0_8px_hsl(var(--primary)/0.25),0_0_20px_hsl(var(--primary)/0.1)]"
                 >
                   <StateOutline
                     stateId={state}
                     size={16}
+                    className="drop-shadow-[0_0_4px_hsl(var(--primary)/0.6)]"
                     strokeColor="hsl(var(--primary))"
                     strokeWidth={3}
                     fillColor="hsl(var(--primary) / 0.15)"
