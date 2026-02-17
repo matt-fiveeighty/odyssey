@@ -13,18 +13,26 @@ import { isSupabaseConfigured, createClient } from "@/lib/supabase/client";
 
 interface AuthContextValue {
   user: User | null;
+  isGuest: boolean;
   loading: boolean;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
   user: null,
+  isGuest: false,
   loading: true,
   signOut: async () => {},
 });
 
 export function useAuth() {
   return useContext(AuthContext);
+}
+
+/** Check for guest-session cookie */
+function checkGuestCookie(): boolean {
+  if (typeof document === "undefined") return false;
+  return document.cookie.split("; ").some((c) => c === "guest-session=true");
 }
 
 function getInitialSupabase(): SupabaseClient | null {
@@ -35,10 +43,17 @@ function getInitialSupabase(): SupabaseClient | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState<SupabaseClient | null>(getInitialSupabase);
   const [user, setUser] = useState<User | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(!!supabase);
 
   useEffect(() => {
-    if (!supabase) return;
+    // Check guest mode on mount
+    setIsGuest(checkGuestCookie());
+
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
 
     // Get initial session
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -60,6 +75,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   const signOut = useCallback(async () => {
+    // Clear guest cookie
+    document.cookie = "guest-session=; path=/; max-age=0";
+    setIsGuest(false);
+
     if (supabase) {
       await supabase.auth.signOut();
     }
@@ -67,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [supabase]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, signOut }}>
+    <AuthContext.Provider value={{ user, isGuest, loading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import {
   Crosshair,
   Map,
@@ -114,6 +115,9 @@ export default function LandingPage() {
                 Sign In
               </Button>
             </Link>
+          </div>
+          <div className="hero-stagger-5 mt-4">
+            <GuestEntryButton />
           </div>
 
           {/* State badges */}

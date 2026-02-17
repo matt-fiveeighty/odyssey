@@ -4,6 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
 
+  // Guest mode: cookie-based bypass — no Supabase needed
+  const isGuest = request.cookies.get("guest-session")?.value === "true";
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -45,6 +48,11 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/units") ||
     request.nextUrl.pathname.startsWith("/calculator") ||
     request.nextUrl.pathname.startsWith("/points");
+
+  // Allow guest users through to app routes
+  if (isGuest && isAppRoute) {
+    return supabaseResponse;
+  }
 
   // Redirect unauthenticated users away from app routes
   if (!user && isAppRoute) {

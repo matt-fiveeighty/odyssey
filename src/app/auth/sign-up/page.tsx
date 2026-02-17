@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { UserPlus, Loader2, CheckCircle2 } from "lucide-react";
+import { UserPlus, Loader2, CheckCircle2, User } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -188,6 +188,30 @@ export default function SignUpPage() {
           />
         </svg>
         Continue with Google
+      </Button>
+
+      <div className="relative">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-border" />
+        </div>
+        <div className="relative flex justify-center text-xs">
+          <span className="bg-background px-2 text-muted-foreground">
+            or skip for now
+          </span>
+        </div>
+      </div>
+
+      <Button
+        variant="ghost"
+        className="w-full text-muted-foreground hover:text-foreground"
+        onClick={() => {
+          document.cookie = "guest-session=true; path=/; max-age=86400";
+          router.push("/plan-builder");
+        }}
+        type="button"
+      >
+        <User className="w-4 h-4 mr-2" />
+        Continue as Guest
       </Button>
 
       <p className="text-center text-sm text-muted-foreground">
