@@ -43,7 +43,7 @@ export default function Error({
             Try again
           </Button>
           <Button variant="outline" size="lg" asChild>
-            <Link href="/">Go to Dashboard</Link>
+            <Link href="/dashboard">Go to Dashboard</Link>
           </Button>
         </div>
       </div>

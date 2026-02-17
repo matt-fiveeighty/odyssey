@@ -50,7 +50,7 @@ export default function CalculatorPage() {
       </div>
 
       {/* Species Selector */}
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {SPECIES.map((sp) => (
           <button
             key={sp.id}

@@ -26,8 +26,11 @@ export default function PlanBuilderPage() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [assessment, setAssessment] = useState<StrategicAssessment | null>(getInitialAssessment);
 
+  const [generationError, setGenerationError] = useState<string | null>(null);
+
   function handleGenerate() {
     setIsGenerating(true);
+    setGenerationError(null);
     wizard.setGenerationPhase("Analyzing your profile...");
     wizard.setGenerationProgress(0);
 
@@ -47,50 +50,65 @@ export default function PlanBuilderPage() {
     });
 
     setTimeout(() => {
-      const result = generateStrategicAssessment({
-        homeState: wizard.homeState,
-        homeCity: wizard.homeCity,
-        experienceLevel: wizard.experienceLevel!,
-        physicalComfort: wizard.physicalComfort!,
-        hasHuntedStates: wizard.hasHuntedStates,
-        species: wizard.species,
-        trophyVsMeat: wizard.trophyVsMeat!,
-        bucketListDescription: wizard.bucketListDescription,
-        dreamHunts: wizard.dreamHunts,
-        pointYearBudget: wizard.pointYearBudget,
-        huntYearBudget: wizard.huntYearBudget,
-        huntFrequency: wizard.huntFrequency!,
-        timeAvailable: wizard.timeAvailable!,
-        travelWillingness: wizard.travelWillingness!,
-        hasExistingPoints: wizard.hasExistingPoints,
-        existingPoints: wizard.existingPoints,
-        huntStylePrimary: wizard.huntStylePrimary!,
-        openToGuided: wizard.openToGuided,
-        guidedForSpecies: wizard.guidedForSpecies,
-        preferredTerrain: wizard.preferredTerrain,
-        importantFactors: wizard.importantFactors,
-      });
-
-      Object.entries(wizard.existingPoints).forEach(([stateId, speciesMap]) => {
-        Object.entries(speciesMap).forEach(([speciesId, pts]) => {
-          if (pts > 0) {
-            appStore.addUserPoint({
-              id: crypto.randomUUID(),
-              userId: "local",
-              stateId,
-              speciesId,
-              points: pts,
-              pointType: "preference",
-            });
-          }
+      try {
+        const result = generateStrategicAssessment({
+          homeState: wizard.homeState,
+          homeCity: wizard.homeCity,
+          experienceLevel: wizard.experienceLevel!,
+          physicalComfort: wizard.physicalComfort!,
+          hasHuntedStates: wizard.hasHuntedStates,
+          species: wizard.species,
+          trophyVsMeat: wizard.trophyVsMeat!,
+          bucketListDescription: wizard.bucketListDescription,
+          dreamHunts: wizard.dreamHunts,
+          pointYearBudget: wizard.pointYearBudget,
+          huntYearBudget: wizard.huntYearBudget,
+          huntFrequency: wizard.huntFrequency!,
+          timeAvailable: wizard.timeAvailable!,
+          travelWillingness: wizard.travelWillingness!,
+          hasExistingPoints: wizard.hasExistingPoints,
+          existingPoints: wizard.existingPoints,
+          huntStylePrimary: wizard.huntStylePrimary!,
+          openToGuided: wizard.openToGuided,
+          guidedForSpecies: wizard.guidedForSpecies,
+          preferredTerrain: wizard.preferredTerrain,
+          importantFactors: wizard.importantFactors,
         });
-      });
 
-      wizard.setGenerationProgress(100);
-      wizard.setGenerationPhase("Complete!");
-      setAssessment(result);
-      wizard.setStep(10);
-      setIsGenerating(false);
+        // Deduplicate: only add points not already in the store
+        const existing = appStore.userPoints;
+        Object.entries(wizard.existingPoints).forEach(([stateId, speciesMap]) => {
+          Object.entries(speciesMap).forEach(([speciesId, pts]) => {
+            if (pts > 0) {
+              const alreadyExists = existing.some(
+                (p) => p.stateId === stateId && p.speciesId === speciesId
+              );
+              if (!alreadyExists) {
+                appStore.addUserPoint({
+                  id: crypto.randomUUID(),
+                  userId: "local",
+                  stateId,
+                  speciesId,
+                  points: pts,
+                  pointType: "preference",
+                });
+              }
+            }
+          });
+        });
+
+        wizard.setGenerationProgress(100);
+        wizard.setGenerationPhase("Complete!");
+        setAssessment(result);
+        wizard.setStep(10);
+      } catch (err) {
+        console.error("Strategy generation failed:", err);
+        setGenerationError(
+          "Something went wrong generating your strategy. Please try again."
+        );
+      } finally {
+        setIsGenerating(false);
+      }
     }, 2000);
   }
 
@@ -116,6 +134,12 @@ export default function PlanBuilderPage() {
       )}
 
       {isGenerating && <GenerationProgress />}
+
+      {generationError && (
+        <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
+          <p className="text-sm text-destructive">{generationError}</p>
+        </div>
+      )}
 
       {showResults && <ResultsShell assessment={assessment} />}
     </div>

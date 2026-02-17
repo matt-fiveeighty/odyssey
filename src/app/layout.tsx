@@ -13,6 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ?? "https://odysseyoutdoors.com"
+  ),
   title: {
     default: "Odyssey Outdoors | Strategic Western Big Game Portfolio",
     template: "%s | Odyssey Outdoors",
@@ -34,6 +37,12 @@ export const metadata: Metadata = {
       "Plan your western big game hunting strategy like a financial portfolio.",
     type: "website",
     locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Odyssey Outdoors | Strategic Western Big Game Portfolio",
+    description:
+      "Plan your western big game hunting strategy like a financial portfolio.",
   },
   robots: {
     index: true,

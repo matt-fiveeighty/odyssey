@@ -1,7 +1,7 @@
 "use client";
 
 import type { StrategicAssessment } from "@/lib/types";
-import { AnimatedCounter } from "../shared/AnimatedCounter";
+import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
 import { Sparkles } from "lucide-react";
 
 interface HeroSummaryProps {

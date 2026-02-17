@@ -445,7 +445,7 @@ export default function PointsPage() {
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Species
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   {SPECIES.map((sp) => (
                     <button
                       key={sp.id}

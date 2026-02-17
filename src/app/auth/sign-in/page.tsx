@@ -38,13 +38,18 @@ export default function SignInPage() {
   }
 
   async function handleGoogleSignIn() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) setError(error.message);
+    } catch {
+      setError("Could not connect to Google. Please try again.");
+    }
   }
 
   return (
@@ -152,7 +157,7 @@ export default function SignInPage() {
         variant="ghost"
         className="w-full text-muted-foreground hover:text-foreground"
         onClick={() => {
-          document.cookie = "guest-session=true; path=/; max-age=86400";
+          document.cookie = "guest-session=true; path=/; max-age=86400; SameSite=Lax; Secure";
           router.push("/plan-builder");
         }}
         type="button"

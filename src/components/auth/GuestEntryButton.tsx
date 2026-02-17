@@ -6,7 +6,7 @@ export function GuestEntryButton() {
   const router = useRouter();
 
   function handleGuestEntry() {
-    document.cookie = "guest-session=true; path=/; max-age=86400";
+    document.cookie = "guest-session=true; path=/; max-age=86400; SameSite=Lax; Secure";
     router.push("/plan-builder");
   }
 
