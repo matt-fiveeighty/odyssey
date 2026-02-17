@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
+import { StateOutline } from "@/components/shared/StateOutline";
 import {
   Crosshair,
   Map,
@@ -195,8 +196,15 @@ export default function LandingPage() {
               (state) => (
                 <span
                   key={state}
-                  className="px-3 py-1 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground badge-shimmer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-border text-xs font-semibold text-muted-foreground badge-shimmer"
                 >
+                  <StateOutline
+                    stateId={state}
+                    size={16}
+                    strokeColor="hsl(var(--primary))"
+                    strokeWidth={3}
+                    fillColor="hsl(var(--primary) / 0.15)"
+                  />
                   {state}
                 </span>
               )
