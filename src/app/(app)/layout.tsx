@@ -1,7 +1,14 @@
+import type { Metadata } from "next";
 import { Sidebar } from "@/components/layout/sidebar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { Header } from "@/components/layout/header";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+
+export const metadata: Metadata = {
+  title: "Dashboard",
+  description:
+    "Manage your western big game hunting portfolio — track points, plan applications, and execute your multi-year strategy.",
+};
 
 export default function AppLayout({
   children,
