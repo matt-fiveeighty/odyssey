@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { GuestEntryLink } from "@/components/auth/GuestEntryLink";
 import { MobileMarketingNav } from "@/components/marketing/MobileMarketingNav";
 
 const navItems = [
@@ -44,7 +43,6 @@ export default function MarketingLayout({
           </div>
 
           <div className="flex items-center gap-3">
-            <GuestEntryLink />
             <Link href="/auth/sign-in">
               <Button variant="ghost" size="sm">
                 Sign In

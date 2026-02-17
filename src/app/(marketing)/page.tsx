@@ -175,18 +175,13 @@ export default function LandingPage() {
             your budget, experience, and goals.
           </p>
 
-          <div className="hero-stagger-4 flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
+          <div className="hero-stagger-4 mt-10">
             <Link href="/auth/sign-up">
               <Button
                 size="lg"
                 className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
               >
                 Start Planning <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <Link href="/auth/sign-in">
-              <Button variant="outline" size="lg" className="text-base px-8">
-                Sign In
               </Button>
             </Link>
           </div>
