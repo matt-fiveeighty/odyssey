@@ -37,12 +37,15 @@ export function OptionCard({ selected, onClick, icon: Icon, title, description, 
             src={imageSrc}
             alt={imageAlt || title}
             fill
-            className={`object-cover transition-transform duration-500 ${
-              selected ? "scale-105 brightness-50" : "brightness-[0.35] group-hover:scale-105 group-hover:brightness-[0.45]"
+            className={`object-cover transition-all duration-500 ${
+              selected ? "scale-105 brightness-[0.55]" : "brightness-[0.35] group-hover:scale-110 group-hover:brightness-[0.7]"
             }`}
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-background/80 to-transparent" />
+          {/* Default: full dark overlay — fades out on hover to reveal animal */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 via-[40%] to-transparent transition-opacity duration-500 group-hover:opacity-0 pointer-events-none" />
+          {/* Hover: thin bottom gradient only — keeps text readable, animal fully visible */}
+          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent via-[35%] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
         </>
       )}
 

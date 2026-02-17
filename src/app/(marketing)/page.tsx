@@ -3,6 +3,8 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
+import { ParallaxImage } from "@/components/marketing/ParallaxImage";
+import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import { StateOutline } from "@/components/shared/StateOutline";
 import {
   Crosshair,
@@ -97,7 +99,7 @@ const showcaseSteps = [
     icon: Crosshair,
     label: "Strategic Consultation",
     image: "/images/how-it-works/tell-us-about-you.png",
-    imageAlt: "Hunter glassing from a mountain ridge",
+    imageAlt: "Hunt consultation species selection interface",
   },
   {
     step: "02",
@@ -138,12 +140,11 @@ export default function LandingPage() {
       {/* HERO */}
       {/* ================================================================ */}
       <section className="relative overflow-hidden">
-        <Image
+        <ParallaxImage
           src="/images/hero/tactical-map.jpg"
           alt=""
-          fill
-          className="object-cover opacity-30 pointer-events-none"
-          sizes="100vw"
+          className="opacity-45 pointer-events-none"
+          speed={0.3}
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background pointer-events-none" />
@@ -196,7 +197,7 @@ export default function LandingPage() {
                     className="drop-shadow-[0_0_4px_hsl(var(--primary)/0.6)]"
                     strokeColor="hsl(var(--primary))"
                     strokeWidth={3}
-                    fillColor="hsl(var(--primary) / 0.15)"
+                    fillColor="hsl(var(--primary) / 0.35)"
                   />
                   <span className="text-primary">{state}</span>
                 </span>
@@ -242,9 +243,9 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30">
         <div className="max-w-5xl mx-auto px-6 py-12">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <ScrollReveal animation="fade-up" stagger={100} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {rtbs.map((rtb) => (
-              <div key={rtb.value} className="p-4 rounded-xl bg-background/50 border border-border">
+              <div key={rtb.value} className="relative p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <rtb.icon className="w-4.5 h-4.5 text-primary" />
@@ -258,7 +259,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -267,7 +268,7 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/50">
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-14">
+          <ScrollReveal animation="blur-in" className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               See It In Action
             </h2>
@@ -275,7 +276,7 @@ export default function LandingPage() {
               From consultation to execution — here&apos;s what your experience
               looks like.
             </p>
-          </div>
+          </ScrollReveal>
 
           <div className="space-y-16">
             {showcaseSteps.map((item, i) => (
@@ -285,28 +286,40 @@ export default function LandingPage() {
                   i % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
                 } gap-8 md:gap-12 items-center`}
               >
+                {/* Text side — copy builds in, bullets stagger */}
                 <div className="flex-1 space-y-4">
-                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-                    Step {item.step}
-                  </span>
-                  <h3 className="text-xl font-bold">{item.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {item.description}
-                  </p>
-                  <ul className="space-y-2 pt-2">
+                  <ScrollReveal animation="fade-up" delay={0}>
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                      Step {item.step}
+                    </span>
+                  </ScrollReveal>
+                  <ScrollReveal animation="fade-up" delay={80}>
+                    <h3 className="text-xl font-bold">{item.title}</h3>
+                  </ScrollReveal>
+                  <ScrollReveal animation="fade-up" delay={160}>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      {item.description}
+                    </p>
+                  </ScrollReveal>
+                  <ScrollReveal animation="fade-up" stagger={120} delay={240} className="space-y-2 pt-2">
                     {item.highlights.map((h) => (
                       <li
                         key={h}
-                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                        className="flex items-start gap-2 text-sm text-muted-foreground list-none"
                       >
                         <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
                         {h}
                       </li>
                     ))}
-                  </ul>
+                  </ScrollReveal>
                 </div>
 
-                <div className="flex-1 w-full">
+                {/* Image side — slides in from the opposite direction */}
+                <ScrollReveal
+                  animation={i % 2 === 1 ? "fade-left" : "fade-right"}
+                  delay={200}
+                  className="flex-1 w-full"
+                >
                   <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-border group">
                     <Image
                       src={item.image}
@@ -322,7 +335,7 @@ export default function LandingPage() {
                       </span>
                     </div>
                   </div>
-                </div>
+                </ScrollReveal>
               </div>
             ))}
           </div>
@@ -334,7 +347,7 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section id="features" className="border-t border-border scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-14">
+          <ScrollReveal animation="blur-in" className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Everything You Need
             </h2>
@@ -342,13 +355,13 @@ export default function LandingPage() {
               Built for serious western hunters who treat their hunting like an
               investment portfolio.
             </p>
-          </div>
+          </ScrollReveal>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ScrollReveal animation="fade-up" stagger={80} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-200 card-lift"
+                className="relative p-5 rounded-xl bg-card border border-border transition-all duration-300 hover:scale-[1.05] hover:-translate-y-2 hover:z-10 hover:border-primary/30 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)]"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                   <feature.icon className="w-4.5 h-4.5 text-primary" />
@@ -361,7 +374,7 @@ export default function LandingPage() {
                 </p>
               </div>
             ))}
-          </div>
+          </ScrollReveal>
         </div>
       </section>
 
@@ -373,16 +386,18 @@ export default function LandingPage() {
         className="border-t border-border bg-card/50 scroll-mt-20"
       >
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <div className="text-center mb-14">
+          <ScrollReveal animation="blur-in" className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Hunters Like You
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
               Hear from hunters who stopped guessing and started strategizing.
             </p>
-          </div>
+          </ScrollReveal>
 
-          <TestimonialCarousel />
+          <ScrollReveal animation="scale-in" delay={100}>
+            <TestimonialCarousel />
+          </ScrollReveal>
         </div>
       </section>
 
@@ -390,44 +405,51 @@ export default function LandingPage() {
       {/* BOTTOM CTA */}
       {/* ================================================================ */}
       <section className="border-t border-border relative overflow-hidden">
-        <Image
+        <ParallaxImage
           src="/images/species/moose.png"
           alt=""
-          fill
-          className="object-cover opacity-15 pointer-events-none"
-          sizes="100vw"
+          className="opacity-20 pointer-events-none"
+          speed={0.2}
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-50" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="relative max-w-3xl mx-auto px-6 py-20 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
-            <Compass className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">
-              Free forever — no credit card needed
-            </span>
-          </div>
+          <ScrollReveal animation="fade-up">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
+              <Compass className="w-3.5 h-3.5 text-primary" />
+              <span className="text-xs font-medium text-primary">
+                Free forever — no credit card needed
+              </span>
+            </div>
+          </ScrollReveal>
 
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Your 10-Year Strategy Starts Now
-          </h2>
-          <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-            Run the strategic consultation in under 5 minutes. Get a
-            personalized multi-year roadmap with state rankings, unit picks, cost
-            breakdowns, and an action timeline.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
-            <Link href="/auth/sign-up">
-              <Button
-                size="lg"
-                className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
-              >
-                Start Planning <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-            <GuestEntryButton />
-          </div>
+          <ScrollReveal animation="blur-in" delay={100}>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Your 10-Year Strategy Starts Now
+            </h2>
+          </ScrollReveal>
+          <ScrollReveal animation="fade-up" delay={200}>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
+              Run the strategic consultation in under 5 minutes. Get a
+              personalized multi-year roadmap with state rankings, unit picks, cost
+              breakdowns, and an action timeline.
+            </p>
+          </ScrollReveal>
+          <ScrollReveal animation="fade-up" delay={300}>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+              <Link href="/auth/sign-up">
+                <Button
+                  size="lg"
+                  className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
+                >
+                  Start Planning <ArrowRight className="w-4 h-4" />
+                </Button>
+              </Link>
+              <GuestEntryButton />
+            </div>
+          </ScrollReveal>
         </div>
       </section>
     </div>

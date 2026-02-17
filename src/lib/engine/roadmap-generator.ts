@@ -410,6 +410,55 @@ export function scoreStateForHunter(
     : `Offers ${speciesMatch.length} of ${input.species.length} target species: ${speciesMatch.join(", ")}`;
   factors.push({ label: "Species Availability", score: speciesScore, maxScore: 5, explanation: speciesExplanation });
 
+  // --- Factor 10: Dream Hunt Fit (max 5) ---
+  if (input.bucketListDescription && input.bucketListDescription.length >= 5) {
+    let dreamScore = 0;
+    let dreamExplanation = "";
+    const dream = input.bucketListDescription.toLowerCase();
+
+    // Trophy intent
+    const trophyKw = ["big", "giant", "trophy", "monster", "mature", "record", "book", "boone", "pope", "6x6", "7x7", "400", "380", "360", "crusty", "stud", "hog", "toad", "slammer"];
+    const wantsTrophy = trophyKw.some(kw => dream.includes(kw));
+    if (wantsTrophy) {
+      const trophyUnits = stateUnits.filter(u => u.trophyRating >= 8);
+      if (trophyUnits.length > 0) {
+        dreamScore = 5;
+        dreamExplanation = "Trophy-class units align with your dream description";
+      } else if (stateUnits.some(u => u.trophyRating >= 6)) {
+        dreamScore = 3;
+        dreamExplanation = "Solid trophy potential matches your goals";
+      }
+    }
+
+    // Terrain intent
+    const terrainMap: Record<string, string[]> = {
+      timber: ["Timber"], "dark timber": ["Timber"],
+      alpine: ["Alpine"], mountain: ["Alpine"],
+      desert: ["Desert"], sage: ["Sagebrush"], sagebrush: ["Sagebrush"],
+      prairie: ["Prairie"], flat: ["Prairie"],
+    };
+    for (const [keyword, terrainTypes] of Object.entries(terrainMap)) {
+      if (dream.includes(keyword)) {
+        if (stateUnits.some(u => u.terrainType.some(t => terrainTypes.includes(t)))) {
+          dreamScore = Math.min(5, dreamScore + 2);
+          dreamExplanation += dreamExplanation ? `. Terrain matches "${keyword}"` : `Terrain matches your "${keyword}" preference`;
+        }
+        break;
+      }
+    }
+
+    // Opportunity intent
+    const oppKw = ["first", "easy", "beginner", "meat", "opportunity", "freezer", "cow", "doe"];
+    if (oppKw.some(kw => dream.includes(kw)) && stateUnits.some(u => u.successRate >= 0.25)) {
+      dreamScore = Math.min(5, dreamScore + 3);
+      dreamExplanation += dreamExplanation ? ". High success rates match your goals" : "High success rates align with your opportunity focus";
+    }
+
+    if (dreamScore > 0) {
+      factors.push({ label: "Dream Hunt Fit", score: dreamScore, maxScore: 5, explanation: dreamExplanation });
+    }
+  }
+
   const totalScore = factors.reduce((sum, f) => sum + f.score, 0);
   const maxPossibleScore = factors.reduce((sum, f) => sum + f.maxScore, 0);
 
@@ -874,6 +923,50 @@ function generateDreamHuntRecs(input: ConsultationInput): DreamHunt[] {
     }
   }
 
+  // Auto-suggest from dream description keywords
+  if (recs.length === 0 && input.bucketListDescription) {
+    const dream = input.bucketListDescription.toLowerCase();
+
+    if (dream.includes("sheep") || dream.includes("ram") || dream.includes("dall")) {
+      recs.push({
+        id: "dream-ak-dall",
+        title: "Alaska Dall Sheep",
+        description: "White rams above the clouds. A 10-day backcountry pursuit in Alaska's Brooks Range or Wrangells.",
+        stateOrRegion: "AK",
+        species: "dall_sheep",
+        estimatedTimelineYears: 1,
+        annualPointCost: 0,
+        notes: "No points needed — draw or guided hunt. Budget $15,000-20,000 for a guided Dall sheep hunt.",
+      });
+    }
+
+    if (dream.includes("bison") || dream.includes("buffalo")) {
+      recs.push({
+        id: "dream-mt-bison",
+        title: "Montana Wild Bison",
+        description: "Hunt free-ranging bison near Yellowstone. Extremely limited tags — a true bucket-list experience.",
+        stateOrRegion: "MT",
+        species: "bison",
+        estimatedTimelineYears: 20,
+        annualPointCost: 50,
+        notes: "Apply annually in Montana. Extremely competitive draw. Consider private land hunts as backup.",
+      });
+    }
+
+    if ((dream.includes("dark timber") || dream.includes("bugling") || dream.includes("6x6")) && !recs.some(r => r.species === "elk")) {
+      recs.push({
+        id: "dream-co-trophy-elk",
+        title: "Colorado Trophy Bull Elk",
+        description: "Dark timber bull in a limited-entry Colorado unit. Build preference points for 5-7 years, then draw a premium tag.",
+        stateOrRegion: "CO",
+        species: "elk",
+        estimatedTimelineYears: 6,
+        annualPointCost: 100,
+        notes: "Target Unit 61 or 201 in the Flat Tops. High trophy potential with 5+ points.",
+      });
+    }
+  }
+
   return recs;
 }
 
@@ -932,6 +1025,17 @@ function generateInsights(
       title: "Mixed Style Advantage",
       description: "Being open to guided hunts for special opportunities means you can target trophy-tier units that benefit from local outfitter knowledge while keeping most hunts DIY to save money.",
       type: "advantage",
+    });
+  }
+
+  if (input.bucketListDescription && input.bucketListDescription.length >= 10) {
+    const dreamSnippet = input.bucketListDescription.length > 80
+      ? input.bucketListDescription.slice(0, 77) + "..."
+      : input.bucketListDescription;
+    insights.push({
+      title: "Dream Hunt Alignment",
+      description: `Your dream — "${dreamSnippet}" — shaped state scoring. We weighted terrain, trophy potential, and success rates to match your vision.`,
+      type: "personalization",
     });
   }
 

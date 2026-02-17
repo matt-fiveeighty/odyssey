@@ -61,14 +61,14 @@ export default function CalculatorPage() {
             <button
               key={sp.id}
               onClick={() => setSelectedSpecies(sp.id)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
                 selectedSpecies === sp.id
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-secondary text-secondary-foreground hover:bg-accent"
+                  ? "bg-primary text-primary-foreground glow-primary"
+                  : "bg-secondary text-secondary-foreground hover:bg-accent hover:scale-105 hover:shadow-[0_0_12px_oklch(0.65_0.18_145/0.15)]"
               }`}
             >
               {img && (
-                <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0">
+                <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 transition-transform duration-200 group-hover:scale-125">
                   <Image src={img.src} alt={img.alt} width={20} height={20} className="object-cover w-full h-full" />
                 </div>
               )}
@@ -115,7 +115,7 @@ export default function CalculatorPage() {
                             size={24}
                             strokeColor="hsl(var(--primary))"
                             strokeWidth={3}
-                            fillColor="hsl(var(--primary) / 0.15)"
+                            fillColor="hsl(var(--primary) / 0.35)"
                           />
                           <span className="text-xs font-bold text-primary">{s.abbreviation}</span>
                         </div>
@@ -289,6 +289,73 @@ export default function CalculatorPage() {
                     ${annualCost}/yr
                   </span>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Year-by-Year Investment */}
+          {selectedState && pointsNeeded > 0 && (
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5" />
+                  Year-by-Year Investment
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {Array.from({ length: pointsNeeded }, (_, i) => {
+                  const year = new Date().getFullYear() + i;
+                  const isHuntYear = i === pointsNeeded - 1;
+                  const yearCost = pointCost + appFee + (isHuntYear ? licenseFee + estimatedTagCost : 0);
+                  return (
+                    <div
+                      key={year}
+                      className={`p-2.5 rounded-lg ${
+                        isHuntYear
+                          ? "bg-primary/5 border border-primary/20"
+                          : "bg-secondary/30"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold font-mono text-muted-foreground">
+                            {year}
+                          </span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${
+                              isHuntYear
+                                ? "bg-chart-2 text-white"
+                                : "bg-secondary text-muted-foreground"
+                            }`}
+                          >
+                            {isHuntYear ? "Hunt Year" : `Year ${i + 1}`}
+                          </span>
+                        </div>
+                        <span className={`text-sm font-bold ${isHuntYear ? "text-primary" : ""}`}>
+                          ${yearCost.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-x-3 mt-1">
+                        <span className="text-[10px] text-muted-foreground">
+                          Point: ${pointCost}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">
+                          App: ${appFee}
+                        </span>
+                        {isHuntYear && licenseFee > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            License: ${licenseFee}
+                          </span>
+                        )}
+                        {isHuntYear && (
+                          <span className="text-[10px] text-primary font-medium">
+                            Tag: ${estimatedTagCost}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </CardContent>
             </Card>
           )}

@@ -906,41 +906,53 @@ export default function GoalsPage() {
                 )}
               </div>
 
-              {/* Weapon Type */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Weapon</label>
-                <div className="flex flex-wrap gap-2">
-                  {WEAPON_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => setNewWeaponType(newWeaponType === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newWeaponType === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                      {opt.label}
-                    </button>
-                  ))}
+              {/* Weapon / Season / Hunt Style — only shown when unit data exists */}
+              {newStateId && newSpeciesId && !hasUnitData && (
+                <div className="p-3 rounded-lg border border-dashed border-border bg-secondary/20">
+                  <p className="text-xs text-muted-foreground">
+                    No unit data for {STATES_MAP[newStateId]?.name} {SPECIES_MAP[newSpeciesId]?.name} yet. Weapon, season, and style filters will appear when unit data is available.
+                  </p>
                 </div>
-              </div>
+              )}
+              {hasUnitData && (
+                <div className="space-y-5 fade-in-up">
+                  {/* Weapon Type */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Weapon</label>
+                    <div className="flex flex-wrap gap-2">
+                      {WEAPON_OPTIONS.map((opt) => (
+                        <button key={opt.value} onClick={() => setNewWeaponType(newWeaponType === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newWeaponType === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Season Preference */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Season</label>
-                <div className="flex flex-wrap gap-2">
-                  {SEASON_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => setNewSeasonPref(newSeasonPref === opt.value ? "any" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSeasonPref === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+                  {/* Season Preference */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Season</label>
+                    <div className="flex flex-wrap gap-2">
+                      {SEASON_OPTIONS.map((opt) => (
+                        <button key={opt.value} onClick={() => setNewSeasonPref(newSeasonPref === opt.value ? "any" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newSeasonPref === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
 
-              {/* Hunt Style */}
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">Hunt Style</label>
-                <div className="flex flex-wrap gap-2">
-                  {HUNT_STYLE_OPTIONS.map((opt) => (
-                    <button key={opt.value} onClick={() => setNewHuntStyle(newHuntStyle === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newHuntStyle === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                      {opt.label}
-                    </button>
-                  ))}
+                  {/* Hunt Style */}
+                  <div>
+                    <label className="text-sm font-medium text-muted-foreground mb-2 block">Hunt Style</label>
+                    <div className="flex flex-wrap gap-2">
+                      {HUNT_STYLE_OPTIONS.map((opt) => (
+                        <button key={opt.value} onClick={() => setNewHuntStyle(newHuntStyle === opt.value ? "" : opt.value)} className={`px-3 py-2 rounded-lg text-sm font-medium transition-all ${newHuntStyle === opt.value ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Dream Hunt Tier */}
               <div>
