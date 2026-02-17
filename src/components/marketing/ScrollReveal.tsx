@@ -90,6 +90,7 @@ export function ScrollReveal({
         {childArray.map((child, i) => (
           <div
             key={i}
+            className="h-full"
             style={{
               ...(isVisible ? anim.to : anim.from),
               transition: `all ${duration}ms cubic-bezier(0.16, 1, 0.3, 1) ${delay + i * stagger}ms`,

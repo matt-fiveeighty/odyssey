@@ -242,10 +242,19 @@ export default function LandingPage() {
       {/* REASONS TO BELIEVE */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30">
-        <div className="max-w-5xl mx-auto px-6 py-12">
-          <ScrollReveal animation="fade-up" stagger={100} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Built for the Western Draw Game
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
+              One platform. Every state, species, and draw system — mapped to your strategy.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal animation="fade-up" stagger={100} once={false} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {rtbs.map((rtb) => (
-              <div key={rtb.value} className="relative p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30">
+              <div key={rtb.value} className="relative flex flex-col p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30 h-full">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                     <rtb.icon className="w-4.5 h-4.5 text-primary" />
@@ -254,7 +263,7 @@ export default function LandingPage() {
                     {rtb.value}
                   </p>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {rtb.detail}
                 </p>
               </div>
@@ -268,7 +277,7 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/50">
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <ScrollReveal animation="blur-in" className="text-center mb-14">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               See It In Action
             </h2>
@@ -288,20 +297,20 @@ export default function LandingPage() {
               >
                 {/* Text side — copy builds in, bullets stagger */}
                 <div className="flex-1 space-y-4">
-                  <ScrollReveal animation="fade-up" delay={0}>
+                  <ScrollReveal animation="fade-up" delay={0} once={false}>
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
                       Step {item.step}
                     </span>
                   </ScrollReveal>
-                  <ScrollReveal animation="fade-up" delay={80}>
+                  <ScrollReveal animation="fade-up" delay={80} once={false}>
                     <h3 className="text-xl font-bold">{item.title}</h3>
                   </ScrollReveal>
-                  <ScrollReveal animation="fade-up" delay={160}>
+                  <ScrollReveal animation="fade-up" delay={160} once={false}>
                     <p className="text-sm text-muted-foreground leading-relaxed">
                       {item.description}
                     </p>
                   </ScrollReveal>
-                  <ScrollReveal animation="fade-up" stagger={120} delay={240} className="space-y-2 pt-2">
+                  <ScrollReveal animation="fade-up" stagger={120} delay={240} once={false} className="space-y-2 pt-2">
                     {item.highlights.map((h) => (
                       <li
                         key={h}
@@ -318,6 +327,7 @@ export default function LandingPage() {
                 <ScrollReveal
                   animation={i % 2 === 1 ? "fade-left" : "fade-right"}
                   delay={200}
+                  once={false}
                   className="flex-1 w-full"
                 >
                   <div className="relative aspect-[16/10] rounded-xl overflow-hidden border border-border group">
@@ -347,7 +357,7 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section id="features" className="border-t border-border scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <ScrollReveal animation="blur-in" className="text-center mb-14">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Everything You Need
             </h2>
@@ -357,11 +367,11 @@ export default function LandingPage() {
             </p>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up" stagger={80} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ScrollReveal animation="fade-up" stagger={80} once={false} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="relative p-5 rounded-xl bg-card border border-border transition-all duration-300 hover:scale-[1.05] hover:-translate-y-2 hover:z-10 hover:border-primary/30 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)]"
+                className="relative flex flex-col p-5 rounded-xl bg-card border border-border transition-all duration-300 hover:scale-[1.05] hover:-translate-y-2 hover:z-10 hover:border-primary/30 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] h-full"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                   <feature.icon className="w-4.5 h-4.5 text-primary" />
@@ -369,7 +379,7 @@ export default function LandingPage() {
                 <h3 className="text-sm font-semibold mb-1.5">
                   {feature.title}
                 </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed">
+                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
                   {feature.description}
                 </p>
               </div>
@@ -386,7 +396,7 @@ export default function LandingPage() {
         className="border-t border-border bg-card/50 scroll-mt-20"
       >
         <div className="max-w-5xl mx-auto px-6 py-20">
-          <ScrollReveal animation="blur-in" className="text-center mb-14">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Hunters Like You
             </h2>
@@ -395,7 +405,7 @@ export default function LandingPage() {
             </p>
           </ScrollReveal>
 
-          <ScrollReveal animation="scale-in" delay={100}>
+          <ScrollReveal animation="scale-in" delay={100} once={false}>
             <TestimonialCarousel />
           </ScrollReveal>
         </div>
@@ -416,7 +426,7 @@ export default function LandingPage() {
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 
         <div className="relative max-w-3xl mx-auto px-6 py-20 text-center">
-          <ScrollReveal animation="fade-up">
+          <ScrollReveal animation="fade-up" once={false}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Compass className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs font-medium text-primary">
@@ -425,19 +435,19 @@ export default function LandingPage() {
             </div>
           </ScrollReveal>
 
-          <ScrollReveal animation="blur-in" delay={100}>
+          <ScrollReveal animation="blur-in" delay={100} once={false}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Your 10-Year Strategy Starts Now
             </h2>
           </ScrollReveal>
-          <ScrollReveal animation="fade-up" delay={200}>
+          <ScrollReveal animation="fade-up" delay={200} once={false}>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
               Run the strategic consultation in under 5 minutes. Get a
               personalized multi-year roadmap with state rankings, unit picks, cost
               breakdowns, and an action timeline.
             </p>
           </ScrollReveal>
-          <ScrollReveal animation="fade-up" delay={300}>
+          <ScrollReveal animation="fade-up" delay={300} once={false}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
               <Link href="/auth/sign-up">
                 <Button
