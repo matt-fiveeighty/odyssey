@@ -81,8 +81,8 @@ const features = [
 
 const rtbs = [
   {
-    value: "10 States",
-    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS — every major western draw state covered.",
+    value: "Western States",
+    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS, AK — and expanding. Every major western draw state covered.",
     icon: MapPin,
   },
   {
@@ -97,7 +97,7 @@ const rtbs = [
   },
   {
     value: "5 Min Setup",
-    detail: "Answer 9 questions. Get a scored state portfolio, unit picks, and a full action timeline.",
+    detail: "Answer a few questions. Get a scored state portfolio, unit picks, and a full action timeline.",
     icon: Users,
   },
 ];
@@ -107,14 +107,14 @@ const showcaseSteps = [
     step: "01",
     title: "Tell Us About You",
     description:
-      "Species, budget, experience, style — a 9-step consultation captures who you are as a hunter.",
+      "Species, budget, experience, style — a short consultation captures who you are as a hunter.",
     highlights: [
-      "Elk, Deer, Moose, Bear + 6 more species",
+      "Elk, Deer, Moose, Bear, and more",
       "DIY Backpack to Guided trip styles",
       "Budget-aware recommendations",
     ],
     icon: Crosshair,
-    label: "9-Step Consultation",
+    label: "Strategic Consultation",
   },
   {
     step: "02",
@@ -191,7 +191,7 @@ export default function LandingPage() {
 
           {/* State badges */}
           <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-12">
-            {["CO", "WY", "MT", "NV", "AZ", "UT", "NM", "OR", "ID", "KS"].map(
+            {["CO", "WY", "MT", "AK", "NV", "AZ", "UT", "NM", "OR", "ID", "KS"].map(
               (state) => (
                 <span
                   key={state}
