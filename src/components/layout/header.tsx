@@ -47,10 +47,10 @@ export function Header() {
     <header className="flex items-center justify-between h-16 px-6 border-b border-border bg-background/95 backdrop-blur-md">
       <div className="flex items-center gap-4 flex-1">
         {/* Mobile brand header */}
-        <div className="md:hidden flex items-center gap-2">
+        <Link href="/" className="md:hidden flex items-center gap-2 hover:opacity-80 transition-opacity">
           <Logo size={28} className="text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
           <span className="text-sm font-semibold">Odyssey Outdoors</span>
-        </div>
+        </Link>
         {/* Desktop page title */}
         <h1 className="hidden md:block text-sm font-medium text-foreground">
           {pageTitle}

@@ -38,7 +38,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border">
+      <Link href="/" className="flex items-center gap-3 px-4 h-16 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors">
         <Logo size={28} className="text-primary shrink-0 drop-shadow-[0_0_6px_hsl(var(--primary)/0.5)]" />
         {!collapsed && (
           <div className="flex flex-col">
@@ -50,7 +50,7 @@ export function Sidebar() {
             </span>
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Navigation */}
       <nav aria-label="Main navigation" className="flex-1 flex flex-col gap-1 p-2 mt-2">

@@ -113,9 +113,9 @@ export default function CalculatorPage() {
                           <StateOutline
                             stateId={s.id}
                             size={24}
-                            strokeColor="hsl(var(--primary))"
+                            strokeColor="white"
                             strokeWidth={3}
-                            fillColor="hsl(var(--primary) / 0.35)"
+                            fillColor="rgba(255,255,255,0.15)"
                           />
                           <span className="text-xs font-bold text-primary">{s.abbreviation}</span>
                         </div>

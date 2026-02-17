@@ -194,10 +194,10 @@ export default function LandingPage() {
                   <StateOutline
                     stateId={state}
                     size={16}
-                    className="drop-shadow-[0_0_4px_hsl(var(--primary)/0.6)]"
-                    strokeColor="hsl(var(--primary))"
+                    className="drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]"
+                    strokeColor="white"
                     strokeWidth={3}
-                    fillColor="hsl(var(--primary) / 0.35)"
+                    fillColor="rgba(255,255,255,0.15)"
                   />
                   <span className="text-primary">{state}</span>
                 </span>
@@ -281,9 +281,8 @@ export default function LandingPage() {
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               See It In Action
             </h2>
-            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              From consultation to execution — here&apos;s what your experience
-              looks like.
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-balance">
+              From consultation to execution — here&apos;s what your experience looks like.
             </p>
           </ScrollReveal>
 

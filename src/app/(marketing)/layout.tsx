@@ -4,9 +4,9 @@ import { MobileMarketingNav } from "@/components/marketing/MobileMarketingNav";
 import { Logo } from "@/components/shared/Logo";
 
 const navItems = [
-  { label: "Features", href: "#features" },
+  { label: "Features", href: "/#features" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Testimonials", href: "#testimonials" },
+  { label: "Testimonials", href: "/#testimonials" },
 ];
 
 export default function MarketingLayout({
@@ -81,7 +81,7 @@ export default function MarketingLayout({
               </h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     Features
                   </Link>
                 </li>
@@ -105,7 +105,7 @@ export default function MarketingLayout({
               </h4>
               <ul className="space-y-2">
                 <li>
-                  <Link href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link href="/#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
                     Testimonials
                   </Link>
                 </li>
