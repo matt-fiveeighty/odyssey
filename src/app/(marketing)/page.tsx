@@ -79,11 +79,27 @@ const features = [
   },
 ];
 
-const stats = [
-  { value: "10", label: "Western States", icon: MapPin },
-  { value: "10+", label: "Species", icon: Trophy },
-  { value: "10yr", label: "Roadmap", icon: Calendar },
-  { value: "Free", label: "To Start", icon: Users },
+const rtbs = [
+  {
+    value: "10 States",
+    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS — every major western draw state covered.",
+    icon: MapPin,
+  },
+  {
+    value: "10+ Species",
+    detail: "Elk, mule deer, moose, sheep, goat, bison, bear, pronghorn, mountain lion, and more.",
+    icon: Trophy,
+  },
+  {
+    value: "10-Year Plan",
+    detail: "Phased build-burn-trophy roadmap with point projections, cost forecasts, and hunt scheduling.",
+    icon: Calendar,
+  },
+  {
+    value: "5 Min Setup",
+    detail: "Answer 9 questions. Get a scored state portfolio, unit picks, and a full action timeline.",
+    icon: Users,
+  },
 ];
 
 const showcaseSteps = [
@@ -218,21 +234,23 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* STATS BAR */}
+      {/* REASONS TO BELIEVE */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30">
-        <div className="max-w-5xl mx-auto px-6 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                  <stat.icon className="w-5 h-5 text-primary" />
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {rtbs.map((rtb) => (
+              <div key={rtb.value} className="p-4 rounded-xl bg-background/50 border border-border">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <rtb.icon className="w-4.5 h-4.5 text-primary" />
+                  </div>
+                  <p className="text-sm font-bold text-foreground">
+                    {rtb.value}
+                  </p>
                 </div>
-                <p className="text-2xl md:text-3xl font-bold text-foreground">
-                  {stat.value}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {stat.label}
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  {rtb.detail}
                 </p>
               </div>
             ))}
