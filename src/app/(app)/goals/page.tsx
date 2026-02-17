@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 import { Separator } from "@/components/ui/separator";
 import {
   Target,
@@ -26,6 +27,7 @@ import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier } from "@/lib/types";
+import { goalFormSchema } from "@/lib/validations";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
@@ -107,6 +109,7 @@ export default function GoalsPage() {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "dream" | "completed">("all");
+  const modalRef = useFocusTrap<HTMLDivElement>(showAddModal);
 
   // Backfill: generate milestones for existing goals that have none
   const backfilled = useRef(false);
@@ -313,11 +316,33 @@ export default function GoalsPage() {
     setTitleManuallyEdited(false);
     setNewUnitId("");
     setNewDreamTier("");
+    setFormErrors([]);
   }
+
+  const [formErrors, setFormErrors] = useState<string[]>([]);
 
   function handleAdd() {
     const finalTitle = titleManuallyEdited ? newTitle : autoTitle;
-    if (!finalTitle || !newStateId) return;
+
+    const result = goalFormSchema.safeParse({
+      title: finalTitle,
+      stateId: newStateId || undefined,
+      speciesId: newSpeciesId || undefined,
+      targetYear: newTargetYear,
+      status: newStatus,
+      weaponType: newWeaponType || undefined,
+      seasonPreference: newSeasonPref || undefined,
+      huntStyle: newHuntStyle || undefined,
+      trophyDescription: newTrophyDesc.trim() || undefined,
+      dreamTier: newDreamTier || undefined,
+      unitId: newUnitId || undefined,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.error.issues.map((i) => i.message));
+      return;
+    }
+    setFormErrors([]);
 
     const selectedUnit = newUnitId ? SAMPLE_UNITS.find(u => u.id === newUnitId) : null;
     const units = SAMPLE_UNITS.filter((u) => u.stateId === newStateId && u.speciesId === newSpeciesId);
@@ -800,7 +825,7 @@ export default function GoalsPage() {
       {/* ADD GOAL MODAL */}
       {/* ================================================================ */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={(e) => { if (e.key === "Escape") resetModal(); }}>
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onClick={resetModal} role="presentation" />
           <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-lg bg-card border-border shadow-2xl max-h-[90vh] flex flex-col modal-content">
             <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
@@ -992,6 +1017,13 @@ export default function GoalsPage() {
                 )}
               </div>
 
+              {formErrors.length > 0 && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  {formErrors.map((err, i) => (
+                    <p key={i} className="text-xs text-destructive">{err}</p>
+                  ))}
+                </div>
+              )}
               <Button onClick={handleAdd} className="w-full" disabled={!displayTitle || !newStateId}>Add Goal</Button>
             </CardContent>
           </Card>

@@ -43,17 +43,11 @@ function getInitialSupabase(): SupabaseClient | null {
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [supabase] = useState<SupabaseClient | null>(getInitialSupabase);
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
+  const [isGuest, setIsGuest] = useState(checkGuestCookie);
   const [loading, setLoading] = useState(!!supabase);
 
   useEffect(() => {
-    // Check guest mode on mount
-    setIsGuest(checkGuestCookie());
-
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
+    if (!supabase) return;
 
     // Get initial session
     supabase.auth

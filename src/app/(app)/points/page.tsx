@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useFocusTrap } from "@/lib/hooks/use-focus-trap";
 import {
   Wallet,
   Plus,
@@ -20,6 +21,7 @@ import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
 import { useAppStore } from "@/lib/store";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
+import { pointsFormSchema } from "@/lib/validations";
 import type { UserPoints } from "@/lib/types";
 
 export default function PointsPage() {
@@ -27,6 +29,7 @@ export default function PointsPage() {
     useAppStore();
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const modalRef = useFocusTrap<HTMLDivElement>(showAddModal);
 
   // Add modal state
   const [newStateId, setNewStateId] = useState("");
@@ -61,8 +64,23 @@ export default function PointsPage() {
     return sum + p.points * costPerPoint;
   }, 0);
 
+  const [formErrors, setFormErrors] = useState<string[]>([]);
+
   function handleAdd() {
-    if (!newStateId || !newSpeciesId) return;
+    const result = pointsFormSchema.safeParse({
+      stateId: newStateId || undefined,
+      speciesId: newSpeciesId || undefined,
+      points: newPoints,
+      pointType: newPointType,
+      yearStarted: newYearStarted,
+    });
+
+    if (!result.success) {
+      setFormErrors(result.error.issues.map((i) => i.message));
+      return;
+    }
+    setFormErrors([]);
+
     addUserPoint({
       id: crypto.randomUUID(),
       userId: "local",
@@ -78,6 +96,7 @@ export default function PointsPage() {
     setNewPoints(0);
     setNewPointType("preference");
     setNewYearStarted(new Date().getFullYear());
+    setFormErrors([]);
   }
 
   function handleSaveEdit(id: string) {
@@ -375,7 +394,7 @@ export default function PointsPage() {
 
       {/* Add Points Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div ref={modalRef} className="fixed inset-0 z-50 flex items-center justify-center" onKeyDown={(e) => { if (e.key === "Escape") setShowAddModal(false); }}>
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay"
             onClick={() => setShowAddModal(false)}
@@ -518,6 +537,13 @@ export default function PointsPage() {
                 </p>
               </div>
 
+              {formErrors.length > 0 && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
+                  {formErrors.map((err, i) => (
+                    <p key={i} className="text-xs text-destructive">{err}</p>
+                  ))}
+                </div>
+              )}
               <Button
                 onClick={handleAdd}
                 className="w-full"
