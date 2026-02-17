@@ -163,7 +163,7 @@ export default function LandingPage() {
             <span className="text-primary">Engineered</span>
           </h1>
 
-          <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+          <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
             Stop guessing where to apply. Odyssey Outdoors builds a personalized
             multi-year strategy across the top western states — optimized for
             your budget, experience, and goals.
