@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { GuestEntryLink } from "@/components/auth/GuestEntryLink";
 
 export default function MarketingLayout({
   children,
@@ -20,6 +21,7 @@ export default function MarketingLayout({
             </span>
           </Link>
           <div className="flex items-center gap-3">
+            <GuestEntryLink />
             <Link href="/auth/sign-in">
               <Button variant="ghost" size="sm">
                 Sign In

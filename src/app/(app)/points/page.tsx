@@ -217,9 +217,10 @@ export default function PointsPage() {
                       href={state.buyPointsUrl}
                       target="_blank"
                       rel="noopener noreferrer"
+                      aria-label={`Buy points for ${state.name} (opens in new tab)`}
                       className="text-muted-foreground hover:text-primary transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4" />
+                      <ExternalLink className="w-4 h-4" aria-hidden="true" />
                     </a>
                   </div>
                 </CardHeader>
@@ -248,17 +249,19 @@ export default function PointsPage() {
                                   onClick={() =>
                                     setEditPoints(Math.max(0, editPoints - 1))
                                   }
+                                  aria-label="Remove one point"
                                   className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent"
                                 >
                                   -
                                 </button>
-                                <span className="w-8 text-center font-bold">
+                                <span className="w-8 text-center font-bold" aria-live="polite">
                                   {editPoints}
                                 </span>
                                 <button
                                   onClick={() =>
                                     setEditPoints(editPoints + 1)
                                   }
+                                  aria-label="Add one point"
                                   className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent"
                                 >
                                   +
@@ -266,12 +269,14 @@ export default function PointsPage() {
                               </div>
                               <button
                                 onClick={() => handleSaveEdit(pt.id)}
+                                aria-label="Save points"
                                 className="w-7 h-7 rounded bg-primary/15 flex items-center justify-center hover:bg-primary/25"
                               >
                                 <Check className="w-3.5 h-3.5 text-primary" />
                               </button>
                               <button
                                 onClick={() => setEditingId(null)}
+                                aria-label="Cancel edit"
                                 className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-accent"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -287,12 +292,14 @@ export default function PointsPage() {
                                   setEditingId(pt.id);
                                   setEditPoints(pt.points);
                                 }}
+                                aria-label={`Edit ${pt.speciesId.replace("_", " ")} points`}
                                 className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-accent transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => removeUserPoint(pt.id)}
+                                aria-label={`Delete ${pt.speciesId.replace("_", " ")} points`}
                                 className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -372,12 +379,14 @@ export default function PointsPage() {
           <div
             className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay"
             onClick={() => setShowAddModal(false)}
+            role="presentation"
           />
           <Card role="dialog" aria-modal="true" aria-labelledby="points-dialog-title" className="relative z-10 w-full max-w-md bg-card border-border shadow-2xl modal-content">
             <CardHeader className="flex flex-row items-center justify-between pb-3">
               <CardTitle id="points-dialog-title" className="text-base">Add Points</CardTitle>
               <button
                 onClick={() => setShowAddModal(false)}
+                aria-label="Close dialog"
                 className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"
               >
                 <X className="w-4 h-4" />
@@ -464,15 +473,17 @@ export default function PointsPage() {
                 <div className="flex items-center gap-3 justify-center">
                   <button
                     onClick={() => setNewPoints(Math.max(0, newPoints - 1))}
+                    aria-label="Remove one point"
                     className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-xl font-bold hover:bg-accent transition-colors"
                   >
                     -
                   </button>
-                  <span className="w-16 text-center text-3xl font-bold">
+                  <span className="w-16 text-center text-3xl font-bold" aria-live="polite">
                     {newPoints}
                   </span>
                   <button
                     onClick={() => setNewPoints(newPoints + 1)}
+                    aria-label="Add one point"
                     className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center text-xl font-bold hover:bg-accent transition-colors"
                   >
                     +

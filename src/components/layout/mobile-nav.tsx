@@ -26,6 +26,8 @@ export function MobileNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={item.label}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center gap-1 px-2 py-1.5 rounded-lg transition-colors",
                 isActive

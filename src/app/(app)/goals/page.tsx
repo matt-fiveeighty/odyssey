@@ -457,6 +457,7 @@ export default function GoalsPage() {
                           {/* Checkbox */}
                           <button
                             onClick={() => milestone.completed ? uncompleteMilestone(milestone.id) : completeMilestone(milestone.id)}
+                            aria-label={milestone.completed ? `Mark "${milestone.title}" incomplete` : `Mark "${milestone.title}" complete`}
                             className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
                               milestone.completed ? "bg-chart-2 border-chart-2" : "border-border hover:border-primary"
                             }`}
@@ -744,11 +745,11 @@ export default function GoalsPage() {
                           </div>
                           <div className="flex items-center gap-1">
                             {goal.status !== "completed" && (
-                              <button onClick={() => updateUserGoal(goal.id, { status: goal.status === "active" ? "completed" : "active" })} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-chart-2/15 hover:text-chart-2 transition-colors" title="Mark complete">
+                              <button onClick={() => updateUserGoal(goal.id, { status: goal.status === "active" ? "completed" : "active" })} aria-label={`Mark ${goal.title} as complete`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-chart-2/15 hover:text-chart-2 transition-colors">
                                 <Star className="w-3.5 h-3.5" />
                               </button>
                             )}
-                            <button onClick={() => removeUserGoal(goal.id)} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
+                            <button onClick={() => removeUserGoal(goal.id)} aria-label={`Delete ${goal.title}`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -800,11 +801,11 @@ export default function GoalsPage() {
       {/* ================================================================ */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onClick={resetModal} />
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm modal-overlay" onClick={resetModal} role="presentation" />
           <Card role="dialog" aria-modal="true" aria-labelledby="goals-dialog-title" className="relative z-10 w-full max-w-lg bg-card border-border shadow-2xl max-h-[90vh] flex flex-col modal-content">
             <CardHeader className="flex flex-row items-center justify-between pb-3 shrink-0">
               <CardTitle id="goals-dialog-title" className="text-base">Add Hunt Goal</CardTitle>
-              <button onClick={resetModal} className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"><X className="w-4 h-4" /></button>
+              <button onClick={resetModal} aria-label="Close dialog" className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center hover:bg-accent"><X className="w-4 h-4" /></button>
             </CardHeader>
             <CardContent className="space-y-5 overflow-y-auto">
               {/* State */}

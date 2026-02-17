@@ -61,6 +61,8 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
+              aria-label={collapsed ? item.label : undefined}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
                 isActive
@@ -91,28 +93,31 @@ export function Sidebar() {
               href="https://cpw.state.co.us"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="CO Fish & Game (opens in new tab)"
               className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
             >
               <span>CO Fish & Game</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
             <a
               href="https://wgfd.wyo.gov"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="WY Game & Fish (opens in new tab)"
               className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
             >
               <span>WY Game & Fish</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
             <a
               href="https://fwp.mt.gov"
               target="_blank"
               rel="noopener noreferrer"
+              aria-label="MT Fish & Wildlife (opens in new tab)"
               className="flex items-center gap-2 text-xs text-sidebar-foreground/60 hover:text-primary transition-colors"
             >
               <span>MT Fish & Wildlife</span>
-              <ExternalLink className="w-3 h-3" />
+              <ExternalLink className="w-3 h-3" aria-hidden="true" />
             </a>
           </div>
         </div>

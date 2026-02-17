@@ -17,11 +17,17 @@ export default function AppLayout({
 }) {
   return (
     <AuthProvider>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium"
+      >
+        Skip to content
+      </a>
       <div className="flex h-screen overflow-hidden">
         <Sidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
           <Header />
-          <main className="flex-1 overflow-y-auto pb-20 md:pb-0">
+          <main id="main-content" className="flex-1 overflow-y-auto pb-20 md:pb-0">
             {children}
           </main>
         </div>
