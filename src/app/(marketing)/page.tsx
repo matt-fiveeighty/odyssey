@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
+import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
 import {
   Crosshair,
   Map,
@@ -12,6 +13,10 @@ import {
   Mountain,
   Compass,
   Shield,
+  CheckCircle2,
+  MapPin,
+  Trophy,
+  Users,
 } from "lucide-react";
 
 const steps = [
@@ -25,7 +30,7 @@ const steps = [
     icon: BarChart3,
     title: "Get Your Strategy",
     description:
-      "Our scoring engine evaluates every western state across multiple weighted factors and builds a personalized multi-year roadmap with phased milestones.",
+      "Our scoring engine evaluates every western state across weighted factors and builds a personalized multi-year roadmap with phased milestones.",
   },
   {
     icon: Calendar,
@@ -40,13 +45,13 @@ const features = [
     icon: Target,
     title: "Point Strategy",
     description:
-      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most. Track elk, deer, sheep, goat, bison, and more.",
+      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most.",
   },
   {
     icon: Map,
     title: "State Scoring",
     description:
-      "Every western state scored against your specific profile. Not generic advice — strategy tuned to your budget, fitness, and goals.",
+      "Every western state scored against your specific profile. Not generic advice — strategy tuned to you.",
   },
   {
     icon: Calendar,
@@ -64,7 +69,7 @@ const features = [
     icon: Compass,
     title: "Unit Database",
     description:
-      "Browse units across every state with success rates, point requirements, and species breakdowns.",
+      "Browse units across every state with success rates, point requirements, and tactical hunt notes.",
   },
   {
     icon: Shield,
@@ -74,12 +79,62 @@ const features = [
   },
 ];
 
+const stats = [
+  { value: "10", label: "Western States", icon: MapPin },
+  { value: "10+", label: "Species", icon: Trophy },
+  { value: "10yr", label: "Roadmap", icon: Calendar },
+  { value: "Free", label: "To Start", icon: Users },
+];
+
+const showcaseSteps = [
+  {
+    step: "01",
+    title: "Tell Us About You",
+    description:
+      "Species, budget, experience, style — a 9-step consultation captures who you are as a hunter.",
+    highlights: [
+      "Elk, Deer, Moose, Bear + 6 more species",
+      "DIY Backpack to Guided trip styles",
+      "Budget-aware recommendations",
+    ],
+    icon: Crosshair,
+    label: "9-Step Consultation",
+  },
+  {
+    step: "02",
+    title: "Receive Your Strategy",
+    description:
+      "A personalized state portfolio with scoring breakdowns, unit recommendations, and a 10-year phased roadmap.",
+    highlights: [
+      "State-by-state scoring with visible reasoning",
+      "Best units matched to your profile",
+      "Itemized cost breakdowns per year",
+    ],
+    icon: BarChart3,
+    label: "Strategy & Roadmap",
+  },
+  {
+    step: "03",
+    title: "Track & Execute",
+    description:
+      "Manage points, set goals, track milestones, and follow your timeline across every state you're applying in.",
+    highlights: [
+      "Points portfolio dashboard",
+      "Application deadline tracking",
+      "Goal-to-milestone conversion",
+    ],
+    icon: Target,
+    label: "Dashboard & Tracking",
+  },
+];
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col">
-      {/* Hero */}
+      {/* ================================================================ */}
+      {/* HERO */}
+      {/* ================================================================ */}
       <section className="relative overflow-hidden">
-        {/* Layered background: aurora + topo grid + radial glow */}
         <div className="absolute inset-0 aurora-bg pointer-events-none" />
         <div className="absolute inset-0 topo-grid pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background pointer-events-none" />
@@ -106,7 +161,10 @@ export default function LandingPage() {
 
           <div className="hero-stagger-4 flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
             <Link href="/auth/sign-up">
-              <Button size="lg" className="gap-2 text-base px-8 glow-pulse shimmer-sweep">
+              <Button
+                size="lg"
+                className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
+              >
                 Start Planning <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
@@ -136,22 +194,56 @@ export default function LandingPage() {
 
           {/* Species badges */}
           <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-3">
-            {["Elk", "Mule Deer", "Whitetail", "Bear", "Moose", "Pronghorn", "Bighorn Sheep", "Mountain Goat", "Bison", "Mountain Lion"].map(
-              (species) => (
-                <span
-                  key={species}
-                  className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer"
-                >
-                  {species}
-                </span>
-              )
-            )}
+            {[
+              "Elk",
+              "Mule Deer",
+              "Whitetail",
+              "Bear",
+              "Moose",
+              "Pronghorn",
+              "Bighorn Sheep",
+              "Mountain Goat",
+              "Bison",
+              "Mountain Lion",
+            ].map((species) => (
+              <span
+                key={species}
+                className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer"
+              >
+                {species}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="border-t border-border">
+      {/* ================================================================ */}
+      {/* STATS BAR */}
+      {/* ================================================================ */}
+      <section className="border-t border-border bg-card/30">
+        <div className="max-w-5xl mx-auto px-6 py-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {stats.map((stat) => (
+              <div key={stat.label} className="text-center">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <stat.icon className="w-5 h-5 text-primary" />
+                </div>
+                <p className="text-2xl md:text-3xl font-bold text-foreground">
+                  {stat.value}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {stat.label}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* HOW IT WORKS */}
+      {/* ================================================================ */}
+      <section id="how-it-works" className="border-t border-border scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6 py-20">
           <div className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -184,8 +276,72 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Features */}
+      {/* ================================================================ */}
+      {/* APP SHOWCASE — Alternating layout */}
+      {/* ================================================================ */}
       <section className="border-t border-border bg-card/50">
+        <div className="max-w-5xl mx-auto px-6 py-20">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              See It In Action
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
+              From consultation to execution — here&apos;s what your experience
+              looks like.
+            </p>
+          </div>
+
+          <div className="space-y-16">
+            {showcaseSteps.map((item, i) => (
+              <div
+                key={item.step}
+                className={`flex flex-col ${
+                  i % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
+                } gap-8 md:gap-12 items-center`}
+              >
+                <div className="flex-1 space-y-4">
+                  <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                    Step {item.step}
+                  </span>
+                  <h3 className="text-xl font-bold">{item.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {item.description}
+                  </p>
+                  <ul className="space-y-2 pt-2">
+                    {item.highlights.map((h) => (
+                      <li
+                        key={h}
+                        className="flex items-start gap-2 text-sm text-muted-foreground"
+                      >
+                        <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                        {h}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                <div className="flex-1 w-full">
+                  <div className="aspect-[16/10] rounded-xl bg-gradient-to-br from-card to-secondary/30 border border-border flex items-center justify-center">
+                    <div className="text-center px-6">
+                      <div className="w-14 h-14 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                        <item.icon className="w-7 h-7 text-primary" />
+                      </div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {item.label}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* FEATURES */}
+      {/* ================================================================ */}
+      <section id="features" className="border-t border-border scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6 py-20">
           <div className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -201,7 +357,7 @@ export default function LandingPage() {
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="p-5 rounded-xl bg-background border border-border hover:border-primary/30 transition-all duration-200 card-lift"
+                className="p-5 rounded-xl bg-card border border-border hover:border-primary/30 transition-all duration-200 card-lift"
               >
                 <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
                   <feature.icon className="w-4.5 h-4.5 text-primary" />
@@ -218,21 +374,61 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="border-t border-border">
-        <div className="max-w-3xl mx-auto px-6 py-20 text-center">
+      {/* ================================================================ */}
+      {/* TESTIMONIALS */}
+      {/* ================================================================ */}
+      <section
+        id="testimonials"
+        className="border-t border-border bg-card/50 scroll-mt-20"
+      >
+        <div className="max-w-5xl mx-auto px-6 py-20">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Hunters Like You
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
+              Hear from hunters who stopped guessing and started strategizing.
+            </p>
+          </div>
+
+          <TestimonialCarousel />
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* BOTTOM CTA */}
+      {/* ================================================================ */}
+      <section className="border-t border-border relative overflow-hidden">
+        <div className="absolute inset-0 aurora-bg pointer-events-none opacity-50" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="relative max-w-3xl mx-auto px-6 py-20 text-center">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
+            <Compass className="w-3.5 h-3.5 text-primary" />
+            <span className="text-xs font-medium text-primary">
+              Free forever — no credit card needed
+            </span>
+          </div>
+
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-            Ready to Build Your Strategy?
+            Your 10-Year Strategy Starts Now
           </h2>
           <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-            Create your free account and run the strategic consultation. Your
-            personalized multi-year roadmap is just a few questions away.
+            Run the strategic consultation in under 5 minutes. Get a
+            personalized multi-year roadmap with state rankings, unit picks, cost
+            breakdowns, and an action timeline.
           </p>
-          <Link href="/auth/sign-up">
-            <Button size="lg" className="gap-2 text-base px-8 mt-8">
-              Start Planning <ArrowRight className="w-4 h-4" />
-            </Button>
-          </Link>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
+            <Link href="/auth/sign-up">
+              <Button
+                size="lg"
+                className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
+              >
+                Start Planning <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <GuestEntryButton />
+          </div>
         </div>
       </section>
     </div>
