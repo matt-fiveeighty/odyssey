@@ -58,10 +58,10 @@ export function TestimonialCarousel() {
     setCurrent((c) => (c - 1 + testimonials.length) % testimonials.length);
   }, []);
 
-  // Auto-advance every 6 seconds
+  // Auto-advance every 5 seconds
   useEffect(() => {
     if (isPaused) return;
-    const timer = setInterval(next, 6000);
+    const timer = setInterval(next, 5000);
     return () => clearInterval(timer);
   }, [isPaused, next]);
 

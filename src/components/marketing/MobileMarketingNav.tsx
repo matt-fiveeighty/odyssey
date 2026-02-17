@@ -2,13 +2,10 @@
 
 import { useState } from "react";
 import { Menu, X } from "lucide-react";
-import Link from "next/link";
+import { NavLink } from "./NavLink";
+import { navItems } from "./MarketingNav";
 
-interface MobileMarketingNavProps {
-  items: { label: string; href: string }[];
-}
-
-export function MobileMarketingNav({ items }: MobileMarketingNavProps) {
+export function MobileMarketingNav() {
   const [open, setOpen] = useState(false);
 
   return (
@@ -23,15 +20,15 @@ export function MobileMarketingNav({ items }: MobileMarketingNavProps) {
 
       {open && (
         <div className="absolute top-16 left-0 right-0 bg-background border-b border-border p-4 space-y-3">
-          {items.map((item) => (
-            <Link
+          {navItems.map((item) => (
+            <NavLink
               key={item.href}
               href={item.href}
               onClick={() => setOpen(false)}
               className="block text-sm text-muted-foreground hover:text-foreground transition-colors py-2"
             >
               {item.label}
-            </Link>
+            </NavLink>
           ))}
         </div>
       )}

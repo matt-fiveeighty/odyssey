@@ -1,13 +1,9 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { MobileMarketingNav } from "@/components/marketing/MobileMarketingNav";
+import { MarketingNav } from "@/components/marketing/MarketingNav";
+import { MarketingFooterLinks } from "@/components/marketing/MarketingFooterLinks";
 import { Logo } from "@/components/shared/Logo";
-
-const navItems = [
-  { label: "Features", href: "/#features" },
-  { label: "Pricing", href: "/pricing" },
-  { label: "Testimonials", href: "/#testimonials" },
-];
 
 export default function MarketingLayout({
   children,
@@ -28,17 +24,7 @@ export default function MarketingLayout({
             </Link>
 
             {/* Desktop nav */}
-            <nav className="hidden md:flex items-center gap-6">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
+            <MarketingNav />
           </div>
 
           <div className="flex items-center gap-3">
@@ -51,7 +37,7 @@ export default function MarketingLayout({
               <Button size="sm">Get Started</Button>
             </Link>
             {/* Mobile menu */}
-            <MobileMarketingNav items={navItems} />
+            <MobileMarketingNav />
           </div>
         </div>
       </header>
@@ -70,81 +56,12 @@ export default function MarketingLayout({
                 <span className="text-sm font-semibold">Odyssey Outdoors</span>
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed">
-                Strategic western big game portfolio planning. Built by hunters, for hunters.
+                Your western hunt strategy, engineered.
               </p>
             </div>
 
-            {/* Product */}
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Product
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Features
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/pricing" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Pricing
-                  </Link>
-                </li>
-                <li>
-                  <Link href="/auth/sign-up" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Get Started
-                  </Link>
-                </li>
-              </ul>
-            </div>
-
-            {/* Resources */}
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Resources
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <Link href="/#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Testimonials
-                  </Link>
-                </li>
-                <li>
-                  <span className="text-sm text-muted-foreground/50 cursor-default">
-                    Blog (Coming Soon)
-                  </span>
-                </li>
-                <li>
-                  <span className="text-sm text-muted-foreground/50 cursor-default">
-                    FAQ (Coming Soon)
-                  </span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Legal */}
-            <div>
-              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-                Legal
-              </h4>
-              <ul className="space-y-2">
-                <li>
-                  <span className="text-sm text-muted-foreground/50 cursor-default">
-                    Privacy Policy
-                  </span>
-                </li>
-                <li>
-                  <span className="text-sm text-muted-foreground/50 cursor-default">
-                    Terms of Service
-                  </span>
-                </li>
-                <li>
-                  <Link href="mailto:support@odysseyoutdoors.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-                    Contact
-                  </Link>
-                </li>
-              </ul>
-            </div>
+            {/* Product + Resources + Legal — client component for hash links */}
+            <MarketingFooterLinks />
           </div>
 
           {/* Bottom bar */}

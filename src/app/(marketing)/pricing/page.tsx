@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Check,
@@ -11,34 +12,34 @@ import {
 
 const plans = [
   {
-    name: "Scout",
+    name: "Basecamp",
     price: "Free",
     period: "forever",
     description:
-      "Run the strategic consultation and get your personalized state portfolio.",
+      "Build your strategy, see your state rankings, and plan your first hunt.",
     icon: Compass,
     featured: false,
     features: [
-      "Full strategic consultation",
-      "State scoring & rankings",
+      "Personalized state scoring & rankings",
       "10-year phased roadmap",
       "Budget breakdown & cost projections",
       "Unit recommendations per state",
       "Investment calculator",
+      "Unlimited strategy re-runs",
     ],
     cta: "Get Started",
     href: "/auth/sign-up",
   },
   {
-    name: "Outfitter",
+    name: "Scout",
     price: "$12",
     period: "/month",
     description:
-      "Everything in Scout plus portfolio tracking, alerts, and advanced analytics.",
+      "Everything in Basecamp plus portfolio tracking, alerts, and advanced analytics.",
     icon: Binoculars,
     featured: true,
     features: [
-      "Everything in Scout",
+      "Everything in Basecamp",
       "Points portfolio dashboard",
       "Application deadline alerts",
       "Draw result notifications",
@@ -50,16 +51,15 @@ const plans = [
     href: "#",
   },
   {
-    name: "Expedition",
+    name: "Outfitter",
     price: "$29",
     period: "/month",
     description:
-      "For the serious multi-state hunter. Team features, API access, and 1-on-1 strategy calls.",
+      "For the serious multi-state hunter. Team features, exports, and 1-on-1 strategy calls.",
     icon: Crown,
     featured: false,
     features: [
-      "Everything in Outfitter",
-      "Unlimited strategy re-runs",
+      "Everything in Scout",
       "Hunt journal & harvest log",
       "Team portfolios (up to 5)",
       "CSV/PDF export",
@@ -76,6 +76,17 @@ export default function PricingPage() {
     <div className="flex flex-col">
       {/* Hero */}
       <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hero/pricing-elk.jpg"
+            alt=""
+            fill
+            className="object-cover opacity-40 pointer-events-none"
+            sizes="100vw"
+            priority
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-30" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
@@ -92,8 +103,8 @@ export default function PricingPage() {
             <span className="text-primary">Hunt Better</span>
           </h1>
           <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Start free with the full strategic consultation. Upgrade when
-            you&apos;re ready for tracking, alerts, and advanced analytics.
+            Start free with the full strategy engine. Upgrade when you&apos;re
+            ready for tracking, alerts, and advanced analytics.
           </p>
         </div>
       </section>
@@ -192,14 +203,14 @@ export default function PricingPage() {
           {/* FAQ-style note */}
           <div className="mt-16 max-w-2xl mx-auto text-center">
             <h3 className="text-lg font-bold mb-3">
-              Why is the consultation free?
+              Why is Basecamp free?
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              We believe every hunter deserves a solid strategy. The core
-              consultation &mdash; state scoring, roadmap generation, and cost
-              analysis &mdash; will always be free. Paid plans add ongoing
-              tracking, alerts, and advanced tools for hunters managing
-              multi-state portfolios year over year.
+              Every hunter deserves a real strategy. The core engine &mdash;
+              state scoring, roadmap generation, and cost analysis &mdash; will
+              always be free. Paid plans add ongoing tracking, alerts, and
+              advanced tools for hunters managing multi-state portfolios year
+              over year.
             </p>
           </div>
 

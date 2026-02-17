@@ -143,11 +143,11 @@ export default function LandingPage() {
         <ParallaxImage
           src="/images/hero/tactical-map.jpg"
           alt=""
-          className="opacity-45 pointer-events-none"
+          className="opacity-70 pointer-events-none"
           speed={0.3}
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/55 to-background pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
@@ -241,8 +241,18 @@ export default function LandingPage() {
       {/* ================================================================ */}
       {/* REASONS TO BELIEVE */}
       {/* ================================================================ */}
-      <section className="border-t border-border bg-card/30">
-        <div className="max-w-5xl mx-auto px-6 py-16">
+      <section className="border-t border-border bg-card/30 relative overflow-hidden">
+        <div className="absolute inset-0">
+          <Image
+            src="/images/hero/rtb-bear.png"
+            alt=""
+            fill
+            className="object-cover opacity-30 pointer-events-none"
+            sizes="100vw"
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/70 to-background pointer-events-none" />
+        <div className="relative max-w-5xl mx-auto px-6 py-16">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Built for the Western Draw Game
@@ -417,10 +427,10 @@ export default function LandingPage() {
         <ParallaxImage
           src="/images/species/moose.png"
           alt=""
-          className="opacity-20 pointer-events-none"
-          speed={0.2}
+          className="opacity-40 pointer-events-none"
+          speed={0.3}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/80 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/65 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-50" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 
