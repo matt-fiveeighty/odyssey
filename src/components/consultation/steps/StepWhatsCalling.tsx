@@ -91,7 +91,7 @@ export function StepWhatsCalling() {
                 key={sp.id}
                 selected={wizard.species.includes(sp.id)}
                 onClick={() => wizard.toggleArrayField("species", sp.id)}
-                title={`${sp.icon} ${sp.name}`}
+                title={sp.name}
                 description={SPECIES_DESCRIPTIONS[sp.id]}
                 gradient={SPECIES_GRADIENTS[sp.id]}
                 imageSrc={img?.src}
