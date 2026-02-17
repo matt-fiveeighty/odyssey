@@ -90,16 +90,16 @@ const showcaseSteps = [
     step: "01",
     title: "Tell Us About You",
     description:
-      "Species, budget, experience, style — a short consultation captures who you are as a hunter.",
+      "Species, budget, experience, style — a quick questionnaire captures who you are as a hunter.",
     highlights: [
       "Elk, Deer, Moose, Bear, and more",
       "DIY Backpack to Guided trip styles",
       "Budget-aware recommendations",
     ],
     icon: Crosshair,
-    label: "Strategic Consultation",
+    label: "Strategy Builder",
     image: "/images/how-it-works/tell-us-about-you.png",
-    imageAlt: "Hunt consultation species selection interface",
+    imageAlt: "Hunt strategy species selection interface",
   },
   {
     step: "02",
@@ -143,11 +143,11 @@ export default function LandingPage() {
         <ParallaxImage
           src="/images/hero/tactical-map.jpg"
           alt=""
-          className="opacity-70 pointer-events-none"
+          className="opacity-80 pointer-events-none"
           speed={0.3}
           priority
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/55 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/25 via-background/50 to-background pointer-events-none" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 
         <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
@@ -242,16 +242,13 @@ export default function LandingPage() {
       {/* REASONS TO BELIEVE */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30 relative overflow-hidden">
-        <div className="absolute inset-0">
-          <Image
-            src="/images/hero/rtb-bear.png"
-            alt=""
-            fill
-            className="object-cover opacity-30 pointer-events-none"
-            sizes="100vw"
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/70 to-background pointer-events-none" />
+        <ParallaxImage
+          src="/images/hero/rtb-bear.png"
+          alt=""
+          className="opacity-50 pointer-events-none"
+          speed={0.2}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background pointer-events-none" />
         <div className="relative max-w-5xl mx-auto px-6 py-16">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
@@ -292,7 +289,7 @@ export default function LandingPage() {
               See It In Action
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-balance">
-              From consultation to execution — here&apos;s what your experience looks like.
+              From strategy to execution — here&apos;s what your experience looks like.
             </p>
           </ScrollReveal>
 
@@ -427,10 +424,10 @@ export default function LandingPage() {
         <ParallaxImage
           src="/images/species/moose.png"
           alt=""
-          className="opacity-40 pointer-events-none"
+          className="opacity-50 pointer-events-none"
           speed={0.3}
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/65 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/55 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-50" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-primary/8 rounded-full blur-[100px] pointer-events-none" />
 
@@ -451,8 +448,8 @@ export default function LandingPage() {
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={200} once={false}>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Run the strategic consultation in under 5 minutes. Get a
-              personalized multi-year roadmap with state rankings, unit picks, cost
+              Build your personalized strategy in under 5 minutes. Get a
+              multi-year roadmap with state rankings, unit picks, cost
               breakdowns, and an action timeline.
             </p>
           </ScrollReveal>

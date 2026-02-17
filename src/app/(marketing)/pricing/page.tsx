@@ -16,7 +16,7 @@ const plans = [
     price: "Free",
     period: "forever",
     description:
-      "Build your strategy, see your state rankings, and plan your first hunt.",
+      "Build your strategy, see your state rankings, and start planning your hunts.",
     icon: Compass,
     featured: false,
     features: [
@@ -25,7 +25,7 @@ const plans = [
       "Budget breakdown & cost projections",
       "Unit recommendations per state",
       "Investment calculator",
-      "Unlimited strategy re-runs",
+      "Goal tracking & hunt planning",
     ],
     cta: "Get Started",
     href: "/auth/sign-up",
@@ -35,16 +35,17 @@ const plans = [
     price: "$12",
     period: "/month",
     description:
-      "Everything in Basecamp plus portfolio tracking, alerts, and advanced analytics.",
+      "Real-time portfolio tracking, deadline alerts, draw notifications, and deeper analytics.",
     icon: Binoculars,
     featured: true,
     features: [
       "Everything in Basecamp",
       "Points portfolio dashboard",
-      "Application deadline alerts",
+      "Application deadline reminders",
       "Draw result notifications",
-      "Multi-year strategy comparison",
-      "Unit success rate trends",
+      "Historical draw odds & trends",
+      "Unit success rate analytics",
+      "Unlimited strategy re-runs",
       "Priority support",
     ],
     cta: "Coming Soon",
@@ -55,14 +56,15 @@ const plans = [
     price: "$29",
     period: "/month",
     description:
-      "For the serious multi-state hunter. Team features, exports, and 1-on-1 strategy calls.",
+      "For the serious multi-state hunter. Exports, team planning, and 1-on-1 strategy sessions.",
     icon: Crown,
     featured: false,
     features: [
       "Everything in Scout",
       "Hunt journal & harvest log",
-      "Team portfolios (up to 5)",
-      "CSV/PDF export",
+      "Team portfolios (up to 5 hunters)",
+      "CSV & PDF roadmap exports",
+      "Multi-year strategy comparison",
       "1-on-1 strategy call (quarterly)",
       "Early access to new features",
     ],
@@ -81,12 +83,12 @@ export default function PricingPage() {
             src="/images/hero/pricing-elk.jpg"
             alt=""
             fill
-            className="object-cover opacity-40 pointer-events-none"
+            className="object-cover opacity-50 pointer-events-none"
             sizes="100vw"
             priority
           />
         </div>
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background pointer-events-none" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/30 via-background/60 to-background pointer-events-none" />
         <div className="absolute inset-0 aurora-bg pointer-events-none opacity-30" />
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
 

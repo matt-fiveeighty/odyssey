@@ -41,15 +41,24 @@ export function ParallaxImage({
 
   return (
     <div ref={ref} className="absolute inset-0 overflow-hidden">
-      <Image
-        src={src}
-        alt={alt}
-        fill
-        className={`object-cover ${className}`}
-        style={{ transform: `translateY(${offset}px)` }}
-        sizes="100vw"
-        priority={priority}
-      />
+      <div
+        className="absolute inset-0"
+        style={{
+          top: "-15%",
+          bottom: "-15%",
+          transform: `translateY(${offset}px)`,
+          willChange: "transform",
+        }}
+      >
+        <Image
+          src={src}
+          alt={alt}
+          fill
+          className={`object-cover ${className}`}
+          sizes="100vw"
+          priority={priority}
+        />
+      </div>
     </div>
   );
 }
