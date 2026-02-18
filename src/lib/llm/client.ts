@@ -2,6 +2,7 @@
  * Anthropic Claude SDK Wrapper
  *
  * Provides structured LLM interactions with:
+ * - Official @anthropic-ai/sdk integration
  * - System prompts that enforce "only reference provided data"
  * - Structured output extraction
  * - Error handling and fallback
@@ -10,17 +11,14 @@
  * Requires: ANTHROPIC_API_KEY env var
  */
 
-// Note: @anthropic-ai/sdk must be added to package.json
-// For now, use fetch-based approach that works without the SDK
-
-const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
+import Anthropic from "@anthropic-ai/sdk";
 
 interface LlmMessage {
   role: "user" | "assistant";
   content: string;
 }
 
-interface LlmResponse {
+export interface LlmResponse {
   text: string;
   tokensUsed: number;
   model: string;
@@ -36,9 +34,21 @@ CRITICAL RULES:
 5. Keep responses concise. Aim for 2-4 short paragraphs.
 6. Never recommend illegal activities or disregard game regulations.`;
 
+// Lazy-init SDK client (server-side only)
+let _client: Anthropic | null = null;
+
+function getClient(): Anthropic | null {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) return null;
+  if (!_client) {
+    _client = new Anthropic({ apiKey });
+  }
+  return _client;
+}
+
 /**
  * Call the Anthropic Claude API with a structured prompt.
- * Falls back gracefully if the API key is missing or the call fails.
+ * Uses the official SDK. Falls back gracefully if the API key is missing or the call fails.
  */
 export async function callClaude(
   messages: LlmMessage[],
@@ -48,51 +58,38 @@ export async function callClaude(
     model?: string;
   }
 ): Promise<LlmResponse | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  const client = getClient();
+  if (!client) {
     console.warn("[llm/client] ANTHROPIC_API_KEY not set — skipping LLM call");
     return null;
   }
 
+  const model = options?.model ?? "claude-sonnet-4-20250514";
+
   try {
-    const res = await fetch(ANTHROPIC_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: options?.model ?? "claude-sonnet-4-20250514",
-        max_tokens: options?.maxTokens ?? 1024,
-        temperature: options?.temperature ?? 0.7,
-        system: SYSTEM_PROMPT,
-        messages: messages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      }),
+    const response = await client.messages.create({
+      model,
+      max_tokens: options?.maxTokens ?? 1024,
+      system: SYSTEM_PROMPT,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+      })),
     });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      console.error("[llm/client] API error:", res.status, errorText);
-      return null;
-    }
-
-    const data = await res.json();
     const text =
-      data.content?.[0]?.type === "text" ? data.content[0].text : "";
+      response.content?.[0]?.type === "text" ? response.content[0].text : "";
     const tokensUsed =
-      (data.usage?.input_tokens ?? 0) + (data.usage?.output_tokens ?? 0);
+      (response.usage?.input_tokens ?? 0) +
+      (response.usage?.output_tokens ?? 0);
 
     return {
       text,
       tokensUsed,
-      model: data.model ?? options?.model ?? "claude-sonnet-4-20250514",
+      model: response.model ?? model,
     };
   } catch (err) {
-    console.error("[llm/client] Unexpected error:", err);
+    console.error("[llm/client] API error:", err);
     return null;
   }
 }
