@@ -6,17 +6,16 @@ import { Button } from "@/components/ui/button";
 import {
   Users,
   Plus,
-  UserPlus,
-  Shield,
   AlertCircle,
-  Check,
   X,
-  Clock,
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
+import { GroupRoster, type RosterMember } from "@/components/groups/GroupRoster";
+import { FeasibilityCheck } from "@/components/groups/FeasibilityCheck";
+import type { GroupMember as FeasibilityMember } from "@/lib/engine/group-feasibility";
 
 interface GroupMember {
   id: string;
@@ -45,6 +44,33 @@ const STATUS_CONFIG = {
   unsuccessful: { label: "Not Drawn", color: "text-muted-foreground", bg: "bg-secondary" },
 };
 
+/** Convert page-level GroupMember to GroupRoster's RosterMember format */
+function toRosterMember(m: GroupMember): RosterMember {
+  return {
+    id: m.id,
+    name: m.name,
+    email: m.email,
+    points: m.points,
+    status:
+      m.status === "accepted"
+        ? "confirmed"
+        : m.status === "invited"
+          ? "pending"
+          : "declined",
+    isLeader: m.role === "leader",
+  };
+}
+
+/** Convert page-level GroupMember to feasibility engine's GroupMember format */
+function toFeasibilityMember(m: GroupMember): FeasibilityMember {
+  return {
+    userId: m.id,
+    name: m.name,
+    points: m.points,
+    isResident: false, // Default to NR for feasibility checks
+  };
+}
+
 export default function GroupsPage() {
   const [groups, setGroups] = useState<GroupApp[]>([]);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -55,7 +81,6 @@ export default function GroupsPage() {
   const [newSpeciesId, setNewSpeciesId] = useState("");
   const [newYear, setNewYear] = useState(new Date().getFullYear());
   const [newNotes, setNewNotes] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
 
   function createGroup() {
     if (!newStateId || !newSpeciesId) return;
@@ -83,8 +108,8 @@ export default function GroupsPage() {
     setNewNotes("");
   }
 
-  function inviteMember(groupId: string) {
-    if (!inviteEmail.trim()) return;
+  function inviteMember(groupId: string, email: string) {
+    if (!email.trim()) return;
     setGroups((prev) =>
       prev.map((g) =>
         g.id === groupId
@@ -94,8 +119,8 @@ export default function GroupsPage() {
                 ...g.members,
                 {
                   id: crypto.randomUUID(),
-                  name: inviteEmail.split("@")[0],
-                  email: inviteEmail,
+                  name: email.split("@")[0],
+                  email,
                   points: 0,
                   role: "member" as const,
                   status: "invited" as const,
@@ -105,7 +130,6 @@ export default function GroupsPage() {
           : g
       )
     );
-    setInviteEmail("");
   }
 
   function removeMember(groupId: string, memberId: string) {
@@ -230,69 +254,22 @@ export default function GroupsPage() {
 
                 {isExpanded && (
                   <CardContent className="space-y-4">
-                    {/* Members */}
-                    <div>
-                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        Party Members
-                      </h4>
-                      <div className="space-y-2">
-                        {group.members.map((member) => (
-                          <div
-                            key={member.id}
-                            className="flex items-center justify-between p-2 rounded-lg bg-secondary/50"
-                          >
-                            <div className="flex items-center gap-2">
-                              {member.role === "leader" && (
-                                <Shield className="w-3.5 h-3.5 text-primary" />
-                              )}
-                              <span className="text-sm">{member.name}</span>
-                              {member.status === "invited" && (
-                                <span className="text-[10px] text-amber-400 flex items-center gap-0.5">
-                                  <Clock className="w-3 h-3" /> Invited
-                                </span>
-                              )}
-                              {member.status === "accepted" && (
-                                <Check className="w-3 h-3 text-green-400" />
-                              )}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-bold">
-                                {member.points} pts
-                              </span>
-                              {member.id !== "me" && (
-                                <button
-                                  onClick={() =>
-                                    removeMember(group.id, member.id)
-                                  }
-                                  className="text-muted-foreground hover:text-destructive"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    {/* Group Roster Component */}
+                    <GroupRoster
+                      members={group.members.map(toRosterMember)}
+                      onInvite={(email) => inviteMember(group.id, email)}
+                      onRemove={(memberId) => removeMember(group.id, memberId)}
+                      canEdit={group.status === "forming"}
+                    />
 
-                    {/* Invite */}
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="email"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                        placeholder="Invite by email..."
-                        className="flex-1 px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
+                    {/* Feasibility Check Component */}
+                    {group.members.length >= 2 && (
+                      <FeasibilityCheck
+                        members={group.members.map(toFeasibilityMember)}
+                        stateId={group.stateId}
+                        speciesId={group.speciesId}
                       />
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => inviteMember(group.id)}
-                        disabled={!inviteEmail.trim()}
-                      >
-                        <UserPlus className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    )}
 
                     {/* Notes */}
                     {group.notes && (
