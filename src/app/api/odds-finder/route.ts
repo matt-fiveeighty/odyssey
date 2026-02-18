@@ -6,6 +6,70 @@ import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import type { Unit } from "@/lib/types";
 
 /**
+ * Checks whether a unit has season data matching the requested weapon type.
+ * Uses seasonDates (structured) first, then falls back to tactical notes
+ * (free-text bestSeasonTier). Returns a scoring signal, not a hard filter.
+ */
+function getWeaponMatch(
+  unit: Unit,
+  weaponType?: string
+): { matches: boolean; seasonLabel?: string } {
+  if (!weaponType || weaponType === "any") {
+    return { matches: false };
+  }
+
+  const wt = weaponType.toLowerCase();
+
+  // 1. Check structured seasonDates keys (e.g. "archery", "1st_rifle", "muzzleloader")
+  if (unit.seasonDates) {
+    const keys = Object.keys(unit.seasonDates);
+    for (const key of keys) {
+      const k = key.toLowerCase();
+      if (
+        (wt === "archery" && k.includes("archery")) ||
+        (wt === "rifle" && k.includes("rifle")) ||
+        (wt === "muzzleloader" && (k.includes("muzzleloader") || k.includes("muzzle")))
+      ) {
+        const dates = unit.seasonDates[key];
+        return {
+          matches: true,
+          seasonLabel: `${key} (${dates.start} - ${dates.end})`,
+        };
+      }
+    }
+  }
+
+  // 2. Fallback: check tacticalNotes.bestSeasonTier free text
+  if (unit.tacticalNotes?.bestSeasonTier) {
+    const info = unit.tacticalNotes.bestSeasonTier.toLowerCase();
+    if (
+      (wt === "archery" && info.includes("archery")) ||
+      (wt === "rifle" && info.includes("rifle")) ||
+      (wt === "muzzleloader" && (info.includes("muzzleloader") || info.includes("muzzle")))
+    ) {
+      return {
+        matches: true,
+        seasonLabel: unit.tacticalNotes.bestSeasonTier,
+      };
+    }
+  }
+
+  // 3. Fallback: check notes field
+  if (unit.notes) {
+    const notes = unit.notes.toLowerCase();
+    if (
+      (wt === "archery" && notes.includes("archery")) ||
+      (wt === "rifle" && notes.includes("rifle")) ||
+      (wt === "muzzleloader" && (notes.includes("muzzleloader") || notes.includes("muzzle")))
+    ) {
+      return { matches: true, seasonLabel: undefined };
+    }
+  }
+
+  return { matches: false };
+}
+
+/**
  * POST /api/odds-finder — Highest Odds Finder.
  *
  * Body: { speciesId, weaponType?, timeline, userPoints? }
@@ -88,6 +152,9 @@ export async function POST(request: NextRequest) {
         odds.yearsToLikelyDraw >= timelineYears[0] &&
         odds.yearsToLikelyDraw <= timelineYears[1];
 
+      // Determine weapon season match from seasonDates or tacticalNotes
+      const weaponMatch = getWeaponMatch(unit, weaponType);
+
       // Generate "why" bullets
       const whyBullets: string[] = [];
       if (unit.successRate > 0.3)
@@ -102,9 +169,11 @@ export async function POST(request: NextRequest) {
         whyBullets.push(`${Math.round(odds.currentOdds * 100)}% draw odds this year`);
       if (state?.pointSystem === "random" || state?.pointSystem === "bonus")
         whyBullets.push(`${state.pointSystemDetails.description} — everyone has a shot`);
+      if (weaponMatch.matches && weaponMatch.seasonLabel)
+        whyBullets.push(`Has ${weaponType} season — ${weaponMatch.seasonLabel}`);
 
       // Composite score
-      const compositeScore =
+      let compositeScore =
         unit.successRate * 20 +
         unit.trophyRating * 5 +
         unit.publicLandPct * 10 +
@@ -112,13 +181,18 @@ export async function POST(request: NextRequest) {
         odds.currentOdds * 30 +
         (fitsTimeline ? 20 : 0);
 
+      // Weapon type scoring boost (not a hard filter)
+      if (weaponMatch.matches) {
+        compositeScore += 15;
+      }
+
       return {
         unit,
         stateName: state?.name ?? unit.stateId,
         drawOdds: odds,
         fitsTimeline,
         compositeScore,
-        whyBullets: whyBullets.slice(0, 3),
+        whyBullets: whyBullets.slice(0, 4),
       };
     });
 
