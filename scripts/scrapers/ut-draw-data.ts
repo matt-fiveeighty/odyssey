@@ -1,0 +1,651 @@
+/**
+ * Utah (DWR) Draw Data Scraper
+ *
+ * Utah Division of Wildlife Resources publishes draw odds as PDF reports
+ * and through an interactive draw odds tool.
+ *
+ * Data sources:
+ *   - Draw odds reports (PDF): https://wildlife.utah.gov/bg-odds.html
+ *   - Interactive draw odds: https://wildlife.utah.gov/draw-odds.html
+ *   - Big game harvest data: https://wildlife.utah.gov/hunting/main-hunting-page/big-game/big-game-harvest-data.html
+ *   - PDF patterns: wildlife.utah.gov/pdf/bg/{year}/{yy}_bg-odds.pdf
+ *
+ * UT draw system:
+ *   - Dual system: preference points for general season,
+ *     bonus points for limited-entry and once-in-a-lifetime
+ *   - Apply per unit
+ *   - Moose, goat, bison are OIAL (once-in-a-lifetime)
+ */
+
+import {
+  BaseScraper,
+  ScrapedUnit,
+  ScrapedDrawHistory,
+  ScrapedDeadline,
+  ScrapedFee,
+  ScrapedSeason,
+  ScrapedRegulation,
+  ScrapedLeftoverTag,
+} from "./base-scraper";
+
+// ---------------------------------------------------------------------------
+// URL constants
+// ---------------------------------------------------------------------------
+
+const DWR_ODDS_PAGE = "https://wildlife.utah.gov/bg-odds.html";
+const DWR_DRAW_ODDS_TOOL = "https://wildlife.utah.gov/draw-odds.html";
+
+/**
+ * DWR PDF reports follow a predictable pattern.
+ * Key reports: bg-odds (limited entry/OIAL), deer_odds (general), antlerless
+ *
+ * UPDATE THESE ANNUALLY.
+ */
+const DWR_PDF_REPORTS: { url: string; label: string; speciesIds: string[] }[] = [
+  {
+    url: "https://wildlife.utah.gov/pdf/bg/2025/25_bg-odds.pdf",
+    label: "2025 LE & OIAL Big Game",
+    speciesIds: ["elk", "mule_deer", "moose", "bighorn_sheep", "mountain_goat", "bison", "pronghorn"],
+  },
+  {
+    url: "https://wildlife.utah.gov/pdf/bg/2025/25_deer_odds.pdf",
+    label: "2025 General Deer",
+    speciesIds: ["mule_deer"],
+  },
+  {
+    url: "https://wildlife.utah.gov/pdf/bg/2025/25_antlerless_drawing_odds_report.pdf",
+    label: "2025 Antlerless",
+    speciesIds: ["elk", "mule_deer", "pronghorn"],
+  },
+  {
+    url: "https://wildlife.utah.gov/pdf/bg/2024/24_bg-odds.pdf",
+    label: "2024 LE & OIAL Big Game",
+    speciesIds: ["elk", "mule_deer", "moose", "bighorn_sheep", "mountain_goat", "bison", "pronghorn"],
+  },
+  {
+    url: "https://wildlife.utah.gov/pdf/bg/2024/24_deer_odds.pdf",
+    label: "2024 General Deer",
+    speciesIds: ["mule_deer"],
+  },
+];
+
+/** UT species mapping */
+const UT_SPECIES: Record<string, string> = {
+  elk: "elk",
+  deer: "mule_deer",
+  "mule deer": "mule_deer",
+  moose: "moose",
+  pronghorn: "pronghorn",
+  antelope: "pronghorn",
+  "bighorn sheep": "bighorn_sheep",
+  "rocky mountain bighorn": "bighorn_sheep",
+  "desert bighorn": "bighorn_sheep",
+  sheep: "bighorn_sheep",
+  "mountain goat": "mountain_goat",
+  goat: "mountain_goat",
+  bison: "bison",
+  buffalo: "bison",
+  "black bear": "black_bear",
+  bear: "black_bear",
+  cougar: "mountain_lion",
+  "mountain lion": "mountain_lion",
+};
+
+// ---------------------------------------------------------------------------
+// Utah scraper
+// ---------------------------------------------------------------------------
+
+export class UtahScraper extends BaseScraper {
+  stateId = "UT";
+  stateName = "Utah";
+  sourceUrl = DWR_ODDS_PAGE;
+
+  async scrapeUnits(): Promise<ScrapedUnit[]> {
+    const units: ScrapedUnit[] = [];
+    const seen = new Set<string>();
+
+    // Scrape the draw odds page for PDF links and any embedded data
+    try {
+      this.log("Scraping DWR draw odds page...");
+      const html = await this.fetchPage(DWR_ODDS_PAGE);
+
+      // Extract PDF report links
+      const pdfLinks = this.extractPdfLinks(html);
+      this.log(`  Found ${pdfLinks.length} PDF report links`);
+
+      // Also check for any CSV/data links
+      const csvPattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
+      let match: RegExpExecArray | null;
+      while ((match = csvPattern.exec(html)) !== null) {
+        let href = match[1];
+        if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
+        try {
+          const rows = await this.fetchCsv(href);
+          if (rows.length > 1) {
+            const headers = rows[0].map((h) => h.toLowerCase().trim());
+            for (let i = 1; i < rows.length; i++) {
+              const row = this.parseCsvRow(rows[i], headers);
+              const unit = row["unit"] || row["hunt unit"] || row["area"] || "";
+              const species = (row["species"] || "").toLowerCase();
+              const speciesId = this.mapSpecies(species);
+              if (unit && speciesId) {
+                const key = `${speciesId}:${unit}`;
+                if (!seen.has(key)) {
+                  seen.add(key);
+                  units.push({ stateId: "UT", speciesId, unitCode: unit, unitName: `Unit ${unit}` });
+                }
+              }
+            }
+          }
+        } catch { /* skip */ }
+      }
+
+      // Extract unit numbers from page text
+      const unitPattern = /Unit\s+(\d+[A-Z]?)/gi;
+      while ((match = unitPattern.exec(html)) !== null) {
+        const code = match[1];
+        for (const speciesId of ["elk", "mule_deer", "moose"]) {
+          const key = `${speciesId}:${code}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            units.push({ stateId: "UT", speciesId, unitCode: code, unitName: `Unit ${code}` });
+          }
+        }
+      }
+    } catch (err) {
+      this.log(`Draw odds page scrape failed: ${(err as Error).message}`);
+    }
+
+    // Try the interactive draw odds tool
+    try {
+      this.log("Checking DWR draw odds tool...");
+      const html = await this.fetchPage(DWR_DRAW_ODDS_TOOL);
+
+      // Look for API endpoints or data URLs
+      const apiPattern = /(?:url|endpoint|api)\s*[:=]\s*["']([^"']+)["']/gi;
+      let match: RegExpExecArray | null;
+      while ((match = apiPattern.exec(html)) !== null) {
+        this.log(`  Found potential API: ${match[1]}`);
+      }
+    } catch { /* skip */ }
+
+    this.log(`Extracted ${units.length} UT units`);
+    return units;
+  }
+
+  async scrapeDrawHistory(): Promise<ScrapedDrawHistory[]> {
+    const results: ScrapedDrawHistory[] = [];
+
+    // Try to download PDF reports
+    for (const report of DWR_PDF_REPORTS) {
+      try {
+        this.log(`Fetching ${report.label}: ${report.url}`);
+        const text = await this.fetchPage(report.url);
+
+        // Try to parse any text content from the PDF response
+        const parsed = this.parsePdfText(text, report.speciesIds);
+        if (parsed.length > 0) {
+          results.push(...parsed);
+          this.log(`  Parsed ${parsed.length} rows from ${report.label}`);
+        } else {
+          this.log(`  No parseable data from ${report.label} (PDF needs binary parser)`);
+        }
+      } catch (err) {
+        this.log(`  ${report.label} fetch failed: ${(err as Error).message}`);
+      }
+    }
+
+    // Try scraping the draw odds page for any embedded HTML tables
+    try {
+      this.log("Scraping DWR pages for HTML table data...");
+      for (const url of [DWR_ODDS_PAGE, DWR_DRAW_ODDS_TOOL]) {
+        const html = await this.fetchPage(url);
+        const tableData = this.parseHtmlTables(html);
+        results.push(...tableData);
+      }
+    } catch { /* skip */ }
+
+    // Try to find CSV download links
+    try {
+      const html = await this.fetchPage(DWR_ODDS_PAGE);
+      const csvLinks: string[] = [];
+      const pattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
+      let match: RegExpExecArray | null;
+      while ((match = pattern.exec(html)) !== null) {
+        let href = match[1];
+        if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
+        csvLinks.push(href);
+      }
+
+      for (const csvUrl of csvLinks) {
+        try {
+          const rows = await this.fetchCsv(csvUrl);
+          if (rows.length > 1) {
+            const headers = rows[0].map((h) => h.toLowerCase().trim());
+            for (let i = 1; i < rows.length; i++) {
+              const row = this.parseCsvRow(rows[i], headers);
+              const parsed = this.parseUtRow(row);
+              if (parsed) results.push(parsed);
+            }
+          }
+        } catch { /* skip */ }
+      }
+    } catch { /* skip */ }
+
+    this.log(`Total UT draw history rows: ${results.length}`);
+    return results;
+  }
+
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+
+  private extractPdfLinks(html: string): string[] {
+    const links: string[] = [];
+    const pattern = /href=["']([^"']*\.pdf[^"']*)["']/gi;
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(html)) !== null) {
+      let href = match[1];
+      if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
+      links.push(href);
+    }
+    return links;
+  }
+
+  private parsePdfText(text: string, speciesIds: string[]): ScrapedDrawHistory[] {
+    const results: ScrapedDrawHistory[] = [];
+    const lines = text.split("\n");
+    const defaultSpecies = speciesIds[0] || "elk";
+
+    // Look for lines with unit numbers and numeric data
+    const unitLine = /(?:Unit|Area)\s*(\d+[A-Z]?)/i;
+
+    for (const line of lines) {
+      const unitMatch = unitLine.exec(line);
+      if (!unitMatch) continue;
+
+      const unitCode = unitMatch[1];
+      const nums = line.match(/\d+/g);
+      if (!nums || nums.length < 3) continue;
+
+      // Detect species from context
+      let speciesId = defaultSpecies;
+      const lower = line.toLowerCase();
+      for (const [key, id] of Object.entries(UT_SPECIES)) {
+        if (lower.includes(key)) { speciesId = id; break; }
+      }
+
+      results.push({
+        unitId: `UT:${speciesId}:${unitCode}`,
+        year: 2025,
+        applicants: parseInt(nums[nums.length - 3] || "0", 10),
+        tags: parseInt(nums[nums.length - 2] || "0", 10),
+        odds: 0,
+        minPointsDrawn: null,
+      });
+    }
+
+    return results;
+  }
+
+  private parseHtmlTables(html: string): ScrapedDrawHistory[] {
+    const results: ScrapedDrawHistory[] = [];
+    const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+    for (const table of tables) {
+      const headers: string[] = [];
+      const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
+      for (const th of ths) headers.push(th.replace(/<[^>]*>/g, "").trim().toLowerCase());
+      if (headers.length < 3) continue;
+
+      const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+      for (const tr of trs) {
+        const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+        if (tds.length < 3) continue;
+        const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+        const row: Record<string, string> = {};
+        for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+        const parsed = this.parseUtRow(row);
+        if (parsed) results.push(parsed);
+      }
+    }
+    return results;
+  }
+
+  private parseUtRow(row: Record<string, string>): ScrapedDrawHistory | null {
+    const unitCode = row["unit"] || row["hunt unit"] || row["area"] || "";
+    if (!unitCode) return null;
+
+    const species = (row["species"] || row["animal"] || "").toLowerCase();
+    const speciesId = this.mapSpecies(species);
+    if (!speciesId) return null;
+
+    const year = parseInt(row["year"] || "0", 10);
+    if (!year || year < 2000) return null;
+
+    const applicants = this.num(row["applicants"] || row["total applicants"]);
+    const tags = this.num(row["permits"] || row["tags"] || row["issued"]);
+
+    return {
+      unitId: `UT:${speciesId}:${unitCode}`,
+      year,
+      applicants,
+      tags,
+      odds: applicants > 0 ? Math.round((tags / applicants) * 10000) / 100 : 0,
+      minPointsDrawn: row["min points"] ? parseInt(row["min points"], 10) : null,
+    };
+  }
+
+  private mapSpecies(name: string): string | null {
+    for (const [key, id] of Object.entries(UT_SPECIES)) {
+      if (name.includes(key)) return id;
+    }
+    return null;
+  }
+
+  private num(val: string | undefined): number {
+    if (!val) return 0;
+    return parseInt(val.replace(/,/g, "").replace(/\s/g, ""), 10) || 0;
+  }
+
+  // =========================================================================
+  // FULL-SPECTRUM DATA: Deadlines, Fees, Seasons, Regulations, Leftovers
+  // =========================================================================
+
+  async scrapeDeadlines(): Promise<ScrapedDeadline[]> {
+    const deadlines: ScrapedDeadline[] = [];
+    const year = new Date().getFullYear();
+
+    try {
+      this.log("Scraping Utah DWR for application deadlines...");
+      const urls = [
+        "https://wildlife.utah.gov/hunting/drawing-odds.html",
+        "https://wildlife.utah.gov/hunting.html",
+        "https://wildlife.utah.gov/guidebooks/big-game.html",
+      ];
+
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const datePatterns = [
+            /(?:application|deadline|opens?|closes?|due|draw\s+results?|bonus\s+point)[^.]*?(\w+\s+\d{1,2},?\s+\d{4})/gi,
+            /(\d{1,2}\/\d{1,2}\/\d{4})/g,
+          ];
+
+          for (const pattern of datePatterns) {
+            let match: RegExpExecArray | null;
+            while ((match = pattern.exec(html)) !== null) {
+              const context = html.substring(Math.max(0, match.index - 150), match.index + 150)
+                .replace(/<[^>]*>/g, " ").toLowerCase();
+              const dateStr = match[1];
+
+              let deadlineType = "application_close";
+              if (context.includes("open")) deadlineType = "application_open";
+              if (context.includes("result")) deadlineType = "draw_results";
+              if (context.includes("leftover") || context.includes("remaining")) deadlineType = "leftover";
+              if (context.includes("bonus point")) deadlineType = "bonus_point";
+
+              const speciesIds = this.detectSpeciesFromContext(context);
+              for (const speciesId of speciesIds) {
+                deadlines.push({ stateId: "UT", speciesId, deadlineType, date: dateStr, year, notes: context.trim().substring(0, 200) });
+              }
+            }
+          }
+        } catch (err) {
+          this.log(`  Deadline page fetch failed (${url}): ${(err as Error).message}`);
+        }
+      }
+    } catch (err) {
+      this.log(`Deadline scrape failed: ${(err as Error).message}`);
+    }
+
+    this.log(`Found ${deadlines.length} UT deadlines`);
+    return deadlines;
+  }
+
+  async scrapeFees(): Promise<ScrapedFee[]> {
+    const fees: ScrapedFee[] = [];
+
+    try {
+      this.log("Scraping Utah DWR for fee data...");
+      const urls = [
+        "https://wildlife.utah.gov/licenses-permits.html",
+        "https://wildlife.utah.gov/hunting.html",
+      ];
+
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
+          let match: RegExpExecArray | null;
+          const seen = new Set<string>();
+
+          while ((match = feePattern.exec(html)) !== null) {
+            const amount = parseFloat(match[1].replace(/,/g, ""));
+            const label = match[2].replace(/<[^>]*>/g, "").trim();
+
+            if (amount > 0 && amount < 10000 && label.length > 3) {
+              const key = `${amount}:${label.substring(0, 30)}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+
+              const lower = label.toLowerCase();
+              const residency = lower.includes("nonresident") || lower.includes("non-resident")
+                ? "nonresident" as const
+                : lower.includes("resident") ? "resident" as const : "both" as const;
+
+              fees.push({
+                stateId: "UT",
+                feeName: label.substring(0, 100),
+                amount,
+                residency,
+                speciesId: this.detectSingleSpecies(lower) ?? undefined,
+                frequency: lower.includes("per species") ? "per_species"
+                  : lower.includes("annual") ? "annual" : "one_time",
+                notes: label,
+              });
+            }
+          }
+
+          // Also parse HTML tables
+          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+          for (const table of tables) {
+            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+            for (const tr of trs) {
+              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+              if (tds.length < 2) continue;
+              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+              for (const cell of cells) {
+                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+                if (dollarMatch) {
+                  const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
+                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
+                  if (amount > 0 && feeName) {
+                    const key = `${amount}:${feeName.substring(0, 30)}`;
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      fees.push({
+                        stateId: "UT",
+                        feeName: feeName.substring(0, 100),
+                        amount,
+                        residency: feeName.toLowerCase().includes("nonresident") ? "nonresident" : "both",
+                        frequency: "annual",
+                      });
+                    }
+                  }
+                }
+              }
+            }
+          }
+        } catch (err) {
+          this.log(`  Fee page fetch failed (${url}): ${(err as Error).message}`);
+        }
+      }
+    } catch (err) {
+      this.log(`Fee scrape failed: ${(err as Error).message}`);
+    }
+
+    this.log(`Found ${fees.length} UT fee entries`);
+    return fees;
+  }
+
+  async scrapeSeasons(): Promise<ScrapedSeason[]> {
+    const seasons: ScrapedSeason[] = [];
+    const year = new Date().getFullYear();
+
+    try {
+      this.log("Scraping Utah DWR for season dates...");
+      const html = await this.fetchPage("https://wildlife.utah.gov/guidebooks/big-game.html");
+
+      const seasonPattern = /(archery|muzzleloader|rifle|general|any\s+legal\s+weapon|any\s+weapon)[^:]*?:\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})\s*[-–]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})/gi;
+      let match: RegExpExecArray | null;
+
+      while ((match = seasonPattern.exec(html)) !== null) {
+        const seasonType = match[1].toLowerCase().trim();
+        const startDate = match[2];
+        const endDate = match[3];
+        const context = html.substring(Math.max(0, match.index - 200), match.index + 200).toLowerCase();
+
+        const speciesIds = this.detectSpeciesFromContext(context);
+        for (const speciesId of speciesIds) {
+          seasons.push({ stateId: "UT", speciesId, seasonType, startDate, endDate, year });
+        }
+      }
+    } catch (err) {
+      this.log(`Season scrape failed: ${(err as Error).message}`);
+    }
+
+    this.log(`Found ${seasons.length} UT season entries`);
+    return seasons;
+  }
+
+  async scrapeRegulations(): Promise<ScrapedRegulation[]> {
+    const regs: ScrapedRegulation[] = [];
+
+    try {
+      this.log("Scraping Utah DWR for regulation updates...");
+      const urls = [
+        "https://wildlife.utah.gov/hunting/big-game.html",
+        "https://wildlife.utah.gov/hunting.html",
+      ];
+
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const newsPattern = /<(?:h[2-4]|a)[^>]*>([\s\S]*?)<\/(?:h[2-4]|a)>/gi;
+          let match: RegExpExecArray | null;
+
+          while ((match = newsPattern.exec(html)) !== null) {
+            const text = match[1].replace(/<[^>]*>/g, "").trim();
+            if (text.length < 10 || text.length > 300) continue;
+
+            const lower = text.toLowerCase();
+            if (
+              lower.includes("regulation") || lower.includes("change") ||
+              lower.includes("update") || lower.includes("announcement") ||
+              lower.includes("closure") || lower.includes("leftover") ||
+              lower.includes("new rule") || lower.includes("draw") ||
+              lower.includes("season") || lower.includes("emergency")
+            ) {
+              let category = "announcement";
+              if (lower.includes("regulation") || lower.includes("rule")) category = "rule_change";
+              if (lower.includes("closure") || lower.includes("emergency")) category = "emergency_closure";
+              if (lower.includes("leftover")) category = "leftover_tags";
+
+              regs.push({
+                stateId: "UT",
+                title: text.substring(0, 200),
+                summary: text,
+                sourceUrl: url,
+                category,
+              });
+            }
+          }
+        } catch (err) {
+          this.log(`  Regulation page fetch failed (${url}): ${(err as Error).message}`);
+        }
+      }
+    } catch (err) {
+      this.log(`Regulation scrape failed: ${(err as Error).message}`);
+    }
+
+    this.log(`Found ${regs.length} UT regulation entries`);
+    return regs;
+  }
+
+  async scrapeLeftoverTags(): Promise<ScrapedLeftoverTag[]> {
+    const leftovers: ScrapedLeftoverTag[] = [];
+
+    try {
+      this.log("Checking Utah DWR for leftover tag data...");
+      const html = await this.fetchPage("https://wildlife.utah.gov/hunting/drawing-odds.html");
+
+      const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+      for (const table of tables) {
+        const lower = table.toLowerCase();
+        if (!lower.includes("leftover") && !lower.includes("remaining") && !lower.includes("available")) continue;
+
+        const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
+        const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
+        const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+
+        for (const tr of trs) {
+          const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+          if (tds.length < 2) continue;
+          const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+          const row: Record<string, string> = {};
+          for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+
+          const unitCode = row["unit"] || row["hunt"] || row["area"] || cells[0] || "";
+          const available = parseInt((row["available"] || row["remaining"] || row["permits"] || cells[cells.length - 1] || "0").replace(/,/g, ""), 10);
+          const species = (row["species"] || "").toLowerCase();
+          const speciesId = this.detectSingleSpecies(species) || "elk";
+
+          if (unitCode && available > 0) {
+            leftovers.push({
+              stateId: "UT",
+              speciesId,
+              unitCode,
+              tagsAvailable: available,
+              sourceUrl: "https://wildlife.utah.gov/hunting/drawing-odds.html",
+            });
+          }
+        }
+      }
+    } catch (err) {
+      this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
+    }
+
+    this.log(`Found ${leftovers.length} UT leftover tags`);
+    return leftovers;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: detect species from surrounding text context
+  // -------------------------------------------------------------------------
+
+  private detectSpeciesFromContext(text: string): string[] {
+    const species: string[] = [];
+    if (text.includes("elk")) species.push("elk");
+    if (text.includes("deer") || text.includes("mule")) species.push("mule_deer");
+    if (text.includes("pronghorn") || text.includes("antelope")) species.push("pronghorn");
+    if (text.includes("moose")) species.push("moose");
+    if (text.includes("sheep") || text.includes("bighorn")) species.push("bighorn_sheep");
+    if (text.includes("goat")) species.push("mountain_goat");
+    if (text.includes("bison") || text.includes("buffalo")) species.push("bison");
+    if (text.includes("bear")) species.push("black_bear");
+    if (species.length === 0) species.push("elk");
+    return species;
+  }
+
+  private detectSingleSpecies(text: string): string | null {
+    if (text.includes("elk")) return "elk";
+    if (text.includes("deer") || text.includes("mule")) return "mule_deer";
+    if (text.includes("pronghorn") || text.includes("antelope")) return "pronghorn";
+    if (text.includes("moose")) return "moose";
+    if (text.includes("sheep")) return "bighorn_sheep";
+    if (text.includes("goat")) return "mountain_goat";
+    if (text.includes("bison")) return "bison";
+    if (text.includes("bear")) return "black_bear";
+    return null;
+  }
+}
