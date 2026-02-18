@@ -28,7 +28,9 @@ import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { findAlternateUnits } from "@/lib/engine/unit-alternates";
-import UnitTagBadges from "@/components/units/UnitTagBadges";
+import UnitProfileHeader from "@/components/units/UnitProfileHeader";
+import DrawTrendChart from "@/components/units/DrawTrendChart";
+import UnitChangeNotes from "@/components/units/UnitChangeNotes";
 import AlternateUnitsAccordion from "@/components/units/AlternateUnitsAccordion";
 
 export default function UnitProfilePage() {
@@ -127,8 +129,15 @@ export default function UnitProfilePage() {
     },
   ];
 
-  // Trophy rating stars
-  const trophyStars = Array.from({ length: 10 }, (_, i) => i < unit.trophyRating);
+  // Build draw history from unit.drawData for the chart
+  const drawHistory = (unit.drawData ?? []).map((d) => ({
+    year: d.year,
+    applicants: d.applicants,
+    tagsAvailable: d.tags,
+    tagsIssued: null as number | null,
+    oddsPercent: d.oddsPercent,
+    minPointsDrawn: null as number | null,
+  }));
 
   return (
     <div className="p-6 space-y-6 fade-in-up">
@@ -142,49 +151,7 @@ export default function UnitProfilePage() {
       {/* ================================================================ */}
       {/* Unit Header */}
       {/* ================================================================ */}
-      <div className="flex items-start gap-4">
-        {state && (
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center text-base font-bold text-white shrink-0"
-            style={{ backgroundColor: state.color }}
-          >
-            {state.abbreviation}
-          </div>
-        )}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Unit {unit.unitCode}
-            </h1>
-            {unit.unitName && (
-              <span className="text-lg text-muted-foreground">
-                {unit.unitName}
-              </span>
-            )}
-          </div>
-          <div className="flex items-center gap-3 mb-2">
-            <span className="text-sm text-muted-foreground">
-              {species?.name ?? unit.speciesId} &middot; {state?.name ?? unit.stateId}
-            </span>
-          </div>
-          {/* Trophy stars */}
-          <div className="flex items-center gap-1 mb-3">
-            {trophyStars.map((filled, i) => (
-              <Star
-                key={i}
-                className={`w-4 h-4 ${
-                  filled ? "text-amber-400 fill-amber-400" : "text-muted-foreground/30"
-                }`}
-              />
-            ))}
-            <span className="text-xs text-muted-foreground ml-1.5">
-              {unit.trophyRating}/10 Trophy
-            </span>
-          </div>
-          {/* Tags */}
-          <UnitTagBadges unit={unit} />
-        </div>
-      </div>
+      <UnitProfileHeader unit={unit} state={state} species={species} />
 
       {/* ================================================================ */}
       {/* Key Stats Grid */}
@@ -302,27 +269,11 @@ export default function UnitProfilePage() {
             </Card>
           )}
 
-          {/* Draw Trend (Placeholder) */}
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-primary" />
-                Draw Trend
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col items-center justify-center py-8 px-4 rounded-lg bg-secondary/30 border border-dashed border-border">
-                <TrendingUp className="w-10 h-10 text-muted-foreground/30 mb-3" />
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  Draw Trend Charts Coming Soon
-                </p>
-                <p className="text-xs text-muted-foreground/60 text-center max-w-sm">
-                  Historical draw odds, applicant counts, and point creep
-                  visualization will appear here once data is available.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Draw Trend Chart */}
+          <DrawTrendChart drawHistory={drawHistory} />
+
+          {/* Change Notes (renders nothing when empty) */}
+          <UnitChangeNotes notes={[]} />
 
           {/* Tactical Notes */}
           {tn && (
