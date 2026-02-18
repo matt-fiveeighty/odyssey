@@ -5,7 +5,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/auth/", "/dashboard", "/plan-builder", "/goals", "/units", "/calculator", "/points"],
+      disallow: ["/auth/", "/api/", "/dashboard", "/plan-builder", "/goals", "/units", "/calculator", "/points", "/settings"],
     },
     sitemap: "https://odysseyoutdoors.com/sitemap.xml",
   };

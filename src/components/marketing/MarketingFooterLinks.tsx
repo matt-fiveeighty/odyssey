@@ -71,6 +71,11 @@ export function MarketingFooterLinks() {
             </Link>
           </li>
           <li>
+            <Link href="/security" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+              Security
+            </Link>
+          </li>
+          <li>
             <Link href="mailto:support@odysseyoutdoors.com" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
               Contact
             </Link>

@@ -21,6 +21,8 @@ import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
 import { useAppStore } from "@/lib/store";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
+import { UnlockHorizon } from "@/components/points/UnlockHorizon";
+import { PointImpactViz } from "@/components/points/PointImpactViz";
 import { pointsFormSchema } from "@/lib/validations";
 import type { UserPoints } from "@/lib/types";
 
@@ -344,6 +346,20 @@ export default function PointsPage() {
                       /yr
                     </span>
                   </div>
+                  {/* Unlock Horizons */}
+                  <div className="pt-2">
+                    <UnlockHorizon stateId={stateId} points={points} />
+                  </div>
+                  {/* Point Impact Viz (for first species entry) */}
+                  {points[0] && (
+                    <div className="pt-2">
+                      <PointImpactViz
+                        stateId={stateId}
+                        speciesId={points[0].speciesId}
+                        currentPoints={points[0].points}
+                      />
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

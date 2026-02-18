@@ -79,7 +79,15 @@ export default function SignInPage() {
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
+          <div className="flex items-center justify-between">
+            <Label htmlFor="password">Password</Label>
+            <Link
+              href="/auth/reset-password"
+              className="text-xs text-muted-foreground hover:text-primary hover:underline"
+            >
+              Forgot password?
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
@@ -156,9 +164,13 @@ export default function SignInPage() {
       <Button
         variant="ghost"
         className="w-full text-muted-foreground hover:text-foreground"
-        onClick={() => {
-          document.cookie = "guest-session=true; path=/; max-age=86400; SameSite=Lax; Secure";
-          router.push("/plan-builder");
+        onClick={async () => {
+          try {
+            await fetch("/auth/guest", { method: "POST" });
+            router.push("/plan-builder");
+          } catch {
+            setError("Could not start guest session. Please try again.");
+          }
         }}
         type="button"
       >

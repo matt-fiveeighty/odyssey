@@ -1,0 +1,5 @@
+Contact: mailto:security@odysseyoutdoors.com
+Expires: 2027-02-18T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://odysseyoutdoors.com/.well-known/security.txt
+Policy: https://odysseyoutdoors.com/security

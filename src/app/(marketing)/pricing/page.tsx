@@ -4,6 +4,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import {
   Check,
+  X,
   ArrowRight,
   Mountain,
   Compass,
@@ -13,72 +14,77 @@ import {
 
 export const metadata: Metadata = {
   title: "Pricing | Odyssey Outdoors",
-  description: "Simple, transparent pricing for western big game hunt planning. Start free with the full strategy engine.",
+  description:
+    "Simple, transparent pricing for western big game hunt planning. Start free with the full strategy engine.",
 };
 
 const plans = [
   {
     name: "Basecamp",
-    price: "Free",
+    monthly: "Free",
+    annual: "Free",
     period: "forever",
     description:
       "See how western states stack up for your goals. A quick snapshot to get started.",
     icon: Compass,
     featured: false,
     features: [
-      "State scoring overview",
-      "Top 3 state recommendations",
-      "Basic budget estimate",
-      "Species & state explorer",
+      { name: "Species & state explorer", included: true },
+      { name: "Top 3 state recommendations", included: true },
+      { name: "Basic budget estimate", included: true },
+      { name: "1 strategy engine run", included: true },
+      { name: "Summary roadmap only", included: true },
+      { name: "Full draw odds data", included: false },
+      { name: "Goal tracking", included: false },
+      { name: "Data export", included: false },
     ],
     cta: "Get Started",
     href: "/auth/sign-up",
   },
   {
     name: "Scout",
-    price: "$12",
-    period: "/month",
+    monthly: "$9.99",
+    annual: "$79.99",
+    annualSavings: "Save 33%",
+    period: "/year",
     description:
-      "The full strategy engine. Personalized roadmaps, unit recommendations, portfolio tracking, and alerts.",
+      "The full strategy engine. Personalized roadmaps, draw odds, portfolio tracking, and deadline alerts.",
     icon: Binoculars,
     featured: true,
     features: [
-      "Everything in Basecamp",
-      "Personalized state scoring & rankings",
-      "10-year phased roadmap",
-      "Budget breakdown & cost projections",
-      "Unit recommendations per state",
-      "Investment calculator",
-      "Goal tracking & hunt planning",
-      "Application deadline reminders",
-      "Draw result notifications",
-      "Points portfolio dashboard",
-      "Unlimited strategy re-runs",
+      { name: "Everything in Basecamp", included: true },
+      { name: "All 11 states scored", included: true },
+      { name: "Full draw odds (all species)", included: true },
+      { name: "Unlimited strategy re-runs", included: true },
+      { name: "Full 10-year roadmap", included: true },
+      { name: "Goal tracking & point portfolio", included: true },
+      { name: "Deadline reminders", included: true },
+      { name: "Budget projections", included: true },
     ],
-    cta: "Coming Soon",
-    href: "#",
+    cta: "Get Scout",
+    href: "/auth/sign-up",
   },
   {
     name: "Outfitter",
-    price: "$29",
-    period: "/month",
+    monthly: "$14.99",
+    annual: "$129.99",
+    annualSavings: "Save 28%",
+    period: "/year",
     description:
-      "For the serious multi-state hunter. Advanced analytics, team planning, and exports.",
+      "For the serious multi-state hunter. Advanced analytics, historical trends, and data exports.",
     icon: Crown,
     featured: false,
     features: [
-      "Everything in Scout",
-      "Historical draw odds & trends",
-      "Unit success rate analytics",
-      "Hunt journal & harvest log",
-      "Team portfolios (up to 5 hunters)",
-      "CSV & PDF roadmap exports",
-      "Multi-year strategy comparison",
-      "Early access to new features",
-      "Priority support",
+      { name: "Everything in Scout", included: true },
+      { name: "Unit recommendations", included: true },
+      { name: "Historical draw trends", included: true },
+      { name: "Multi-year comparison", included: true },
+      { name: "Advanced analytics", included: true },
+      { name: "Data export (JSON/CSV)", included: true },
+      { name: "Priority support", included: true },
     ],
-    cta: "Coming Soon",
-    href: "#",
+    cta: "Get Outfitter",
+    href: "/auth/sign-up",
   },
 ];
 
@@ -114,8 +120,8 @@ export default function PricingPage() {
             <span className="text-primary">Hunt Better</span>
           </h1>
           <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Start free with the full strategy engine. Upgrade when you&apos;re
-            ready for tracking, alerts, and advanced analytics.
+            Start free with a snapshot. Upgrade for the full strategy engine,
+            draw odds, and multi-year planning.
           </p>
         </div>
       </section>
@@ -144,9 +150,7 @@ export default function PricingPage() {
                 <div className="flex items-center gap-3 mb-4">
                   <div
                     className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                      plan.featured
-                        ? "bg-primary/15"
-                        : "bg-secondary"
+                      plan.featured ? "bg-primary/15" : "bg-secondary"
                     }`}
                   >
                     <plan.icon
@@ -160,12 +164,20 @@ export default function PricingPage() {
                   <h3 className="text-lg font-bold">{plan.name}</h3>
                 </div>
 
-                <div className="mb-4">
-                  <span className="text-3xl font-bold">{plan.price}</span>
-                  <span className="text-sm text-muted-foreground ml-1">
-                    {plan.period}
-                  </span>
+                <div className="mb-1">
+                  <span className="text-3xl font-bold">{plan.annual}</span>
+                  {plan.period !== "forever" && (
+                    <span className="text-sm text-muted-foreground ml-1">
+                      {plan.period}
+                    </span>
+                  )}
                 </div>
+                {plan.annualSavings && (
+                  <p className="text-xs text-primary font-medium mb-4">
+                    {plan.annualSavings} vs. monthly
+                  </p>
+                )}
+                {!plan.annualSavings && <div className="mb-4" />}
 
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">
                   {plan.description}
@@ -174,51 +186,72 @@ export default function PricingPage() {
                 <ul className="space-y-3 mb-8 flex-1">
                   {plan.features.map((feature) => (
                     <li
-                      key={feature}
+                      key={feature.name}
                       className="flex items-start gap-2.5 text-sm"
                     >
-                      <Check
-                        className={`w-4 h-4 shrink-0 mt-0.5 ${
-                          plan.featured
-                            ? "text-primary"
-                            : "text-muted-foreground"
-                        }`}
-                      />
-                      <span className="text-muted-foreground">
-                        {feature}
+                      {feature.included ? (
+                        <Check
+                          className={`w-4 h-4 shrink-0 mt-0.5 ${
+                            plan.featured
+                              ? "text-primary"
+                              : "text-muted-foreground"
+                          }`}
+                        />
+                      ) : (
+                        <X className="w-4 h-4 shrink-0 mt-0.5 text-muted-foreground/40" />
+                      )}
+                      <span
+                        className={
+                          feature.included
+                            ? "text-muted-foreground"
+                            : "text-muted-foreground/40"
+                        }
+                      >
+                        {feature.name}
                       </span>
                     </li>
                   ))}
                 </ul>
 
-                {plan.cta === "Coming Soon" ? (
+                <Link href={plan.href}>
                   <Button
-                    className="w-full gap-2"
-                    variant="outline"
-                    disabled
+                    className={`w-full gap-2 ${
+                      plan.featured ? "glow-pulse" : ""
+                    }`}
+                    variant={plan.featured ? "default" : "outline"}
                   >
                     {plan.cta}
+                    <ArrowRight className="w-4 h-4" />
                   </Button>
-                ) : (
-                  <Link href={plan.href}>
-                    <Button
-                      className={`w-full gap-2 ${
-                        plan.featured
-                          ? "glow-pulse"
-                          : ""
-                      }`}
-                      variant={plan.featured ? "default" : "outline"}
-                    >
-                      {plan.cta}
-                      <ArrowRight className="w-4 h-4" />
-                    </Button>
-                  </Link>
-                )}
+                </Link>
               </div>
             ))}
           </div>
 
-          {/* FAQ-style note */}
+          {/* Trust signals */}
+          <div className="mt-16 grid sm:grid-cols-3 gap-6 text-center">
+            <div>
+              <p className="text-sm font-semibold mb-1">No tracking</p>
+              <p className="text-xs text-muted-foreground">
+                Zero third-party trackers. No Google Analytics, no Facebook
+                Pixel.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1">Your data is yours</p>
+              <p className="text-xs text-muted-foreground">
+                Export anytime. Delete anytime. 30-day deletion guarantee.
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-semibold mb-1">Cancel anytime</p>
+              <p className="text-xs text-muted-foreground">
+                No contracts. No hidden fees. One-click cancel in settings.
+              </p>
+            </div>
+          </div>
+
+          {/* FAQ */}
           <div className="mt-16 max-w-2xl mx-auto text-center">
             <h3 className="text-lg font-bold mb-3">
               Why is Basecamp free?
@@ -226,16 +259,9 @@ export default function PricingPage() {
             <p className="text-sm text-muted-foreground leading-relaxed">
               Every hunter deserves a starting point. Basecamp gives you a
               snapshot of which states fit your goals. When you&apos;re ready for
-              the full strategy engine &mdash; personalized roadmaps, unit
-              recommendations, portfolio tracking, and alerts &mdash; Scout
-              has everything you need.
-            </p>
-          </div>
-
-          {/* Pricing subject to change */}
-          <div className="mt-8 text-center">
-            <p className="text-[10px] text-muted-foreground/40 uppercase tracking-widest">
-              Pricing subject to change
+              the full strategy engine &mdash; draw odds, personalized roadmaps,
+              portfolio tracking, and alerts &mdash; Scout has everything you
+              need.
             </p>
           </div>
         </div>

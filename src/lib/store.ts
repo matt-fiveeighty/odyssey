@@ -209,6 +209,11 @@ interface AppState {
   milestones: Milestone[];
   confirmedAssessment: StrategicAssessment | null;
 
+  // Subscription / entitlements (client-side cache)
+  subscriptionPlanId: string;
+  subscriptionFeatures: Record<string, boolean>;
+  setSubscription: (planId: string, features: Record<string, boolean>) => void;
+
   setUserPoints: (points: UserPoints[]) => void;
   addUserPoint: (point: UserPoints) => void;
   updateUserPoint: (id: string, updates: Partial<UserPoints>) => void;
@@ -228,6 +233,45 @@ interface AppState {
   clearConfirmedAssessment: () => void;
 }
 
+// ============================================================================
+// Points DB Sync — fire-and-forget POST to /api/user/points
+// Zustand stays the source of truth for instant UI. DB is async backup.
+// ============================================================================
+
+let syncTimeout: ReturnType<typeof setTimeout> | null = null;
+
+function syncPointsToDb() {
+  // Debounce: wait 500ms after last mutation before syncing
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => {
+    const pts = useAppStore.getState().userPoints;
+    fetch("/api/user/points", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ points: pts }),
+    }).catch(() => {
+      // Silent fail — local store is still authoritative
+    });
+  }, 500);
+}
+
+/**
+ * Hydrate points from DB on authenticated app load.
+ * Call this from a top-level layout effect when user is authenticated.
+ */
+export async function hydratePointsFromDb() {
+  try {
+    const res = await fetch("/api/user/points");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data.points) && data.points.length > 0) {
+      useAppStore.getState().setUserPoints(data.points);
+    }
+  } catch {
+    // Silent fail — local store is still authoritative
+  }
+}
+
 export const useAppStore = create<AppState>()(
   persist(
     (set) => ({
@@ -236,19 +280,40 @@ export const useAppStore = create<AppState>()(
       milestones: [],
       confirmedAssessment: null,
 
+      // Subscription defaults (free tier)
+      subscriptionPlanId: "free",
+      subscriptionFeatures: {
+        state_overview: true,
+        top_3_states: true,
+        basic_budget: true,
+        species_explorer: true,
+        full_draw_odds: false,
+        unlimited_reruns: false,
+        export: false,
+        priority_support: false,
+      },
+      setSubscription: (planId, features) =>
+        set({ subscriptionPlanId: planId, subscriptionFeatures: features }),
+
       setUserPoints: (userPoints) => set({ userPoints }),
-      addUserPoint: (point) =>
-        set((state) => ({ userPoints: [...state.userPoints, point] })),
-      updateUserPoint: (id, updates) =>
+      addUserPoint: (point) => {
+        set((state) => ({ userPoints: [...state.userPoints, point] }));
+        syncPointsToDb();
+      },
+      updateUserPoint: (id, updates) => {
         set((state) => ({
           userPoints: state.userPoints.map((p) =>
             p.id === id ? { ...p, ...updates } : p
           ),
-        })),
-      removeUserPoint: (id) =>
+        }));
+        syncPointsToDb();
+      },
+      removeUserPoint: (id) => {
         set((state) => ({
           userPoints: state.userPoints.filter((p) => p.id !== id),
-        })),
+        }));
+        syncPointsToDb();
+      },
 
       setUserGoals: (userGoals) => set({ userGoals }),
       addUserGoal: (goal) =>

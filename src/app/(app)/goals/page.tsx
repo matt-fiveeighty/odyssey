@@ -30,6 +30,7 @@ import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier
 import { goalFormSchema } from "@/lib/validations";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import SuggestedUnit from "@/components/goals/SuggestedUnit";
 
 const currentYear = new Date().getFullYear();
 const ROADMAP_YEARS = Array.from({ length: 10 }, (_, i) => currentYear + i);
@@ -748,80 +749,86 @@ export default function GoalsPage() {
                   const statusStyle = STATUS_STYLES[goal.status];
                   const attachedUnit = goal.unitId ? SAMPLE_UNITS.find(u => u.id === goal.unitId) : null;
                   return (
-                    <Card key={goal.id} className="bg-card border-border hover:border-primary/20 transition-colors">
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            {state && (
-                              <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5" style={{ backgroundColor: state.color }}>
-                                {state.abbreviation}
-                              </div>
-                            )}
-                            <div>
-                              <h3 className="font-semibold text-sm">{goal.title}</h3>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-xs text-muted-foreground capitalize">{goal.speciesId.replace("_", " ")}</span>
-                                <span className="text-muted-foreground">&middot;</span>
-                                <span className="text-xs text-muted-foreground">{state?.name}</span>
-                              </div>
-
-                              {/* Detail badges */}
-                              {(goal.weaponType || goal.seasonPreference || goal.huntStyle) && (
-                                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                                  {goal.weaponType && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
-                                      {WEAPON_LABELS[goal.weaponType] ?? goal.weaponType}
-                                    </span>
-                                  )}
-                                  {goal.seasonPreference && goal.seasonPreference !== "any" && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium capitalize">
-                                      {goal.seasonPreference} Season
-                                    </span>
-                                  )}
-                                  {goal.huntStyle && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
-                                      {HUNT_STYLE_LABELS[goal.huntStyle] ?? goal.huntStyle}
-                                    </span>
-                                  )}
-                                  {attachedUnit && (
-                                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                                      Unit {attachedUnit.unitCode}
-                                    </span>
-                                  )}
+                    <div key={goal.id} className="space-y-3">
+                      <Card className="bg-card border-border hover:border-primary/20 transition-colors">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              {state && (
+                                <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xs font-bold text-white shrink-0 mt-0.5" style={{ backgroundColor: state.color }}>
+                                  {state.abbreviation}
                                 </div>
                               )}
+                              <div>
+                                <h3 className="font-semibold text-sm">{goal.title}</h3>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span className="text-xs text-muted-foreground capitalize">{goal.speciesId.replace("_", " ")}</span>
+                                  <span className="text-muted-foreground">&middot;</span>
+                                  <span className="text-xs text-muted-foreground">{state?.name}</span>
+                                </div>
 
-                              {/* Trophy description */}
-                              {goal.trophyDescription && (
-                                <p className="text-xs text-muted-foreground italic mt-1.5 line-clamp-1">
-                                  &ldquo;{goal.trophyDescription}&rdquo;
-                                </p>
-                              )}
-
-                              <div className="flex items-center gap-3 mt-2">
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
-                                {goal.dreamTier && (
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DREAM_TIER_STYLES[goal.dreamTier].bg} ${DREAM_TIER_STYLES[goal.dreamTier].text}`}>
-                                    {DREAM_TIER_STYLES[goal.dreamTier].label}
-                                  </span>
+                                {/* Detail badges */}
+                                {(goal.weaponType || goal.seasonPreference || goal.huntStyle) && (
+                                  <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                                    {goal.weaponType && (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
+                                        {WEAPON_LABELS[goal.weaponType] ?? goal.weaponType}
+                                      </span>
+                                    )}
+                                    {goal.seasonPreference && goal.seasonPreference !== "any" && (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium capitalize">
+                                        {goal.seasonPreference} Season
+                                      </span>
+                                    )}
+                                    {goal.huntStyle && (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-secondary text-muted-foreground font-medium">
+                                        {HUNT_STYLE_LABELS[goal.huntStyle] ?? goal.huntStyle}
+                                      </span>
+                                    )}
+                                    {attachedUnit && (
+                                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
+                                        Unit {attachedUnit.unitCode}
+                                      </span>
+                                    )}
+                                  </div>
                                 )}
-                                <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Target: {goal.targetYear}</span>
+
+                                {/* Trophy description */}
+                                {goal.trophyDescription && (
+                                  <p className="text-xs text-muted-foreground italic mt-1.5 line-clamp-1">
+                                    &ldquo;{goal.trophyDescription}&rdquo;
+                                  </p>
+                                )}
+
+                                <div className="flex items-center gap-3 mt-2">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${statusStyle.bg} ${statusStyle.text}`}>{statusStyle.label}</span>
+                                  {goal.dreamTier && (
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${DREAM_TIER_STYLES[goal.dreamTier].bg} ${DREAM_TIER_STYLES[goal.dreamTier].text}`}>
+                                      {DREAM_TIER_STYLES[goal.dreamTier].label}
+                                    </span>
+                                  )}
+                                  <span className="text-xs text-muted-foreground flex items-center gap-1"><Clock className="w-3 h-3" /> Target: {goal.targetYear}</span>
+                                </div>
                               </div>
                             </div>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            {goal.status !== "completed" && (
-                              <button onClick={() => updateUserGoal(goal.id, { status: goal.status === "active" ? "completed" : "active" })} aria-label={`Mark ${goal.title} as complete`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-chart-2/15 hover:text-chart-2 transition-colors">
-                                <Star className="w-3.5 h-3.5" />
+                            <div className="flex items-center gap-1">
+                              {goal.status !== "completed" && (
+                                <button onClick={() => updateUserGoal(goal.id, { status: goal.status === "active" ? "completed" : "active" })} aria-label={`Mark ${goal.title} as complete`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-chart-2/15 hover:text-chart-2 transition-colors">
+                                  <Star className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button onClick={() => removeUserGoal(goal.id)} aria-label={`Delete ${goal.title}`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
-                            )}
-                            <button onClick={() => removeUserGoal(goal.id)} aria-label={`Delete ${goal.title}`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
+                            </div>
                           </div>
-                        </div>
-                      </CardContent>
-                    </Card>
+                        </CardContent>
+                      </Card>
+                      {/* Suggested unit for this goal */}
+                      {goal.stateId && goal.speciesId && (
+                        <SuggestedUnit stateId={goal.stateId} speciesId={goal.speciesId} />
+                      )}
+                    </div>
                   );
                 })}
               </div>

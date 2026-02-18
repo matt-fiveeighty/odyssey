@@ -9,21 +9,46 @@ import {
   Target,
   Compass,
   Wallet,
+  Settings,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  Search,
+  DollarSign,
+  Users,
+  Route,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import { Logo } from "@/components/shared/Logo";
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: Home },
-  { href: "/calculator", label: "Calculator", icon: Calculator },
-  { href: "/units", label: "Units", icon: Map },
-  { href: "/goals", label: "Goals", icon: Target },
-  { href: "/plan-builder", label: "Plan Builder", icon: Compass },
-  { href: "/points", label: "Points", icon: Wallet },
+const navSections = [
+  {
+    label: "Explore",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: Home },
+      { href: "/units", label: "Units", icon: Map },
+      { href: "/odds-finder", label: "Odds Finder", icon: Search },
+      { href: "/calculator", label: "Calculator", icon: Calculator },
+    ],
+  },
+  {
+    label: "Plan",
+    items: [
+      { href: "/planner", label: "My Year", icon: Compass },
+      { href: "/goals", label: "Goals", icon: Target },
+      { href: "/points", label: "Points", icon: Wallet },
+      { href: "/journey", label: "Journey Map", icon: Route },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      { href: "/budget", label: "Budget", icon: DollarSign },
+      { href: "/groups", label: "Groups", icon: Users },
+      { href: "/plan-builder", label: "Plan Builder", icon: Compass },
+    ],
+  },
 ];
 
 export function Sidebar() {
@@ -53,32 +78,58 @@ export function Sidebar() {
       </Link>
 
       {/* Navigation */}
-      <nav aria-label="Main navigation" className="flex-1 flex flex-col gap-1 p-2 mt-2">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-label={collapsed ? item.label : undefined}
-              aria-current={isActive ? "page" : undefined}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-primary/15 text-primary"
-                  : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
-              )}
-            >
-              <item.icon
-                className={cn("w-5 h-5 shrink-0", isActive && "text-primary")}
-              />
-              {!collapsed && <span>{item.label}</span>}
-              {isActive && !collapsed && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
-              )}
-            </Link>
-          );
-        })}
+      <nav aria-label="Main navigation" className="flex-1 flex flex-col gap-1 p-2 mt-2 overflow-y-auto">
+        {navSections.map((section) => (
+          <div key={section.label} className="mb-3">
+            {!collapsed && (
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider px-3 mb-1">
+                {section.label}
+              </p>
+            )}
+            {section.items.map((item) => {
+              const isActive = pathname === item.href;
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-label={collapsed ? item.label : undefined}
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+                    isActive
+                      ? "bg-primary/15 text-primary"
+                      : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+                  )}
+                >
+                  <item.icon
+                    className={cn("w-5 h-5 shrink-0", isActive && "text-primary")}
+                  />
+                  {!collapsed && <span>{item.label}</span>}
+                  {isActive && !collapsed && (
+                    <div className="ml-auto w-1.5 h-1.5 rounded-full bg-primary" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
+        {/* Settings at bottom */}
+        <div className="mt-auto">
+          <Link
+            href="/settings"
+            aria-label={collapsed ? "Settings" : undefined}
+            aria-current={pathname === "/settings" ? "page" : undefined}
+            className={cn(
+              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200",
+              pathname === "/settings"
+                ? "bg-primary/15 text-primary"
+                : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            )}
+          >
+            <Settings className={cn("w-5 h-5 shrink-0", pathname === "/settings" && "text-primary")} />
+            {!collapsed && <span>Settings</span>}
+          </Link>
+        </div>
       </nav>
 
       {/* Quick Links */}

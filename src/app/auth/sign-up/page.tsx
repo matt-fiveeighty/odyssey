@@ -18,9 +18,23 @@ export default function SignUpPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
+  function validatePassword(pw: string): string | null {
+    if (pw.length < 8) return "Password must be at least 8 characters.";
+    if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(pw))
+      return "Password must include uppercase, lowercase, and a number.";
+    return null;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
+
+    const pwError = validatePassword(password);
+    if (pwError) {
+      setError(pwError);
+      return;
+    }
+
     setLoading(true);
 
     const supabase = createClient();
@@ -135,13 +149,16 @@ export default function SignUpPage() {
           <Input
             id="password"
             type="password"
-            placeholder="At least 6 characters"
+            placeholder="At least 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             autoComplete="new-password"
           />
+          <p className="text-xs text-muted-foreground">
+            Must include uppercase, lowercase, and a number.
+          </p>
         </div>
 
         {error && (
@@ -209,9 +226,13 @@ export default function SignUpPage() {
       <Button
         variant="ghost"
         className="w-full text-muted-foreground hover:text-foreground"
-        onClick={() => {
-          document.cookie = "guest-session=true; path=/; max-age=86400; SameSite=Lax; Secure";
-          router.push("/plan-builder");
+        onClick={async () => {
+          try {
+            await fetch("/auth/guest", { method: "POST" });
+            router.push("/plan-builder");
+          } catch {
+            setError("Could not start guest session. Please try again.");
+          }
         }}
         type="button"
       >
