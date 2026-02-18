@@ -387,6 +387,39 @@ export interface BudgetTier {
 }
 
 // ============================================================================
+// Unit Scoring Types (6-Factor Transparent Scoring)
+// ============================================================================
+
+export interface UnitScoreResult {
+  totalScore: number;
+  maxPossibleScore: number;
+  factors: UnitScoreFactor[];
+}
+
+export interface UnitScoreFactor {
+  label: string;
+  score: number;
+  maxScore: number;
+  explanation: string;
+}
+
+export interface UnitScoreInput {
+  weaponType?: "archery" | "rifle" | "muzzleloader";
+  seasonPreference?: "early" | "mid" | "late" | "any";
+  userPoints?: number;
+  huntStyle?: HuntStyle;
+}
+
+export interface DrawHistoryEntry {
+  year: number;
+  applicants: number | null;
+  tagsAvailable: number | null;
+  tagsIssued: number | null;
+  oddsPercent: number | null;
+  minPointsDrawn: number | null;
+}
+
+// ============================================================================
 // Strategic Assessment Types (Roadmap Generator Output)
 // ============================================================================
 

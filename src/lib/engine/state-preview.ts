@@ -11,10 +11,12 @@ import type { ConsultationInput } from "./roadmap-generator";
 import type { StateScoreBreakdown } from "@/lib/types";
 
 export function generateStatePreview(input: ConsultationInput): StateScoreBreakdown[] {
+  // Uses the module-level data context from roadmap-generator (defaults to constants)
   return STATES
     .map((s) => scoreStateForHunter(s.id, input))
     .sort((a, b) => b.totalScore - a.totalScore);
 }
+
 
 export interface FineTuneQuestion {
   id: string;

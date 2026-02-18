@@ -25,8 +25,9 @@ import type {
   PointOnlyGuideEntry,
   UserGoal,
 } from "@/lib/types";
-import { STATES, STATES_MAP } from "@/lib/constants/states";
-import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
+import { STATES as DEFAULT_STATES, STATES_MAP as DEFAULT_STATES_MAP } from "@/lib/constants/states";
+import { SAMPLE_UNITS as DEFAULT_UNITS } from "@/lib/constants/sample-units";
+import type { State, Unit } from "@/lib/types";
 import { findBestRoutes, getPrimaryAirport, HUNTING_AIRPORTS } from "@/lib/constants/flight-hubs";
 import {
   estimateCreepRate,
@@ -41,6 +42,38 @@ import type {
   TrophyVsMeat,
   TimeAvailable,
 } from "@/lib/store";
+
+// --- Data Context (dual-read: DB-backed data or constants fallback)
+
+export interface DataContext {
+  states: State[];
+  statesMap: Record<string, State>;
+  units: Unit[];
+}
+
+const DEFAULT_DATA: DataContext = {
+  states: DEFAULT_STATES,
+  statesMap: DEFAULT_STATES_MAP,
+  units: DEFAULT_UNITS,
+};
+
+// Module-level data context — set before calling generator functions.
+// Defaults to hardcoded constants; overridden when DB data is available.
+let _data: DataContext = DEFAULT_DATA;
+
+/** Override the data context with DB-backed data before generation. */
+export function setDataContext(ctx: Partial<DataContext>) {
+  _data = { ...DEFAULT_DATA, ...ctx };
+  // Rebuild statesMap if states provided but map not
+  if (ctx.states && !ctx.statesMap) {
+    _data.statesMap = Object.fromEntries(ctx.states.map(s => [s.id, s]));
+  }
+}
+
+/** Reset to hardcoded constants. */
+export function resetDataContext() {
+  _data = DEFAULT_DATA;
+}
 
 // --- Consultation Input (from store)
 
@@ -83,7 +116,7 @@ const fmtFlight = (routes: ReturnType<typeof findBestRoutes>) =>
 
 /** Build itemized cost line items for a state + species (license + app fee + point cost). */
 function buildStateCostItems(
-  state: typeof STATES_MAP[string],
+  state: State,
   stateId: string,
   speciesId: string
 ): CostLineItem[] {
@@ -125,7 +158,7 @@ const sumItems = (items: CostLineItem[]) => items.reduce((s, i) => s + i.amount,
 
 /** Lookup unit object + tactical notes for a unit code + state. */
 function lookupUnit(unitCode: string, stateId: string) {
-  const unitObj = SAMPLE_UNITS.find(u => u.unitCode === unitCode && u.stateId === stateId);
+  const unitObj = _data.units.find(u => u.unitCode === unitCode && u.stateId === stateId);
   return { unitObj, tNotes: unitObj?.tacticalNotes };
 }
 
@@ -180,7 +213,7 @@ export function scoreStateForHunter(
   stateId: string,
   input: ConsultationInput
 ): StateScoreBreakdown {
-  const state = STATES_MAP[stateId];
+  const state = _data.statesMap[stateId];
   if (!state) return { stateId, totalScore: 0, maxPossibleScore: 100, factors: [] };
 
   const factors: StateScoreFactor[] = [];
@@ -213,7 +246,7 @@ export function scoreStateForHunter(
   factors.push({ label: "Elevation Compatibility", score: elevScore, maxScore: 15, explanation: elevExplanation });
 
   // --- Factor 2: Budget Fit (max 15) ---
-  const stateUnits = SAMPLE_UNITS.filter(
+  const stateUnits = _data.units.filter(
     (u) => u.stateId === stateId && input.species.some(s => state.availableSpecies.includes(s))
   );
   const relevantSpecies = getRelevantSpecies(input.species, state);
@@ -470,7 +503,7 @@ function getStateRole(
   totalScore: number,
   maxScore: number,
 ): StateRecommendation["role"] {
-  const state = STATES_MAP[stateId];
+  const state = _data.statesMap[stateId];
   if (!state) return "secondary";
 
   if (state.pointSystem === "random") return "wildcard";
@@ -489,7 +522,7 @@ export function generateStrategicAssessment(
   const currentYear = new Date().getFullYear();
 
   // Score all states
-  const stateScores = STATES.map((s) => scoreStateForHunter(s.id, input))
+  const stateScores = _data.states.map((s) => scoreStateForHunter(s.id, input))
     .sort((a, b) => b.totalScore - a.totalScore);
 
   // Select top states based on budget
@@ -501,12 +534,12 @@ export function generateStrategicAssessment(
   const stateRecommendations = selectedScores.map(
     (scoreBreakdown) => {
       const { stateId } = scoreBreakdown;
-      const state = STATES_MAP[stateId];
+      const state = _data.statesMap[stateId];
       if (!state) return null;
       const role = getStateRole(stateId, scoreBreakdown.totalScore, scoreBreakdown.maxPossibleScore);
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
-      const stateUnits = SAMPLE_UNITS.filter(
+      const stateUnits = _data.units.filter(
         (u) => u.stateId === stateId && relevantSpecies.includes(u.speciesId)
       );
 
@@ -634,7 +667,7 @@ function generateMilestonesFromPlan(
   let idx = 0;
 
   for (const rec of recs) {
-    const state = STATES_MAP[rec.stateId];
+    const state = _data.statesMap[rec.stateId];
     if (!state) continue;
 
     const relevantSpecies = getRelevantSpecies(input.species, state);
@@ -703,7 +736,7 @@ function generateMilestonesFromPlan(
 
 /** Generate milestones for a single user goal (buy points / apply each year → hunt). */
 export function generateMilestonesForGoal(goal: UserGoal): Milestone[] {
-  const state = STATES_MAP[goal.stateId];
+  const state = _data.statesMap[goal.stateId];
   if (!state) return [];
 
   const currentYear = new Date().getFullYear();
@@ -811,7 +844,7 @@ function generateMacroSummary(
 
   const uniqueStates = new Set(recs.map(r => r.stateId)).size;
   const uniqueSpecies = new Set(recs.flatMap(r =>
-    STATES_MAP[r.stateId]?.availableSpecies ?? []
+    _data.statesMap[r.stateId]?.availableSpecies ?? []
   )).size;
   const portfolioDiversity = Math.min(100, Math.round((uniqueStates * 10 + uniqueSpecies * 5)));
 
@@ -846,7 +879,7 @@ function generateBudgetBreakdown(
   const huntYearItems: CostLineItem[] = [...pointYearItems];
   const primaryRec = recs.find(r => r.role === "primary") ?? recs[0];
   if (primaryRec) {
-    const state = STATES_MAP[primaryRec.stateId];
+    const state = _data.statesMap[primaryRec.stateId];
     if (state) {
       const primarySpecies = input.species.find(s => state.availableSpecies.includes(s)) ?? input.species[0];
       if (primarySpecies) {
@@ -1015,7 +1048,7 @@ function generateInsights(
   if (wildcards.length > 0) {
     insights.push({
       title: "Wild Card Lottery",
-      description: `${wildcards.map((w) => STATES_MAP[w.stateId]?.name).join(" and ")} — pure random draw. No points needed, same odds as a veteran. Apply every year.`,
+      description: `${wildcards.map((w) => _data.statesMap[w.stateId]?.name).join(" and ")} — pure random draw. No points needed, same odds as a veteran. Apply every year.`,
       type: "opportunity",
     });
   }
@@ -1081,7 +1114,7 @@ function generateKeyYears(
     keyYears.push({
       year: currentYear + 7,
       label: "Trophy Phase",
-      description: `Cash in accumulated points for premium hunts. ${trophyRecs.map(r => STATES_MAP[r.stateId]?.name).join(", ")} are the targets.`,
+      description: `Cash in accumulated points for premium hunts. ${trophyRecs.map(r => _data.statesMap[r.stateId]?.name).join(", ")} are the targets.`,
     });
   }
 
@@ -1112,7 +1145,7 @@ function generateYearlyPlan(
 
     // Point buying for all non-random states
     for (const rec of recs) {
-      const state = STATES_MAP[rec.stateId];
+      const state = _data.statesMap[rec.stateId];
       if (!state || state.pointSystem === "random") continue;
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
@@ -1145,7 +1178,7 @@ function generateYearlyPlan(
     // Wild card applications (random draw states)
     const wildcards = recs.filter((r) => r.role === "wildcard");
     for (const wc of wildcards) {
-      const state = STATES_MAP[wc.stateId];
+      const state = _data.statesMap[wc.stateId];
       if (!state) continue;
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
@@ -1181,7 +1214,7 @@ function generateYearlyPlan(
       for (const rec of recs) {
         const immediateUnit = rec.bestUnits.find(u => u.drawTimeline === "Drawable now");
         if (immediateUnit) {
-          const huntState = STATES_MAP[rec.stateId];
+          const huntState = _data.statesMap[rec.stateId];
           const { tNotes } = lookupUnit(immediateUnit.unitCode, rec.stateId);
           const flight = fmtFlight(findBestRoutes(input.homeState, rec.stateId));
           const season = tNotes?.bestSeasonTier ? ` Best season: ${tNotes.bestSeasonTier}.` : "";
@@ -1214,7 +1247,7 @@ function generateYearlyPlan(
 
         actions.push({
           type: "hunt", stateId: sid, speciesId: sp, unitCode: burnTarget.unitCode,
-          description: `Burn points — ${fmtSpecies(sp)} in ${STATES_MAP[sid]?.abbreviation ?? sid} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flight}${season}${trophy} This is where your years of point-building pay off.`,
+          description: `Burn points — ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flight}${season}${trophy} This is where your years of point-building pay off.`,
           estimatedDrawOdds: 0.75, cost: 1200,
           costs: [{ label: "Tag + travel (burn year)", amount: 1200, category: "tag", stateId: sid, speciesId: sp }],
         });
@@ -1236,7 +1269,7 @@ function generateYearlyPlan(
 
         actions.push({
           type: "hunt", stateId: sid, speciesId: sp, unitCode: trophyTarget.unitCode,
-          description: `Trophy hunt — ${fmtSpecies(sp)} in ${STATES_MAP[sid]?.abbreviation ?? sid} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flight}${trophy}${guided} This is the payoff for years of disciplined point-building.`,
+          description: `Trophy hunt — ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flight}${trophy}${guided} This is the payoff for years of disciplined point-building.`,
           estimatedDrawOdds: 0.85, cost: 1800,
           costs: [{ label: "Trophy tag + travel + gear", amount: 1800, category: "tag", stateId: sid, speciesId: sp }],
         });
@@ -1322,7 +1355,7 @@ function buildProfileSummary(
 function buildPointStrategy(
   stateId: string,
   role: StateRecommendation["role"],
-  state: typeof STATES_MAP[string],
+  state: State,
   annualCost: number,
   bestUnits: StateRecommendation["bestUnits"],
   input: ConsultationInput
@@ -1398,7 +1431,7 @@ function buildStateReason(
   scoreBreakdown: StateScoreBreakdown,
   input: ConsultationInput,
   bestUnits: StateRecommendation["bestUnits"],
-  state: typeof STATES_MAP[string]
+  state: State
 ): string {
   if (!state) return "";
 
@@ -1435,7 +1468,7 @@ function buildStateReason(
   // Hunt style fit
   if (input.huntStylePrimary === "diy_truck") {
     const publicUnits = bestUnits.filter(u => {
-      const unitObj = SAMPLE_UNITS.find(su => su.unitCode === u.unitCode && su.stateId === stateId);
+      const unitObj = _data.units.find(su => su.unitCode === u.unitCode && su.stateId === stateId);
       return unitObj && unitObj.publicLandPct > 0.35;
     });
     if (publicUnits.length > 0) {
@@ -1485,7 +1518,7 @@ function generateTravelLogistics(
   let totalBudget = 0;
 
   for (const rec of recs) {
-    const state = STATES_MAP[rec.stateId];
+    const state = _data.statesMap[rec.stateId];
     if (!state) continue;
 
     const routes = findBestRoutes(input.homeState, rec.stateId);
@@ -1511,7 +1544,7 @@ function generateTravelLogistics(
   const tip = dist === "far"
     ? `Book flights 6-8 weeks before your hunt date for best prices. ${homeAirport} has the most direct flight options from your area. Consider Southwest/Frontier for budget-friendly options with free/cheap checked bags for gear.`
     : dist === "medium"
-      ? `You're close enough to consider driving to ${recs.slice(0, 2).map(r => STATES_MAP[r.stateId]?.name).join(" and ")} while flying to farther states. Driving lets you bring more gear and game meat home without shipping hassles.`
+      ? `You're close enough to consider driving to ${recs.slice(0, 2).map(r => _data.statesMap[r.stateId]?.name).join(" and ")} while flying to farther states. Driving lets you bring more gear and game meat home without shipping hassles.`
       : `Your proximity to western states means driving is often the best option. Save flight money for premium hunts in harder-to-reach states.`;
 
   return {
@@ -1531,7 +1564,7 @@ function generateSeasonCalendar(
   const calendar: SeasonCalendarEntry[] = [];
 
   for (const rec of recs) {
-    const state = STATES_MAP[rec.stateId];
+    const state = _data.statesMap[rec.stateId];
     if (!state?.seasonTiers || state.seasonTiers.length === 0) continue;
 
     const relevantSpecies = getRelevantSpecies(input.species, state);
@@ -1589,7 +1622,7 @@ function generatePointOnlyGuide(
   const guide: PointOnlyGuideEntry[] = [];
 
   for (const rec of recs) {
-    const state = STATES_MAP[rec.stateId];
+    const state = _data.statesMap[rec.stateId];
     if (!state) continue;
 
     // Skip random draw states — they don't have points to buy
@@ -1628,16 +1661,16 @@ function buildStrategyOverview(
 
   let overview = "Your portfolio is built around ";
   if (primaries.length > 0) {
-    overview += `${primaries.map((a) => STATES_MAP[a.stateId]?.name).join(" and ")} as your anchor state${primaries.length > 1 ? "s" : ""}`;
+    overview += `${primaries.map((a) => _data.statesMap[a.stateId]?.name).join(" and ")} as your anchor state${primaries.length > 1 ? "s" : ""}`;
   }
   if (secondaries.length > 0) {
-    overview += `, with ${secondaries.map((b) => STATES_MAP[b.stateId]?.name).join(", ")} building medium-term value`;
+    overview += `, with ${secondaries.map((b) => _data.statesMap[b.stateId]?.name).join(", ")} building medium-term value`;
   }
   if (wildcards.length > 0) {
-    overview += `, ${wildcards.map((w) => STATES_MAP[w.stateId]?.name).join(", ")} as wild-card lottery plays`;
+    overview += `, ${wildcards.map((w) => _data.statesMap[w.stateId]?.name).join(", ")} as wild-card lottery plays`;
   }
   if (longTerms.length > 0) {
-    overview += `, and ${longTerms.map((l) => STATES_MAP[l.stateId]?.name).join(", ")} as long-term trophy investments`;
+    overview += `, and ${longTerms.map((l) => _data.statesMap[l.stateId]?.name).join(", ")} as long-term trophy investments`;
   }
   overview += `. At ~$${Math.round(annualSub)}/year in point subscriptions, this keeps you positioned across ${recs.length} states.`;
 

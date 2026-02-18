@@ -7,40 +7,17 @@
  * where it does.
  */
 
-import type { Unit, PressureLevel } from "@/lib/types";
+import type {
+  Unit,
+  PressureLevel,
+  UnitScoreResult,
+  UnitScoreFactor,
+  UnitScoreInput,
+  DrawHistoryEntry,
+} from "@/lib/types";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface UnitScoreResult {
-  totalScore: number;
-  maxPossibleScore: number;
-  factors: UnitScoreFactor[];
-}
-
-export interface UnitScoreFactor {
-  label: string;
-  score: number;
-  maxScore: number;
-  explanation: string;
-}
-
-export interface UnitScoreInput {
-  weaponType?: "archery" | "rifle" | "muzzleloader";
-  seasonPreference?: "early" | "mid" | "late" | "any";
-  userPoints?: number;
-  huntStyle?: "diy_truck" | "diy_backpack" | "guided" | "drop_camp";
-}
-
-export interface DrawHistoryEntry {
-  year: number;
-  applicants: number | null;
-  tagsAvailable: number | null;
-  tagsIssued: number | null;
-  oddsPercent: number | null;
-  minPointsDrawn: number | null;
-}
+// Re-export types so existing consumers don't break
+export type { UnitScoreResult, UnitScoreFactor, UnitScoreInput, DrawHistoryEntry };
 
 // ============================================================================
 // Factor 1: Harvest Trend (25pt max)
