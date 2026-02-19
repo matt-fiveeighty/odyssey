@@ -26,11 +26,12 @@ import { useAppStore, useWizardStore } from "@/lib/store";
 import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
-import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier } from "@/lib/types";
+import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier, UserGoal, Milestone } from "@/lib/types";
 import { goalFormSchema } from "@/lib/validations";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuggestedUnit from "@/components/goals/SuggestedUnit";
+import { GoalConfirmation } from "@/components/goals/GoalConfirmation";
 import { formatSpeciesName } from "@/lib/utils";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
@@ -157,6 +158,16 @@ export default function GoalsPage() {
   const [titleManuallyEdited, setTitleManuallyEdited] = useState(false);
   const [newUnitId, setNewUnitId] = useState("");
   const [newDreamTier, setNewDreamTier] = useState<DreamHuntTier | "">("");
+
+  // Confirmation popup state
+  const [confirmationData, setConfirmationData] = useState<{
+    goal: UserGoal;
+    milestones: Milestone[];
+    totalCost: number;
+    monthlySavings: number;
+    huntMonth: string;
+    evaluation?: string;
+  } | null>(null);
 
   // Auto-generate title from selections
   const autoTitle = useMemo(() => {
@@ -338,12 +349,15 @@ export default function GoalsPage() {
   // Dream hunts from confirmed assessment
   const dreamHunts = confirmedAssessment?.dreamHuntRecommendations ?? [];
 
-  // Build roadmap from goals
+  // Build roadmap from goals — combine milestone costs with assessment costs
   const roadmapData = ROADMAP_YEARS.map((year) => {
     const goalsThisYear = userGoals.filter((g) => g.targetYear === year || g.projectedDrawYear === year);
     const milestonesThisYear = milestones.filter(m => m.year === year);
-    const isHuntYear = confirmedAssessment?.roadmap.find(r => r.year === year)?.isHuntYear ?? false;
-    const yearCost = confirmedAssessment?.roadmap.find(r => r.year === year)?.estimatedCost ?? 0;
+    const isHuntYear = confirmedAssessment?.roadmap.find(r => r.year === year)?.isHuntYear
+      ?? milestonesThisYear.some(m => m.type === "hunt");
+    const assessmentCost = confirmedAssessment?.roadmap.find(r => r.year === year)?.estimatedCost ?? 0;
+    const milestoneCost = milestonesThisYear.reduce((s, m) => s + m.totalCost, 0);
+    const yearCost = Math.max(milestoneCost, assessmentCost);
     return { year, goals: goalsThisYear, milestones: milestonesThisYear, isHuntYear, yearCost };
   });
 
@@ -399,8 +413,10 @@ export default function GoalsPage() {
       const years = yearsToDrawWithCreep(0, bestUnit.pointsRequiredNonresident, creepRate);
       projectedDrawYear = currentYear + years;
     }
-    addUserGoal({
-      id: crypto.randomUUID(),
+
+    const goalId = crypto.randomUUID();
+    const goalData: UserGoal = {
+      id: goalId,
       userId: "local",
       title: finalTitle,
       speciesId: newSpeciesId,
@@ -415,8 +431,64 @@ export default function GoalsPage() {
       ...(newHuntStyle ? { huntStyle: newHuntStyle as HuntStyle } : {}),
       ...(newTrophyDesc.trim() ? { trophyDescription: newTrophyDesc.trim() } : {}),
       ...(newDreamTier ? { dreamTier: newDreamTier as DreamHuntTier } : {}),
+    };
+
+    addUserGoal(goalData);
+
+    // Generate milestones and compute confirmation data
+    const hs = useWizardStore.getState().homeState;
+    const generatedMs = generateMilestonesForGoal(goalData, hs);
+    if (generatedMs.length > 0) addMilestones(generatedMs);
+
+    const goalTotalCost = generatedMs.reduce((s, m) => s + m.totalCost, 0);
+    const monthsUntil = Math.max(1, (projectedDrawYear - currentYear) * 12);
+    const monthly = goalTotalCost > 0 ? Math.ceil(goalTotalCost / monthsUntil) : 0;
+
+    // Derive hunt month from application deadline
+    const state = STATES_MAP[newStateId];
+    const deadline = state?.applicationDeadlines?.[newSpeciesId];
+    let huntMonth = `Fall ${projectedDrawYear}`;
+    if (deadline?.close) {
+      const month = new Date(deadline.close).toLocaleString("en-US", { month: "long" });
+      huntMonth = `${month} ${projectedDrawYear}`;
+    }
+
+    // Build evaluation from dream description
+    let evaluation: string | undefined;
+    const dream = newTrophyDesc.trim().toLowerCase();
+    if (dream.length >= 3) {
+      const trophyKeywords = ["big", "giant", "trophy", "monster", "mature", "crusty", "heavy", "wide", "deep", "tall", "record", "book", "boone", "pope", "6x6", "6x7", "7x7", "360", "380", "400", "stud", "hog", "toad", "slammer", "brute", "tank", "beast", "bruiser", "gnarly", "kicker", "palmated"];
+      const oppKeywords = ["first", "easy", "otc", "opportunity", "beginner", "meat", "cow", "doe", "raghorn", "fork", "forky", "spiker", "any bull", "any buck", "freezer"];
+      const tokens = dream.split(/\s+/);
+      const isTrophy = tokens.some(t => trophyKeywords.includes(t)) || /big\s*(ol|old|ole)?\s*(crusty|gnarly)?\s*(6x6|7x7|bull|buck|ram)/i.test(dream);
+      const isOpp = !isTrophy && (tokens.some(t => oppKeywords.includes(t)) || /fill\s*(the|my)\s*freezer/i.test(dream));
+
+      const stateName = state?.name ?? newStateId;
+      const yearsOut = projectedDrawYear - currentYear;
+      if (isTrophy) {
+        evaluation = `Trophy-class hunt — expect a ${yearsOut > 0 ? `${yearsOut}-year build` : "draw this year"} in ${stateName}. ${bestUnit ? `Top unit has ${Math.round(bestUnit.successRate * 100)}% success with ${bestUnit.trophyRating}/10 trophy quality.` : "Focus on building points each year."}`;
+      } else if (isOpp) {
+        evaluation = `Opportunity hunt — ${yearsOut <= 1 ? "you could draw this year" : `short ${yearsOut}-year timeline`} in ${stateName}. ${bestUnit ? `${Math.round(bestUnit.successRate * 100)}% success rate in the top unit.` : "Good draw odds with the current point system."}`;
+      } else {
+        evaluation = `${yearsOut > 0 ? `${yearsOut}-year plan` : "Drawable now"} in ${stateName}. ${goalTotalCost > 0 ? `$${goalTotalCost.toLocaleString()} total investment across ${generatedMs.length} action items.` : `${generatedMs.length} action items created.`}`;
+      }
+
+      // Add unit-specific info if a unit was selected
+      if (selectedUnit) {
+        evaluation += ` Unit ${selectedUnit.unitCode}: ${Math.round(selectedUnit.successRate * 100)}% success, ${selectedUnit.pressureLevel.toLowerCase()} pressure, ${Math.round(selectedUnit.publicLandPct * 100)}% public land.`;
+      }
+    }
+
+    // Show confirmation popup
+    setShowAddModal(false);
+    setConfirmationData({
+      goal: goalData,
+      milestones: generatedMs,
+      totalCost: goalTotalCost,
+      monthlySavings: monthly,
+      huntMonth,
+      evaluation,
     });
-    resetModal();
   }
 
   // If we have milestones from a confirmed plan, show milestone-first layout
@@ -839,19 +911,28 @@ export default function GoalsPage() {
               <div className="relative">
                 <div className="absolute left-[15px] top-0 bottom-0 w-0.5 bg-border" />
                 <div className="space-y-1">
-                  {roadmapData.map(({ year }) => {
+                  {roadmapData.map(({ year, yearCost, isHuntYear, milestones: ms }) => {
                     const isCurrentYear = year === currentYear;
                     const phase = year - currentYear < 3 ? "building" : year - currentYear < 5 ? "burn" : year - currentYear === 5 ? "gap" : "trophy";
                     const phaseColors: Record<string, string> = { building: "bg-chart-1", burn: "bg-chart-2", gap: "bg-chart-3", trophy: "bg-primary" };
                     return (
                       <div key={year} className={`relative pl-9 py-2 rounded-lg ${isCurrentYear ? "bg-primary/5" : ""}`}>
-                        <div className={`absolute left-2 top-3 w-[14px] h-[14px] rounded-full border-2 border-background ${isCurrentYear ? "bg-primary" : "bg-muted"}`} />
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-mono ${isCurrentYear ? "font-bold text-primary" : "text-muted-foreground"}`}>{year}</span>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium text-white ${phaseColors[phase]}`}>
-                            {phase === "building" ? "Build" : phase === "burn" ? "Burn" : phase === "gap" ? "Gap" : "Trophy"}
-                          </span>
+                        <div className={`absolute left-2 top-3 w-[14px] h-[14px] rounded-full border-2 border-background ${isCurrentYear ? "bg-primary" : isHuntYear ? "bg-chart-2" : "bg-muted"}`} />
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-mono ${isCurrentYear ? "font-bold text-primary" : "text-muted-foreground"}`}>{year}</span>
+                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium text-white ${phaseColors[phase]}`}>
+                              {phase === "building" ? "Build" : phase === "burn" ? "Burn" : phase === "gap" ? "Gap" : "Trophy"}
+                            </span>
+                            {isHuntYear && <Crosshair className="w-3 h-3 text-chart-2" />}
+                          </div>
+                          {yearCost > 0 && (
+                            <span className="text-[10px] text-muted-foreground font-mono">${yearCost.toLocaleString()}</span>
+                          )}
                         </div>
+                        {ms.length > 0 && (
+                          <p className="text-[10px] text-muted-foreground/60 mt-0.5">{ms.length} action item{ms.length !== 1 ? "s" : ""}</p>
+                        )}
                       </div>
                     );
                   })}
@@ -906,44 +987,17 @@ export default function GoalsPage() {
                 )}
               </div>
 
-              {/* Blocker — species unavailable or no unit data */}
-              {newStateId && newSpeciesId && !hasUnitData && (() => {
-                const statesWithUnits = STATES.filter(
-                  (s) => s.id !== newStateId && s.availableSpecies.includes(newSpeciesId) && SAMPLE_UNITS.some((u) => u.stateId === s.id && u.speciesId === newSpeciesId)
-                );
-                return (
-                  <div className="p-4 rounded-lg border-2 border-dashed border-destructive/30 bg-destructive/5 text-center space-y-3 fade-in-up">
-                    <div className="flex items-center justify-center gap-2">
-                      <X className="w-4 h-4 text-destructive" />
-                      <p className="text-sm font-semibold text-destructive">
-                        Unavailable for Hunts
-                      </p>
-                    </div>
-                    <p className="text-xs text-muted-foreground">
-                      {SPECIES_MAP[newSpeciesId]?.name} is not currently available for goal building in {STATES_MAP[newStateId]?.name}.
-                    </p>
-                    {statesWithUnits.length > 0 && (
-                      <div>
-                        <p className="text-[10px] text-muted-foreground mb-2">Try {SPECIES_MAP[newSpeciesId]?.name} in:</p>
-                        <div className="flex flex-wrap gap-1.5 justify-center">
-                          {statesWithUnits.map((s) => (
-                            <button
-                              key={s.id}
-                              onClick={() => { setNewStateId(s.id); setNewUnitId(""); }}
-                              className="px-2.5 py-1 rounded-md bg-primary/10 border border-primary/20 text-xs font-semibold text-primary hover:bg-primary/20 transition-colors"
-                            >
-                              {s.abbreviation}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+              {/* Note when no unit-level data */}
+              {newStateId && newSpeciesId && !hasUnitData && (
+                <div className="p-3 rounded-lg bg-primary/5 border border-primary/10 fade-in-up">
+                  <p className="text-xs text-primary font-medium">
+                    Detailed unit data for {SPECIES_MAP[newSpeciesId]?.name} in {STATES_MAP[newStateId]?.name} is coming soon — you can still create a goal using state-level deadlines and costs.
+                  </p>
+                </div>
+              )}
 
-              {/* Full goal form — only when unit data exists */}
-              {hasUnitData && (
+              {/* Full goal form */}
+              {newStateId && newSpeciesId && (
                 <>
               {/* Weapon / Season / Hunt Style */}
               <div className="space-y-5 fade-in-up">
@@ -1022,8 +1076,8 @@ export default function GoalsPage() {
                 <p className="text-[10px] text-muted-foreground mt-1 text-right">{newTrophyDesc.length}/200</p>
               </div>
 
-              {/* AI-Matched Units — scored against all inputs */}
-              {newStateId && newSpeciesId && (
+              {/* AI-Matched Units — only when unit data exists */}
+              {hasUnitData && newStateId && newSpeciesId && (
                 <div>
                   <label className="text-sm font-medium text-muted-foreground mb-1 block">Recommended Units</label>
                   {!dreamReady ? (
@@ -1126,6 +1180,31 @@ export default function GoalsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Goal Confirmation Popup */}
+      {confirmationData && (
+        <GoalConfirmation
+          goal={confirmationData.goal}
+          milestones={confirmationData.milestones}
+          totalCost={confirmationData.totalCost}
+          monthlySavings={confirmationData.monthlySavings}
+          huntMonth={confirmationData.huntMonth}
+          evaluation={confirmationData.evaluation}
+          onViewGoals={() => {
+            setConfirmationData(null);
+            resetModal();
+          }}
+          onViewPlanner={() => {
+            setConfirmationData(null);
+            resetModal();
+            router.push("/planner");
+          }}
+          onDone={() => {
+            setConfirmationData(null);
+            resetModal();
+          }}
+        />
       )}
     </div>
   );

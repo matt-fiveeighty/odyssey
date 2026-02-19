@@ -1,11 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
 import { useWizardStore } from "@/lib/store";
 import type { TrophyVsMeat, UncertaintyComfort } from "@/lib/store";
 import { OptionCard } from "../shared/OptionCard";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trophy, Scale, Drumstick, Shuffle, ShieldCheck } from "lucide-react";
+import { Trophy, Scale, Drumstick, Shuffle, ShieldCheck, Sparkles } from "lucide-react";
 
 const TROPHY_OPTIONS: { id: TrophyVsMeat; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "trophy_focused", label: "Trophy Focused", desc: "I\u2019ll wait years for the right tag on the right animal", icon: Trophy },
@@ -29,8 +30,80 @@ const UNCERTAINTY_OPTIONS: { id: UncertaintyComfort; label: string; desc: string
   { id: "prefer_certainty", label: "Prefer Certainty", desc: "I want to know when I\u2019m going hunting years in advance", icon: ShieldCheck },
 ];
 
+function evaluateDream(text: string): string[] {
+  if (text.trim().length < 5) return [];
+  const dream = text.toLowerCase();
+  const signals: string[] = [];
+
+  // Trophy intent
+  const trophyKw = ["big", "giant", "trophy", "monster", "mature", "record", "book", "boone", "pope", "6x6", "7x7", "400", "380", "360", "crusty", "stud", "hog", "toad", "slammer", "brute", "tank", "beast"];
+  if (trophyKw.some((kw) => dream.includes(kw))) {
+    signals.push("Trophy intent detected — we'll prioritize premium units and states with strong preference point systems");
+  }
+
+  // Opportunity intent
+  const oppKw = ["first", "easy", "beginner", "meat", "opportunity", "freezer", "cow", "doe", "raghorn", "any bull", "any buck"];
+  if (oppKw.some((kw) => dream.includes(kw))) {
+    signals.push("Opportunity focus detected — we'll weight high-draw-odds states and OTC tags");
+  }
+
+  // Terrain matching
+  const terrainSignals: [string, string][] = [
+    ["timber", "Dark timber preference → factoring in states with forested units (CO, MT, ID, OR)"],
+    ["dark timber", "Dark timber preference → factoring in states with forested units (CO, MT, ID, OR)"],
+    ["alpine", "Alpine terrain → scoring states with high-elevation wilderness (CO, WY, MT)"],
+    ["mountain", "Mountain terrain → scoring states with high-elevation wilderness (CO, WY, MT)"],
+    ["desert", "Desert terrain → factoring in arid-country states (AZ, NV, NM, UT)"],
+    ["sage", "Sagebrush country → factoring in open-country states (WY, MT, NV)"],
+    ["prairie", "Prairie/plains preference → scoring flatland states (KS, NE, SD)"],
+  ];
+  for (const [kw, msg] of terrainSignals) {
+    if (dream.includes(kw)) {
+      signals.push(msg);
+      break;
+    }
+  }
+
+  // Species detection
+  const speciesSignals: [string, string][] = [
+    ["elk", "Elk focus detected"],
+    ["bugling", "Bugling elk → early archery seasons will be weighted"],
+    ["mule deer", "Mule deer focus detected"],
+    ["muley", "Mule deer focus detected"],
+    ["whitetail", "Whitetail focus detected"],
+    ["moose", "Moose focus — states with moose draws will be prioritized"],
+    ["sheep", "Sheep focus — long-term premium draws will be weighted heavily"],
+    ["ram", "Sheep focus — long-term premium draws will be weighted heavily"],
+    ["goat", "Mountain goat focus detected"],
+    ["bear", "Bear focus detected"],
+    ["pronghorn", "Pronghorn/antelope focus detected"],
+    ["antelope", "Pronghorn/antelope focus detected"],
+  ];
+  for (const [kw, msg] of speciesSignals) {
+    if (dream.includes(kw)) {
+      signals.push(msg);
+      break;
+    }
+  }
+
+  // Style detection
+  if (dream.includes("backpack") || dream.includes("backcountry") || dream.includes("remote") || dream.includes("wilderness")) {
+    signals.push("Backcountry style → public land percentage and low pressure will be weighted");
+  }
+  if (dream.includes("guided") || dream.includes("outfitter")) {
+    signals.push("Guided hunt interest → premium units worth the outfitter investment will score higher");
+  }
+
+  return signals.slice(0, 3);
+}
+
 export function StepPaintThePicture() {
   const wizard = useWizardStore();
+
+  const dreamEvaluation = useMemo(
+    () => evaluateDream(wizard.bucketListDescription),
+    [wizard.bucketListDescription]
+  );
 
   return (
     <Card className="bg-card border-border">
@@ -92,6 +165,22 @@ export function StepPaintThePicture() {
             className="w-full px-3 py-2.5 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
           />
           <p className="text-[10px] text-muted-foreground text-right mt-1">{wizard.bucketListDescription.length}/500</p>
+
+          {/* Live evaluation feedback */}
+          {dreamEvaluation.length > 0 && (
+            <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5 fade-in-up">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Sparkles className="w-3.5 h-3.5 text-primary" />
+                <span className="text-[10px] font-semibold text-primary">How this shapes your plan:</span>
+              </div>
+              {dreamEvaluation.map((signal, i) => (
+                <p key={i} className="text-[11px] text-primary/80 flex items-start gap-1.5">
+                  <span className="text-primary mt-px shrink-0">&#x2192;</span>
+                  <span>{signal}</span>
+                </p>
+              ))}
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

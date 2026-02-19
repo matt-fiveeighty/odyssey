@@ -28,7 +28,7 @@ const navSections = [
     items: [
       { href: "/dashboard", label: "Dashboard", icon: Home },
       { href: "/units", label: "Units", icon: Map },
-      { href: "/odds-finder", label: "Odds Finder", icon: Search },
+      { href: "/opportunity-finder", label: "Opportunity Finder", icon: Search },
       { href: "/calculator", label: "Calculator", icon: Calculator },
     ],
   },

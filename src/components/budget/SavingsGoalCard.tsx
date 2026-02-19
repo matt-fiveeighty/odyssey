@@ -1,9 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PiggyBank, Plus, X, Trash2, Mountain } from "lucide-react";
+import { PiggyBank, Plus, X, Trash2, Mountain, Sparkles } from "lucide-react";
+import { useAppStore } from "@/lib/store";
+import { STATES_MAP } from "@/lib/constants/states";
+import { SPECIES_MAP } from "@/lib/constants/species";
+import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 
 // ============================================================================
 // Types
@@ -114,11 +118,59 @@ function SavingsGoalItem({
 // ============================================================================
 
 export function SavingsGoalsSection() {
+  const { userGoals, milestones: allMilestones } = useAppStore();
   const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
   const [showAddGoal, setShowAddGoal] = useState(false);
   const [newGoalTitle, setNewGoalTitle] = useState("");
   const [newGoalTarget, setNewGoalTarget] = useState(5000);
   const [newGoalMonthly, setNewGoalMonthly] = useState(200);
+  const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
+
+  const currentYear = new Date().getFullYear();
+
+  // Auto-generate savings suggestions from active goals
+  const suggestedSavings = useMemo(() => {
+    return userGoals
+      .filter((g) => g.status === "active" && g.targetYear > currentYear + 1)
+      .map((g) => {
+        const goalMs = allMilestones.filter((m) => m.planId === g.id);
+        const totalCost = goalMs.reduce((s, m) => s + m.totalCost, 0);
+        const monthsAway = Math.max(1, (g.targetYear - currentYear) * 12);
+        return {
+          goal: g,
+          totalCost,
+          monthlySavings: Math.ceil(totalCost / monthsAway),
+        };
+      })
+      .filter(
+        (s) =>
+          s.totalCost > 500 &&
+          !dismissedSuggestions.has(s.goal.id) &&
+          !savingsGoals.some(
+            (sg) => sg.stateId === s.goal.stateId && sg.speciesId === s.goal.speciesId
+          )
+      );
+  }, [userGoals, allMilestones, currentYear, dismissedSuggestions, savingsGoals]);
+
+  function activateSuggestion(suggestion: (typeof suggestedSavings)[number]) {
+    const months = Math.ceil(suggestion.totalCost / (suggestion.monthlySavings || 1));
+    const targetDate = new Date();
+    targetDate.setMonth(targetDate.getMonth() + months);
+
+    setSavingsGoals((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        title: suggestion.goal.title,
+        targetCost: suggestion.totalCost,
+        targetDate: targetDate.toISOString().split("T")[0],
+        monthlySavings: suggestion.monthlySavings,
+        currentSaved: 0,
+        stateId: suggestion.goal.stateId,
+        speciesId: suggestion.goal.speciesId,
+      },
+    ]);
+  }
 
   function addSavingsGoal() {
     if (!newGoalTitle.trim()) return;
@@ -197,6 +249,64 @@ export function SavingsGoalsSection() {
               onRemove={removeGoal}
             />
           ))}
+        </div>
+      )}
+
+      {/* Auto-suggested savings from goals */}
+      {suggestedSavings.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-semibold">Suggested from Your Goals</h3>
+          </div>
+          <div className="grid md:grid-cols-2 gap-3">
+            {suggestedSavings.map((s) => {
+              const state = STATES_MAP[s.goal.stateId];
+              const species = SPECIES_MAP[s.goal.speciesId];
+              return (
+                <Card key={s.goal.id} className="bg-card border-border border-dashed">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <SpeciesAvatar speciesId={s.goal.speciesId} size={24} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold truncate">{s.goal.title}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {species?.name} in {state?.name} — Target {s.goal.targetYear}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">
+                        ${s.totalCost.toLocaleString()} total
+                      </span>
+                      <span className="font-bold text-primary">
+                        ${s.monthlySavings}/mo
+                      </span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={() => activateSuggestion(s)}
+                      >
+                        Start Saving
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground"
+                        onClick={() =>
+                          setDismissedSuggestions((prev) => new Set([...prev, s.goal.id]))
+                        }
+                      >
+                        Dismiss
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
         </div>
       )}
 

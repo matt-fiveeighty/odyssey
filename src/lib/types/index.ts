@@ -425,6 +425,53 @@ export interface UnitScoreInput {
   huntStyle?: HuntStyle;
 }
 
+// ============================================================================
+// Opportunity Finder Types
+// ============================================================================
+
+export type OpportunityTier = "excellent" | "good" | "moderate" | "long_term";
+
+export interface OpportunityResult {
+  stateId: string;
+  speciesId: string;
+
+  // State+species metadata (always present)
+  pointSystem: PointSystemType;
+  pointSystemLabel: string;
+  annualPointCost: number;
+  applicationDeadline?: { open: string; close: string };
+  isOnceInALifetime: boolean;
+
+  // User-specific
+  userPoints: number;
+  pointsRequired: number;
+  yearsToUnlock: number;
+
+  // Scoring
+  opportunityScore: number;
+  pointPositionScore: number;
+  drawAccessScore: number;
+  huntQualityScore: number;
+  costScore: number;
+
+  // Quality (optional — only with unit data)
+  hasUnitData: boolean;
+  bestUnit?: {
+    unitCode: string;
+    unitName: string;
+    successRate: number;
+    trophyRating: number;
+    publicLandPct: number;
+    pressureLevel: string;
+  };
+  unitCount: number;
+
+  // Explanation
+  whyBullets: string[];
+  topReason: string;
+  tier: OpportunityTier;
+}
+
 export interface DrawHistoryEntry {
   year: number;
   applicants: number | null;
