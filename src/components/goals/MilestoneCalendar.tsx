@@ -11,7 +11,9 @@ import {
   ChevronRight,
   CalendarDays,
   List,
+  Download,
 } from "lucide-react";
+import { formatSpeciesName } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 import { STATES_MAP } from "@/lib/constants/states";
 import { DataSourceInline } from "@/components/shared/DataSourceBadge";
@@ -46,6 +48,50 @@ interface MonthGroup {
   completedCount: number;
   isCurrentMonth: boolean;
   isPast: boolean;
+}
+
+/** Generate an RFC 5545 ICS calendar file from milestones */
+function generateICS(milestones: Milestone[]): string {
+  const lines: string[] = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Odyssey Outdoors//Hunt Planner//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "X-WR-CALNAME:Odyssey Hunt Plan",
+  ];
+
+  for (const ms of milestones) {
+    if (!ms.dueDate) continue;
+    const d = new Date(ms.dueDate);
+    const dtStr = d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    const state = STATES_MAP[ms.stateId];
+    const stateName = state?.name ?? ms.stateId;
+    const speciesName = formatSpeciesName(ms.speciesId);
+
+    lines.push("BEGIN:VEVENT");
+    lines.push(`UID:${ms.id}@odysseyoutdoors.com`);
+    lines.push(`DTSTART;VALUE=DATE:${dtStr.slice(0, 8)}`);
+    lines.push(`SUMMARY:${ms.title}`);
+    lines.push(`DESCRIPTION:${stateName} — ${speciesName}. ${ms.description.replace(/\n/g, "\\n")}`);
+    if (ms.url) lines.push(`URL:${ms.url}`);
+    // Reminder 7 days before
+    lines.push("BEGIN:VALARM");
+    lines.push("TRIGGER:-P7D");
+    lines.push("ACTION:DISPLAY");
+    lines.push(`DESCRIPTION:${ms.title} is due in 7 days`);
+    lines.push("END:VALARM");
+    // Reminder 1 day before
+    lines.push("BEGIN:VALARM");
+    lines.push("TRIGGER:-P1D");
+    lines.push("ACTION:DISPLAY");
+    lines.push(`DESCRIPTION:${ms.title} is due tomorrow`);
+    lines.push("END:VALARM");
+    lines.push("END:VEVENT");
+  }
+
+  lines.push("END:VCALENDAR");
+  return lines.join("\r\n");
 }
 
 export function MilestoneCalendar({
@@ -162,6 +208,25 @@ export function MilestoneCalendar({
           <span>{yearCompleted}/{yearMilestones.length} done</span>
           <span>${yearTotal.toLocaleString()} total</span>
           <span>{monthsWithActions} active months</span>
+          {yearMilestones.length > 0 && (
+            <button
+              onClick={() => {
+                const ics = generateICS(yearMilestones);
+                const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `odyssey-${selectedYear}-deadlines.ics`;
+                a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1 px-2 py-1 rounded-md bg-secondary hover:bg-accent transition-colors cursor-pointer"
+              title="Export to calendar"
+            >
+              <Download className="w-3 h-3" />
+              <span>.ics</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -11,12 +11,17 @@ import { GenerationProgress } from "@/components/results/shared/GenerationProgre
 import type { StrategicAssessment } from "@/lib/types";
 
 function getInitialAssessment(): StrategicAssessment | null {
-  const state = useWizardStore.getState();
-  if (state.step === 10 && state.confirmedPlan) {
-    return state.confirmedPlan;
+  const wizardState = useWizardStore.getState();
+  const appState = useAppStore.getState();
+  // Restore from wizard store first, then app store as fallback
+  if (wizardState.step === 10 && wizardState.confirmedPlan) {
+    return wizardState.confirmedPlan;
   }
-  if (state.step === 10 || state.step > 10) {
-    state.setStep(1);
+  if (wizardState.step === 10 && appState.confirmedAssessment) {
+    return appState.confirmedAssessment;
+  }
+  if (wizardState.step === 10 || wizardState.step > 10) {
+    wizardState.setStep(1);
   }
   return null;
 }
@@ -32,9 +37,11 @@ export default function PlanBuilderPage() {
   // Hydration recovery: if Zustand hydrates after initial render with
   // a confirmed plan, sync the assessment state to match
   useEffect(() => {
-    const state = useWizardStore.getState();
-    if (state.step === 10 && state.confirmedPlan && !assessment) {
-      setAssessment(state.confirmedPlan);
+    const wizState = useWizardStore.getState();
+    const appState = useAppStore.getState();
+    if (wizState.step === 10 && !assessment) {
+      const restored = wizState.confirmedPlan ?? appState.confirmedAssessment;
+      if (restored) setAssessment(restored);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -116,6 +123,9 @@ export default function PlanBuilderPage() {
         wizard.setGenerationProgress(100);
         wizard.setGenerationPhase("Complete!");
         setAssessment(result);
+        wizard.confirmPlan(result);
+        // Persist to app store immediately so it survives navigation
+        appStore.setConfirmedAssessment(result);
         wizard.setStep(10);
       } catch (err) {
         console.error("Strategy generation failed:", err);

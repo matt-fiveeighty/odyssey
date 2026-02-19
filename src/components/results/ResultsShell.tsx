@@ -8,7 +8,7 @@ import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
 import { PlanExport } from "@/components/shared/PlanExport";
 import { Button } from "@/components/ui/button";
-import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows } from "lucide-react";
+import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows, Pencil } from "lucide-react";
 
 export interface EditableAction extends RoadmapAction {
   _edited?: boolean;
@@ -58,6 +58,11 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
     appStore.setConfirmedAssessment(assessment);
     appStore.setMilestones(assessment.milestones);
     router.push("/goals");
+  }
+
+  function handleEditPlan() {
+    // Go back to step 1 with all answers preserved so user can adjust
+    wizard.setStep(1);
   }
 
   function handleStartOver() {
@@ -117,9 +122,14 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
 
       {/* Action buttons */}
       <div className="flex items-center justify-between pt-4 border-t border-border">
-        <Button variant="ghost" onClick={handleStartOver} className="gap-1.5">
-          <RotateCcw className="w-4 h-4" /> Start Over
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={handleEditPlan} className="gap-1.5">
+            <Pencil className="w-4 h-4" /> Edit Plan
+          </Button>
+          <Button variant="ghost" onClick={handleStartOver} className="gap-1.5 text-muted-foreground">
+            <RotateCcw className="w-4 h-4" /> Start Over
+          </Button>
+        </div>
         <div className="flex items-center gap-2">
           <PlanExport assessment={assessment} milestones={assessment.milestones} />
           <Button onClick={handleConfirmPlan} className="gap-1.5">
