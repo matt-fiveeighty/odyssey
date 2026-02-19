@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Compass } from "lucide-react";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { generateStrategicAssessment } from "@/lib/engine/roadmap-generator";
+import { loadDataContext } from "@/lib/engine/data-loader";
 import { ConsultationShell } from "@/components/consultation/ConsultationShell";
 import { ResultsShell } from "@/components/results/ResultsShell";
 import { GenerationProgress } from "@/components/results/shared/GenerationProgress";
@@ -28,11 +29,25 @@ export default function PlanBuilderPage() {
 
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  function handleGenerate() {
+  // Hydration recovery: if Zustand hydrates after initial render with
+  // a confirmed plan, sync the assessment state to match
+  useEffect(() => {
+    const state = useWizardStore.getState();
+    if (state.step === 10 && state.confirmedPlan && !assessment) {
+      setAssessment(state.confirmedPlan);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleGenerate() {
     setIsGenerating(true);
     setGenerationError(null);
-    wizard.setGenerationPhase("Analyzing your profile...");
+    wizard.setGenerationPhase("Loading latest data...");
     wizard.setGenerationProgress(0);
+
+    // Hydrate engine with DB-backed data (silent fallback to constants)
+    await loadDataContext().catch(() => {});
+
+    wizard.setGenerationPhase("Analyzing your profile...");
 
     const phases = [
       { phase: "Scoring states against your profile...", pct: 20 },
@@ -73,6 +88,7 @@ export default function PlanBuilderPage() {
           guidedForSpecies: wizard.guidedForSpecies,
           preferredTerrain: wizard.preferredTerrain,
           importantFactors: wizard.importantFactors,
+          selectedStatesConfirmed: wizard.selectedStatesConfirmed,
         });
 
         // Deduplicate: only add points not already in the store

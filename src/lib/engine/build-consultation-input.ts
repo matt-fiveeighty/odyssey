@@ -24,5 +24,6 @@ export function buildConsultationInput(wizard: ReturnType<typeof useWizardStore.
     guidedForSpecies: wizard.guidedForSpecies,
     preferredTerrain: wizard.preferredTerrain,
     importantFactors: wizard.importantFactors,
+    selectedStatesConfirmed: wizard.selectedStatesConfirmed,
   };
 }

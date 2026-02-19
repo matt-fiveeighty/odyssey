@@ -34,6 +34,7 @@ import {
   yearsToDrawWithCreep,
 } from "./point-creep";
 import { calculateAnnualSubscription, calculatePointYearCost, getEstimatedTagCost } from "./roi-calculator";
+import { resolveFees } from "./fee-resolver";
 import type {
   PhysicalComfort,
   HuntFrequency,
@@ -99,11 +100,14 @@ export interface ConsultationInput {
   guidedForSpecies: string[];
   preferredTerrain: string[];
   importantFactors: string[];
+  /** States the user confirmed in Step 8. If provided, the generator respects this selection. */
+  selectedStatesConfirmed?: string[];
 }
 
 // --- Shared Helpers ---
 
-const fmtSpecies = (id: string) => id.replace("_", " ");
+import { formatSpeciesName } from "@/lib/utils";
+const fmtSpecies = formatSpeciesName;
 
 const getRelevantSpecies = (species: string[], state: { availableSpecies: string[] }) =>
   species.filter(s => state.availableSpecies.includes(s));
@@ -114,33 +118,36 @@ const getDeadline = (state: { applicationDeadlines: Record<string, { open: strin
 const fmtFlight = (routes: ReturnType<typeof findBestRoutes>) =>
   routes[0] ? ` Fly ${routes[0].from}→${routes[0].to} (~$${routes[0].avgCost} RT).` : "";
 
-/** Build itemized cost line items for a state + species (license + app fee + point cost). */
+/** Build itemized cost line items for a state + species (license + app fee + point cost).
+ *  When homeState is provided, resolves R vs NR fees automatically. */
 function buildStateCostItems(
   state: State,
   stateId: string,
-  speciesId: string
+  speciesId: string,
+  homeState?: string
 ): CostLineItem[] {
   if (!state) return [];
+  const fees = resolveFees(state, homeState ?? "");
   const items: CostLineItem[] = [];
-  if (state.licenseFees.qualifyingLicense && state.licenseFees.qualifyingLicense > 0) {
+  if (fees.qualifyingLicense > 0) {
     items.push({
-      label: `${state.abbreviation} ${state.feeSchedule.find(f => f.name.includes("License"))?.name ?? "Qualifying License"}`,
-      amount: state.licenseFees.qualifyingLicense,
+      label: `${state.abbreviation} ${fees.feeSchedule.find(f => f.name.includes("License"))?.name ?? "Qualifying License"}`,
+      amount: fees.qualifyingLicense,
       category: "license",
       stateId,
       url: state.fgUrl,
     });
   }
-  if (state.licenseFees.appFee && state.licenseFees.appFee > 0) {
+  if (fees.appFee > 0) {
     items.push({
       label: `${state.abbreviation} ${fmtSpecies(speciesId)} application fee`,
-      amount: state.licenseFees.appFee,
+      amount: fees.appFee,
       category: "application",
       stateId,
       speciesId,
     });
   }
-  const pointCost = state.pointCost[speciesId] ?? 0;
+  const pointCost = fees.pointCost[speciesId] ?? 0;
   if (pointCost > 0) {
     items.push({
       label: `${state.abbreviation} ${fmtSpecies(speciesId)} preference point`,
@@ -250,13 +257,17 @@ export function scoreStateForHunter(
     (u) => u.stateId === stateId && input.species.some(s => state.availableSpecies.includes(s))
   );
   const relevantSpecies = getRelevantSpecies(input.species, state);
-  const pointYearResult = calculatePointYearCost(stateId, relevantSpecies);
+  const pointYearResult = calculatePointYearCost(stateId, relevantSpecies, input.homeState);
   const annualCostPerState = pointYearResult.total;
 
   let budgetScore = 8;
   let budgetExplanation = `~$${Math.round(annualCostPerState)}/yr in point years`;
 
-  if (annualCostPerState <= input.pointYearBudget * 0.12) {
+  if (input.pointYearBudget <= 0) {
+    // Budget not specified — treat all states as equally affordable
+    budgetScore = 8;
+    budgetExplanation += " — budget not specified, scored neutrally";
+  } else if (annualCostPerState <= input.pointYearBudget * 0.12) {
     budgetScore = 14;
     budgetExplanation += " — very affordable for your budget";
   } else if (annualCostPerState <= input.pointYearBudget * 0.20) {
@@ -525,10 +536,17 @@ export function generateStrategicAssessment(
   const stateScores = _data.states.map((s) => scoreStateForHunter(s.id, input))
     .sort((a, b) => b.totalScore - a.totalScore);
 
-  // Select top states based on budget
-  const avgBudget = (input.pointYearBudget + input.huntYearBudget) / 2;
-  const maxStates = avgBudget < 2000 ? 3 : avgBudget < 5000 ? 5 : 7;
-  const selectedScores = stateScores.slice(0, maxStates);
+  // Use user-confirmed states if provided, otherwise auto-select based on budget
+  let selectedScores: StateScoreBreakdown[];
+  if (input.selectedStatesConfirmed && input.selectedStatesConfirmed.length > 0) {
+    // Respect user's Step 8 selection — keep their order by score
+    const confirmedSet = new Set(input.selectedStatesConfirmed);
+    selectedScores = stateScores.filter((s) => confirmedSet.has(s.stateId));
+  } else {
+    const avgBudget = (input.pointYearBudget + input.huntYearBudget) / 2;
+    const maxStates = avgBudget < 2000 ? 3 : avgBudget < 5000 ? 5 : 7;
+    selectedScores = stateScores.slice(0, maxStates);
+  }
 
   // Build state recommendations
   const stateRecommendations = selectedScores.map(
@@ -569,7 +587,7 @@ export function generateStrategicAssessment(
         .slice(0, 3);
 
       // Itemized annual cost
-      const costResult = calculatePointYearCost(stateId, relevantSpecies);
+      const costResult = calculatePointYearCost(stateId, relevantSpecies, input.homeState);
       const pointStrategy = buildPointStrategy(stateId, role, state, costResult.total, bestUnits, input);
       const reason = buildStateReason(stateId, role, scoreBreakdown, input, bestUnits, state);
 
@@ -590,7 +608,8 @@ export function generateStrategicAssessment(
   // Calculate subscription
   const subscription = calculateAnnualSubscription(
     selectedScores.map((s) => s.stateId),
-    input.species
+    input.species,
+    input.homeState
   );
 
   // Generate insights
@@ -622,7 +641,33 @@ export function generateStrategicAssessment(
   // v3: Curated logistics and guides
   const travelLogistics = generateTravelLogistics(input, stateRecommendations);
   const seasonCalendar = generateSeasonCalendar(input, stateRecommendations);
-  const pointOnlyGuide = generatePointOnlyGuide(stateRecommendations);
+  const pointOnlyGuide = generatePointOnlyGuide(stateRecommendations, stateScores, input.species, input.homeState);
+
+  // Build "also considered" states — scored well but not in the user's selection
+  const selectedSet = new Set(selectedScores.map((s) => s.stateId));
+  const alsoConsidered = stateScores
+    .filter((s) => !selectedSet.has(s.stateId) && s.totalScore > 0)
+    .slice(0, 5)
+    .map((s) => {
+      const state = _data.statesMap[s.stateId];
+      if (!state) return null;
+      const speciesAvailable = getRelevantSpecies(input.species, state);
+      const costResult = calculatePointYearCost(s.stateId, speciesAvailable, input.homeState);
+      const topReasons = s.factors
+        .filter((f) => f.score > 0 && f.explanation)
+        .sort((a, b) => (b.score / b.maxScore) - (a.score / a.maxScore))
+        .slice(0, 3)
+        .map((f) => f.explanation);
+      return {
+        stateId: s.stateId,
+        totalScore: s.totalScore,
+        maxPossibleScore: s.maxPossibleScore,
+        topReasons,
+        annualCost: costResult.total,
+        speciesAvailable,
+      };
+    })
+    .filter((s) => s !== null);
 
   const tenYearTotal = roadmap.reduce((sum, yr) => sum + yr.estimatedCost, 0);
   const totalHunts = roadmap.reduce(
@@ -635,6 +680,7 @@ export function generateStrategicAssessment(
     profileSummary,
     strategyOverview,
     stateRecommendations,
+    alsoConsidered,
     roadmap,
     insights: insights.map(i => i.description),
     keyYears: keyYears.map(k => ({ year: k.year, description: k.description })),
@@ -696,9 +742,10 @@ function generateMilestonesFromPlan(
           applicationTip: state.applicationTips[0],
         });
       } else {
-        const pointCost = state.pointCost[speciesId] ?? 0;
+        const resolvedFees = resolveFees(state, input.homeState);
+        const pointCost = resolvedFees.pointCost[speciesId] ?? 0;
         if (pointCost > 0) {
-          const costs = buildStateCostItems(state, rec.stateId, speciesId);
+          const costs = buildStateCostItems(state, rec.stateId, speciesId, input.homeState);
 
           milestones.push({
             id: `ms-${year}-${rec.stateId}-${speciesId}-points-${idx++}`,
@@ -734,8 +781,9 @@ function generateMilestonesFromPlan(
 
 // --- Goal-Driven Milestone Generator
 
-/** Generate milestones for a single user goal (buy points / apply each year → hunt). */
-export function generateMilestonesForGoal(goal: UserGoal): Milestone[] {
+/** Generate milestones for a single user goal (buy points / apply each year → hunt).
+ *  Optional homeState enables R/NR fee resolution. */
+export function generateMilestonesForGoal(goal: UserGoal, homeState?: string): Milestone[] {
   const state = _data.statesMap[goal.stateId];
   if (!state) return [];
 
@@ -747,7 +795,9 @@ export function generateMilestonesForGoal(goal: UserGoal): Milestone[] {
   // Adjust deadline year: constants store "2026-XX-XX", shift to target year
   const shiftDeadline = (dateStr: string | undefined, year: number): string | undefined => {
     if (!dateStr) return undefined;
-    return `${year}${dateStr.slice(4)}`;
+    const parts = dateStr.split("-");
+    if (parts.length < 3) return undefined;
+    return `${year}-${parts[1]}-${parts[2]}`;
   };
 
   const drawDate = state.drawResultDates?.[goal.speciesId];
@@ -755,7 +805,7 @@ export function generateMilestonesForGoal(goal: UserGoal): Milestone[] {
   // Point-building / apply years: currentYear → targetYear - 1
   for (let year = currentYear; year < goal.targetYear; year++) {
     const type = isRandom ? "apply" : "buy_points";
-    const costs = buildStateCostItems(state, goal.stateId, goal.speciesId);
+    const costs = buildStateCostItems(state, goal.stateId, goal.speciesId, homeState);
     milestones.push({
       id: `goal-ms-${goal.id}-${year}-${type}`,
       planId: goal.id,
@@ -883,9 +933,10 @@ function generateBudgetBreakdown(
     if (state) {
       const primarySpecies = input.species.find(s => state.availableSpecies.includes(s)) ?? input.species[0];
       if (primarySpecies) {
+        const estimatedTag = getEstimatedTagCost(primaryRec.stateId, primarySpecies);
         huntYearItems.push({
           label: `${state.abbreviation} ${fmtSpecies(primarySpecies)} tag (estimated)`,
-          amount: 700,
+          amount: estimatedTag,
           category: "tag",
           stateId: primaryRec.stateId,
           speciesId: primarySpecies,
@@ -1149,10 +1200,11 @@ function generateYearlyPlan(
       if (!state || state.pointSystem === "random") continue;
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
+      const yearlyFees = resolveFees(state, input.homeState);
       for (const speciesId of relevantSpecies) {
-        const cost = state.pointCost[speciesId] ?? 0;
+        const cost = yearlyFees.pointCost[speciesId] ?? 0;
         if (cost > 0) {
-          const itemCosts = buildStateCostItems(state, rec.stateId, speciesId);
+          const itemCosts = buildStateCostItems(state, rec.stateId, speciesId, input.homeState);
           const deadline = getDeadline(state, speciesId);
           const totalPointCost = sumItems(itemCosts);
           const pointApp = state.pointOnlyApplication;
@@ -1182,12 +1234,13 @@ function generateYearlyPlan(
       if (!state) continue;
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
+      const wcFees = resolveFees(state, input.homeState);
       for (const speciesId of relevantSpecies) {
         const deadline = getDeadline(state, speciesId);
-        const appCost = state.licenseFees.appFee ?? 0;
-        const licenseCost = state.licenseFees.qualifyingLicense ?? 0;
+        const appCost = wcFees.appFee;
+        const licenseCost = wcFees.qualifyingLicense;
         const itemCosts: CostLineItem[] = [];
-        if (licenseCost > 0) itemCosts.push({ label: `${state.abbreviation} License`, amount: licenseCost, category: "license", stateId: wc.stateId });
+        if (licenseCost > 0) itemCosts.push({ label: `${state.abbreviation} ${wcFees.label} License`, amount: licenseCost, category: "license", stateId: wc.stateId });
         if (appCost > 0) itemCosts.push({ label: `${state.abbreviation} ${fmtSpecies(speciesId)} app fee`, amount: appCost, category: "application", stateId: wc.stateId, speciesId });
 
         const applyTotal = appCost + licenseCost;
@@ -1367,13 +1420,14 @@ function buildPointStrategy(
   const existingPts = Object.values(input.existingPoints[stateId] ?? {}).reduce((a, b) => a + b, 0);
 
   if (role === "wildcard") {
-    // Random draw states
-    const appCost = (state.licenseFees.appFee ?? 0) + (state.licenseFees.qualifyingLicense ?? 0);
+    // Random draw states — use resolved fees for R vs NR
+    const wcFees = resolveFees(state, input.homeState);
+    const appCost = wcFees.appFee + wcFees.qualifyingLicense;
     return `No points needed — ${state.name} is a pure random draw. Apply every year for $${Math.round(appCost)} total. Same odds whether it's your first application or your tenth. ${
       stateId === "NM"
         ? "New Mexico doesn't even require a license to apply — just the $12 application fee. It's the cheapest lottery ticket in western hunting."
         : stateId === "ID"
-          ? "Your Idaho hunting license IS your tag for general units. Buy it ($606), and you're guaranteed to hunt elk and deer in general-tag zones."
+          ? "Your Idaho hunting license IS your tag for general units. Buy it ($185), and you're guaranteed to hunt elk and deer in general-tag zones."
           : "Low-cost annual play that could pay off any year."
     }`;
   }
@@ -1481,7 +1535,8 @@ function buildStateReason(
   // Budget efficiency
   const budgetFactor = scoreBreakdown.factors.find(f => f.label === "Budget Fit");
   if (budgetFactor && budgetFactor.score >= budgetFactor.maxScore * 0.7) {
-    reason += ` At ~$${Math.round(state.feeSchedule.reduce((s, f) => s + (f.required ? f.amount : 0), 0) || 150)}/year in point costs, it's one of your most capital-efficient investments.`;
+    const reasonFees = resolveFees(state, input.homeState);
+    reason += ` At ~$${Math.round(reasonFees.feeSchedule.reduce((s, f) => s + (f.required ? f.amount : 0), 0) || 150)}/year in point costs, it's one of your most capital-efficient investments.`;
   }
 
   // State personality kicker
@@ -1617,15 +1672,18 @@ function generateSeasonCalendar(
 // --- v3: Point-Only Application Guide Generator
 
 function generatePointOnlyGuide(
-  recs: StateRecommendation[]
+  recs: StateRecommendation[],
+  allScores: StateScoreBreakdown[],
+  userSpecies: string[],
+  homeState?: string
 ): PointOnlyGuideEntry[] {
   const guide: PointOnlyGuideEntry[] = [];
+  const addedStates = new Set<string>();
 
+  // First add all recommended states
   for (const rec of recs) {
     const state = _data.statesMap[rec.stateId];
     if (!state) continue;
-
-    // Skip random draw states — they don't have points to buy
     if (state.pointSystem === "random") continue;
 
     const pointApp = state.pointOnlyApplication;
@@ -1640,7 +1698,39 @@ function generatePointOnlyGuide(
       deadline: pointApp.deadline,
       annualCost: rec.annualCost,
       url: pointApp.purchaseUrl,
+      inPlan: true,
     });
+    addedStates.add(rec.stateId);
+  }
+
+  // Then add remaining scored states that have point systems
+  for (const score of allScores) {
+    if (addedStates.has(score.stateId)) continue;
+    const state = _data.statesMap[score.stateId];
+    if (!state) continue;
+    if (state.pointSystem === "random") continue;
+
+    const pointApp = state.pointOnlyApplication;
+    if (!pointApp) continue;
+
+    // Check the state has at least one species the user wants
+    const speciesAvailable = getRelevantSpecies(userSpecies, state);
+    if (speciesAvailable.length === 0) continue;
+
+    const costResult = calculatePointYearCost(score.stateId, speciesAvailable, homeState);
+
+    guide.push({
+      stateId: score.stateId,
+      stateName: state.name,
+      instructions: pointApp.instructions,
+      huntCode: pointApp.huntCode,
+      secondChoiceTactic: pointApp.secondChoiceTactic,
+      deadline: pointApp.deadline,
+      annualCost: costResult.total,
+      url: pointApp.purchaseUrl,
+      inPlan: false,
+    });
+    addedStates.add(score.stateId);
   }
 
   // Sort by deadline

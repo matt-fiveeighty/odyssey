@@ -263,14 +263,14 @@ export default function PricingPage() {
           {/* FAQ */}
           <div className="mt-16 max-w-2xl mx-auto text-center">
             <h3 className="text-lg font-bold mb-3">
-              Why is Basecamp free?
+              Why is Odyssey free?
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Every hunter deserves a starting point. Basecamp gives you a
-              snapshot of which states fit your goals. When you&apos;re ready for
-              the full strategy engine &mdash; draw odds, personalized roadmaps,
-              portfolio tracking, and alerts &mdash; Scout has everything you
-              need.
+              Every hunter deserves a real strategy &mdash; not a paywall. The full
+              engine, all 15 states, unlimited runs, and your complete 10-year
+              roadmap are free forever. When we launch Scout and Outfitter,
+              they&apos;ll add unit-level analytics, deadline alerts, and
+              advanced tools for hunters who want to go deeper.
             </p>
           </div>
         </div>
