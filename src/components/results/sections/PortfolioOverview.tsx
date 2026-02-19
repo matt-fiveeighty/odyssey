@@ -1,21 +1,39 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import type { StrategicAssessment } from "@/lib/types";
 import { CollapsibleSection } from "../shared/CollapsibleSection";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
-import { DollarSign, TrendingUp, Lightbulb, PieChart } from "lucide-react";
+import { DollarSign, TrendingUp, Lightbulb, PieChart, AlertTriangle } from "lucide-react";
 import { WhatIfModeler } from "./WhatIfModeler";
+
+const INFLATION_RATE = 0.035; // 3.5% annual fee inflation
 
 interface PortfolioOverviewProps {
   assessment: StrategicAssessment;
 }
 
+const DAYS_PER_HUNT = 6; // avg western hunt: 5-7 days incl. travel
+
 export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
   const { macroSummary, budgetBreakdown, stateRecommendations, insights } = assessment;
   const userSpecies = useWizardStore((s) => s.species);
+  const huntDaysPerYear = useWizardStore((s) => s.huntDaysPerYear);
+  const [inflationOn, setInflationOn] = useState(false);
+
+  const inflatedProjection = useMemo(() => {
+    if (!inflationOn) return null;
+    const baseYear = budgetBreakdown.tenYearProjection[0]?.year ?? new Date().getFullYear();
+    const items = budgetBreakdown.tenYearProjection.map((yr) => {
+      const yearsOut = yr.year - baseYear;
+      const multiplier = Math.pow(1 + INFLATION_RATE, yearsOut);
+      return { ...yr, cost: Math.round(yr.cost * multiplier) };
+    });
+    return { items, total: items.reduce((s, yr) => s + yr.cost, 0) };
+  }, [inflationOn, budgetBreakdown.tenYearProjection]);
 
   return (
     <div className="space-y-4">
@@ -57,32 +75,100 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
       {/* 10-Year Cost Projection */}
       <CollapsibleSection title="10-Year Cost Projection" icon={TrendingUp} defaultOpen>
         <div className="space-y-2">
-          {budgetBreakdown.tenYearProjection.map((yr) => (
-            <div key={yr.year} className="flex items-center gap-3">
-              <span className={`text-xs font-mono w-12 ${yr.isHuntYear ? "text-chart-2 font-bold" : "text-muted-foreground"}`}>
-                {yr.year}
-              </span>
-              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
-                <div
-                  className={`h-full rounded-full bar-fill ${yr.isHuntYear ? "bg-chart-2/70" : "bg-primary/40"}`}
-                  style={{ width: `${Math.min((yr.cost / (assessment.financialSummary.tenYearTotal / 5)) * 100, 100)}%` }}
-                />
+          {/* Inflation toggle */}
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-muted-foreground">
+              {inflationOn ? `Inflation-adjusted (${(INFLATION_RATE * 100).toFixed(1)}%/yr)` : "Constant 2026 dollars"}
+            </span>
+            <button
+              onClick={() => setInflationOn(!inflationOn)}
+              className={`text-[10px] px-2 py-1 rounded transition-colors ${
+                inflationOn ? "bg-chart-4/15 text-chart-4 font-medium" : "bg-secondary text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {inflationOn ? "Inflation: ON" : "Inflation: OFF"}
+            </button>
+          </div>
+
+          {(inflatedProjection?.items ?? budgetBreakdown.tenYearProjection).map((yr) => {
+            const maxCost = inflatedProjection ? inflatedProjection.total / 5 : assessment.financialSummary.tenYearTotal / 5;
+            return (
+              <div key={yr.year} className="flex items-center gap-3">
+                <span className={`text-xs font-mono w-12 ${yr.isHuntYear ? "text-chart-2 font-bold" : "text-muted-foreground"}`}>
+                  {yr.year}
+                </span>
+                <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
+                  <div
+                    className={`h-full rounded-full bar-fill ${yr.isHuntYear ? "bg-chart-2/70" : "bg-primary/40"}`}
+                    style={{ width: `${Math.min((yr.cost / maxCost) * 100, 100)}%` }}
+                  />
+                </div>
+                <span className={`text-xs font-mono w-16 text-right ${yr.isHuntYear ? "text-chart-2 font-bold" : "text-muted-foreground"}`}>
+                  ${yr.cost.toLocaleString()}
+                </span>
+                {yr.isHuntYear && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-2/15 text-chart-2 font-medium">Hunt</span>}
               </div>
-              <span className={`text-xs font-mono w-16 text-right ${yr.isHuntYear ? "text-chart-2 font-bold" : "text-muted-foreground"}`}>
-                ${yr.cost.toLocaleString()}
-              </span>
-              {yr.isHuntYear && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-2/15 text-chart-2 font-medium">Hunt</span>}
-            </div>
-          ))}
+            );
+          })}
           <div className="flex justify-between pt-2 border-t border-border">
             <span className="text-sm font-semibold">10-Year Total</span>
-            <span className="text-sm font-bold text-primary">${assessment.financialSummary.tenYearTotal.toLocaleString()}</span>
+            <span className="text-sm font-bold text-primary">
+              ${(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal).toLocaleString()}
+            </span>
           </div>
+          {inflationOn && (
+            <p className="text-[10px] text-chart-4/80 mt-1 leading-relaxed">
+              +${((inflatedProjection?.total ?? 0) - assessment.financialSummary.tenYearTotal).toLocaleString()} over constant-dollar projection ({(INFLATION_RATE * 100).toFixed(1)}% annual fee inflation applied).
+            </p>
+          )}
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
-            All costs shown in 2026 dollars. Actual fees may increase over time due to state fee adjustments and inflation. Expect 2-5% annual increases on license and application fees.
+            {inflationOn
+              ? "Projections include estimated 3.5% annual fee inflation. Actual state fee adjustments vary by year and may differ."
+              : "All costs shown in 2026 dollars. Actual fees may increase over time due to state fee adjustments and inflation. Expect 2-5% annual increases on license and application fees."}
           </p>
         </div>
       </CollapsibleSection>
+
+      {/* PTO / Hunt Days Warning */}
+      {huntDaysPerYear > 0 && (() => {
+        // Check each hunt year for PTO overload
+        const huntYears = assessment.roadmap.filter((yr) => yr.isHuntYear);
+        const warnings = huntYears
+          .map((yr) => {
+            const huntActions = yr.actions.filter((a) => a.type === "hunt").length;
+            const estimatedDays = huntActions * DAYS_PER_HUNT;
+            return { year: yr.year, huntActions, estimatedDays };
+          })
+          .filter((w) => w.estimatedDays > huntDaysPerYear);
+
+        if (warnings.length === 0) return null;
+
+        return (
+          <div className="p-3 rounded-xl border border-chart-4/30 bg-chart-4/5">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-chart-4 shrink-0" />
+              <span className="text-xs font-semibold text-chart-4">PTO Budget Warning</span>
+            </div>
+            <p className="text-[10px] text-muted-foreground mb-2">
+              You indicated {huntDaysPerYear} available hunt days per year. Some years may exceed this:
+            </p>
+            <div className="space-y-1">
+              {warnings.map((w) => (
+                <div key={w.year} className="flex items-center justify-between text-[10px]">
+                  <span className="font-mono font-medium">{w.year}</span>
+                  <span className="text-muted-foreground">{w.huntActions} hunts</span>
+                  <span className={`font-medium ${w.estimatedDays > huntDaysPerYear ? "text-chart-4" : "text-muted-foreground"}`}>
+                    ~{w.estimatedDays}d needed vs {huntDaysPerYear}d available
+                  </span>
+                </div>
+              ))}
+            </div>
+            <p className="text-[9px] text-muted-foreground/60 mt-2">
+              Estimates {DAYS_PER_HUNT} days per hunt (including travel). Consider spreading hunts across years or taking extended leave.
+            </p>
+          </div>
+        );
+      })()}
 
       {/* Budget Breakdown */}
       <CollapsibleSection title="Budget Breakdown" icon={DollarSign}>

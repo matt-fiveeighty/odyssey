@@ -20,7 +20,7 @@ export function DataSourceBadge({ stateId, dataType, className = "" }: DataSourc
 
   const lastScraped = state.lastScrapedAt
     ? new Date(state.lastScrapedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
-    : "2025-26";
+    : "Unverified";
 
   const stateAgencyName = getAgencyName(stateId);
 
@@ -52,9 +52,13 @@ export function DataSourceInline({ stateId }: { stateId: string }) {
   const state = STATES_MAP[stateId];
   if (!state) return null;
 
+  const lastVerified = state.lastScrapedAt
+    ? new Date(state.lastScrapedAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
+    : "Unverified";
+
   return (
     <span className="text-[8px] text-muted-foreground/40">
-      {getAgencyShort(stateId)} 2025-26
+      {getAgencyShort(stateId)} {lastVerified}
     </span>
   );
 }

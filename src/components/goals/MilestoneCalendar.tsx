@@ -22,6 +22,7 @@ interface MilestoneCalendarProps {
   userGoals: UserGoal[];
   completeMilestone: (id: string) => void;
   uncompleteMilestone: (id: string) => void;
+  setDrawOutcome?: (id: string, outcome: "drew" | "didnt_draw" | null) => void;
 }
 
 const MONTH_NAMES = [
@@ -52,6 +53,7 @@ export function MilestoneCalendar({
   userGoals,
   completeMilestone,
   uncompleteMilestone,
+  setDrawOutcome,
 }: MilestoneCalendarProps) {
   const now = new Date();
   const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth()).padStart(2, "0")}`;
@@ -234,6 +236,8 @@ export function MilestoneCalendar({
                     const state = STATES_MAP[milestone.stateId];
                     const isGoalMs = milestone.planId && userGoals.some((g) => g.id === milestone.planId);
                     const isOverdue = milestone.dueDate && new Date(milestone.dueDate) < now && !milestone.completed;
+                    const daysLeft = milestone.dueDate ? Math.ceil((new Date(milestone.dueDate).getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                    const isUrgent = daysLeft !== null && daysLeft > 0 && daysLeft <= 14 && !milestone.completed;
 
                     return (
                       <div
@@ -277,10 +281,15 @@ export function MilestoneCalendar({
                           <div className="flex items-center gap-3 mt-1.5">
                             {milestone.dueDate && (
                               <span className={`text-[10px] flex items-center gap-1 ${
-                                isOverdue ? "text-destructive font-medium" : "text-muted-foreground"
+                                isOverdue ? "text-destructive font-medium" : isUrgent ? "text-chart-4 font-medium" : "text-muted-foreground"
                               }`}>
                                 <Clock className="w-2.5 h-2.5" />
                                 {new Date(milestone.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                {isUrgent && (
+                                  <span className={`ml-1 px-1 py-0.5 rounded text-[8px] font-bold ${daysLeft! <= 3 ? "bg-destructive/15 text-destructive" : daysLeft! <= 7 ? "bg-chart-4/15 text-chart-4" : "bg-chart-4/10 text-chart-4/80"}`}>
+                                    {daysLeft}d left
+                                  </span>
+                                )}
                               </span>
                             )}
                             {milestone.drawResultDate && (
@@ -304,6 +313,45 @@ export function MilestoneCalendar({
                                   <span className="font-mono">${cost.amount}</span>
                                 </div>
                               ))}
+                            </div>
+                          )}
+
+                          {/* Draw outcome workflow */}
+                          {setDrawOutcome && milestone.type === "apply" && milestone.drawResultDate && milestone.completed && (
+                            <div className="mt-2 flex items-center gap-2">
+                              {milestone.drawOutcome ? (
+                                <div className="flex items-center gap-2">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                                    milestone.drawOutcome === "drew"
+                                      ? "bg-chart-2/15 text-chart-2"
+                                      : "bg-secondary text-muted-foreground"
+                                  }`}>
+                                    {milestone.drawOutcome === "drew" ? "Drew Tag" : "Didn't Draw"}
+                                  </span>
+                                  <button
+                                    onClick={() => setDrawOutcome(milestone.id, null)}
+                                    className="text-[9px] text-muted-foreground/50 hover:text-muted-foreground underline"
+                                  >
+                                    reset
+                                  </button>
+                                </div>
+                              ) : (
+                                <>
+                                  <span className="text-[10px] text-muted-foreground">Draw result:</span>
+                                  <button
+                                    onClick={() => setDrawOutcome(milestone.id, "drew")}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-chart-2/15 text-chart-2 font-medium hover:bg-chart-2/25 transition-colors"
+                                  >
+                                    Drew Tag
+                                  </button>
+                                  <button
+                                    onClick={() => setDrawOutcome(milestone.id, "didnt_draw")}
+                                    className="text-[10px] px-2 py-0.5 rounded bg-secondary text-muted-foreground font-medium hover:bg-accent transition-colors"
+                                  >
+                                    Didn&apos;t Draw
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>

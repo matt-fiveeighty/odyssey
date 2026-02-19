@@ -65,6 +65,89 @@ export function PlanExport({ assessment, milestones }: PlanExportProps) {
     printWindow.print();
   }, []);
 
+  const handleCSVExport = useCallback(() => {
+    const rows: string[][] = [];
+    const esc = (v: string | number | undefined | null) => {
+      const s = String(v ?? "");
+      return s.includes(",") || s.includes('"') || s.includes("\n")
+        ? `"${s.replace(/"/g, '""')}"`
+        : s;
+    };
+
+    // Roadmap header
+    rows.push(["Year", "Phase", "State", "Species", "Action", "Cost", "Due Date", "Description"]);
+
+    for (const yr of assessment.roadmap) {
+      if (yr.actions.length === 0) {
+        rows.push([String(yr.year), yr.phase, "", "", "", String(yr.estimatedCost), "", ""]);
+      } else {
+        for (const a of yr.actions) {
+          rows.push([
+            String(yr.year),
+            yr.phase,
+            STATES_MAP[a.stateId]?.name ?? a.stateId,
+            SPECIES_MAP[a.speciesId]?.name ?? a.speciesId,
+            a.type,
+            String(a.cost),
+            a.dueDate ?? "",
+            a.description,
+          ]);
+        }
+      }
+    }
+
+    // Blank separator + Milestones section
+    rows.push([]);
+    rows.push(["--- Milestones ---"]);
+    rows.push(["State", "Species", "Title", "Due Date", "Cost", "URL", "Completed"]);
+
+    const currentYearMilestones = milestones.filter((m) => m.year === new Date().getFullYear());
+    for (const ms of currentYearMilestones) {
+      rows.push([
+        STATES_MAP[ms.stateId]?.name ?? ms.stateId,
+        SPECIES_MAP[ms.speciesId]?.name ?? ms.speciesId,
+        ms.title,
+        ms.dueDate ?? "",
+        String(ms.totalCost),
+        ms.url ?? "",
+        ms.completed ? "Yes" : "No",
+      ]);
+    }
+
+    const csv = rows.map((r) => r.map(esc).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `odyssey-strategy-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [assessment, milestones]);
+
+  const handleJSONExport = useCallback(() => {
+    const payload = {
+      stateRecommendations: assessment.stateRecommendations,
+      roadmap: assessment.roadmap,
+      financialSummary: assessment.financialSummary,
+      macroSummary: assessment.macroSummary,
+      budgetBreakdown: assessment.budgetBreakdown,
+      milestones,
+      createdAt: assessment.createdAt,
+    };
+    const json = JSON.stringify(payload, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `odyssey-strategy-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [assessment, milestones]);
+
   const currentYear = new Date().getFullYear();
 
   return (
@@ -82,6 +165,14 @@ export function PlanExport({ assessment, milestones }: PlanExportProps) {
             <div className="flex items-center justify-between p-3 border-b bg-gray-50">
               <p className="text-sm font-semibold text-gray-800">Plan Export Preview</p>
               <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={handleCSVExport} className="gap-1.5 text-xs">
+                  <Download className="w-3.5 h-3.5" />
+                  CSV
+                </Button>
+                <Button variant="outline" size="sm" onClick={handleJSONExport} className="gap-1.5 text-xs">
+                  <Download className="w-3.5 h-3.5" />
+                  JSON
+                </Button>
                 <Button size="sm" onClick={handlePrint} className="gap-1.5 text-xs">
                   <Printer className="w-3.5 h-3.5" />
                   Print / Save as PDF

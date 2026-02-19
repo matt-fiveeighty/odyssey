@@ -117,7 +117,7 @@ const TROPHY_PREFIX: Record<string, string> = {
 export default function GoalsPage() {
   const {
     userGoals, addUserGoal, updateUserGoal, removeUserGoal,
-    milestones, completeMilestone, uncompleteMilestone, addMilestones,
+    milestones, completeMilestone, uncompleteMilestone, setDrawOutcome, addMilestones,
     confirmedAssessment,
   } = useAppStore();
   const router = useRouter();
@@ -604,6 +604,7 @@ export default function GoalsPage() {
               userGoals={userGoals}
               completeMilestone={completeMilestone}
               uncompleteMilestone={uncompleteMilestone}
+              setDrawOutcome={setDrawOutcome}
             />
           )}
 

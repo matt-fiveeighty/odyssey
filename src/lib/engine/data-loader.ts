@@ -18,6 +18,7 @@ import { setDataContext, resetDataContext } from "./roadmap-generator";
 import { STATES } from "@/lib/constants/states";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import type { State, Unit } from "@/lib/types";
+import { logger } from "@/lib/utils";
 
 // Cache to avoid redundant DB queries within the same process
 let _lastLoadedAt: number | null = null;
@@ -107,7 +108,7 @@ async function _loadDataContextInner(): Promise<void> {
       .limit(5000);
 
     if (unitsError) {
-      console.warn("[data-loader] ref_units query failed:", unitsError.message);
+      logger.warn("[data-loader] ref_units query failed:", unitsError.message);
       _dataSource = "constants";
       resetDataContext();
       return;
@@ -141,7 +142,7 @@ async function _loadDataContextInner(): Promise<void> {
     _dbDeadlineCount = dbDeadlines?.length ?? 0;
     _lastLoadedAt = Date.now();
   } catch (err) {
-    console.warn("[data-loader] Failed to load DB data, using constants:", (err as Error).message);
+    logger.warn("[data-loader] Failed to load DB data, using constants:", (err as Error).message);
     _dataSource = "constants";
     resetDataContext();
   }
@@ -271,7 +272,7 @@ function mergeDeadlines(states: State[], dbDeadlines: DbDeadline[]): State[] {
     // Validate: close date should be after open date (reject bad scraped data)
     for (const [speciesId, dl] of Object.entries(updatedDeadlines)) {
       if (dl.open && dl.close && dl.close < dl.open) {
-        console.warn(`[data-loader] Invalid deadline for ${state.id}/${speciesId}: close (${dl.close}) before open (${dl.open}). Keeping constants.`);
+        logger.warn(`[data-loader] Invalid deadline for ${state.id}/${speciesId}: close (${dl.close}) before open (${dl.open}). Keeping constants.`);
         updatedDeadlines[speciesId] = state.applicationDeadlines[speciesId] ?? dl;
       }
     }

@@ -104,6 +104,19 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
                       <span><Target className="w-3 h-3 inline mr-0.5" />{Math.round(unit.successRate * 100)}% success</span>
                       <span><Mountain className="w-3 h-3 inline mr-0.5" />{unit.trophyRating}/10 trophy</span>
                     </div>
+                    {unit.drawConfidence && (
+                      <div className="mt-1.5 flex items-center gap-2 text-[9px] text-muted-foreground/70">
+                        <span>Draw range:</span>
+                        <div className="flex items-center gap-1">
+                          <span className="text-chart-2 font-medium">Yr {unit.drawConfidence.optimistic}</span>
+                          <span>&ndash;</span>
+                          <span className="font-medium">Yr {unit.drawConfidence.expected}</span>
+                          <span>&ndash;</span>
+                          <span className="text-chart-4 font-medium">Yr {unit.drawConfidence.pessimistic}</span>
+                        </div>
+                        <span className="text-muted-foreground/40">(best / expected / worst)</span>
+                      </div>
+                    )}
                     {unit.tacticalNotes && (
                       <div className="mt-2 space-y-1">
                         {unit.tacticalNotes.proTip && (

@@ -50,6 +50,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-06-01", mule_deer: "2026-06-01", black_bear: "2026-06-01", moose: "2026-06-01", pronghorn: "2026-06-01", bighorn_sheep: "2026-06-01", mountain_goat: "2026-06-01", mountain_lion: "2026-06-01" },
     pointCost: { elk: 40, mule_deer: 40, black_bear: 40, moose: 40, pronghorn: 40, bighorn_sheep: 40, mountain_goat: 40, mountain_lion: 40 },
     color: "#1E40AF",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://cpw.state.co.us/activities/hunting/big-game",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "DEN (Denver International)",
       secondaryAirports: ["GJT (Grand Junction)", "EGE (Eagle/Vail)", "HDN (Hayden/Steamboat)"],
@@ -124,6 +127,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-05-15", mule_deer: "2026-05-15", moose: "2026-05-15", black_bear: "2026-05-15", grizzly: "2026-05-15", pronghorn: "2026-05-15", bighorn_sheep: "2026-05-15", mountain_goat: "2026-05-15", bison: "2026-05-15", mountain_lion: "2026-05-15", wolf: "2026-05-15" },
     pointCost: { elk: 55, mule_deer: 55, black_bear: 55, grizzly: 55, moose: 55, pronghorn: 55, bighorn_sheep: 55, mountain_goat: 55, bison: 55, mountain_lion: 55, wolf: 55 },
     color: "#92400E",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://wgfd.wyo.gov/hunting-trapping",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "JAC (Jackson Hole) or SLC (Salt Lake City)",
       secondaryAirports: ["CPR (Casper)", "SHR (Sheridan)", "BIL (Billings, MT — drive south)"],
@@ -200,6 +206,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-06-15", mule_deer: "2026-06-15", black_bear: "2026-06-15", moose: "2026-07-01", grizzly: "2026-07-01", whitetail: "2026-06-15", pronghorn: "2026-06-15", bighorn_sheep: "2026-07-01", mountain_goat: "2026-07-01", bison: "2026-07-01", mountain_lion: "2026-06-15", wolf: "2026-06-15" },
     pointCost: { elk: 50, mule_deer: 50, black_bear: 50, grizzly: 50, moose: 50, pronghorn: 50, bighorn_sheep: 50, mountain_goat: 50, bison: 50, mountain_lion: 50, wolf: 50 },
     color: "#065F46",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://fwp.mt.gov/hunting",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "BZN (Bozeman Yellowstone)",
       secondaryAirports: ["BIL (Billings)", "MSO (Missoula)", "GTF (Great Falls)"],
@@ -261,6 +270,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-06-01", mule_deer: "2026-06-01", pronghorn: "2026-06-01", bighorn_sheep: "2026-06-01", mountain_lion: "2026-06-01" },
     pointCost: { elk: 15, mule_deer: 15, pronghorn: 15, bighorn_sheep: 15, mountain_lion: 15 },
     color: "#7C3AED",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://www.ndow.org/hunt",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "RNO (Reno-Tahoe International)",
       secondaryAirports: ["LAS (Las Vegas)", "EKO (Elko)"],
@@ -324,6 +336,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-04-30", mule_deer: "2026-04-30", black_bear: "2026-08-01", coues_deer: "2026-04-30", pronghorn: "2026-04-30", bighorn_sheep: "2026-04-30", bison: "2026-04-30", mountain_lion: "2026-04-30" },
     pointCost: { elk: 15, mule_deer: 15, coues_deer: 15, black_bear: 15, pronghorn: 15, bighorn_sheep: 15, bison: 15, mountain_lion: 15 },
     color: "#DC2626",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://www.azgfd.com/hunting/draw",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "PHX (Phoenix Sky Harbor)",
       secondaryAirports: ["FLG (Flagstaff)", "TUS (Tucson)"],
@@ -389,6 +404,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-05-15", mule_deer: "2026-05-15", black_bear: "2026-05-15", moose: "2026-05-15", pronghorn: "2026-05-15", bighorn_sheep: "2026-05-15", mountain_goat: "2026-05-15", bison: "2026-05-15", mountain_lion: "2026-05-15" },
     pointCost: { elk: 10, mule_deer: 10, black_bear: 10, moose: 10, pronghorn: 10, bighorn_sheep: 10, mountain_goat: 10, bison: 10, mountain_lion: 10 },
     color: "#B45309",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://wildlife.utah.gov/hunting",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "SLC (Salt Lake City International)",
       secondaryAirports: ["SGU (St. George)", "CDC (Cedar City)"],
@@ -451,6 +469,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-06-15", mule_deer: "2026-06-15", black_bear: "2026-06-15", coues_deer: "2026-06-15", pronghorn: "2026-06-15", bighorn_sheep: "2026-06-15", mountain_lion: "2026-06-15" },
     pointCost: { elk: 0, mule_deer: 0, coues_deer: 0, black_bear: 0, pronghorn: 0, bighorn_sheep: 0, mountain_lion: 0 },
     color: "#EA580C",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://www.wildlife.state.nm.us/hunting",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "ABQ (Albuquerque International Sunport)",
       secondaryAirports: ["SAF (Santa Fe)"],
@@ -512,6 +533,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-07-01", mule_deer: "2026-07-01", black_bear: "2026-07-01", blacktail: "2026-07-01", pronghorn: "2026-07-01", bighorn_sheep: "2026-07-01", mountain_goat: "2026-07-01", mountain_lion: "2026-07-01" },
     pointCost: { elk: 8, mule_deer: 8, blacktail: 8, black_bear: 8, pronghorn: 8, bighorn_sheep: 8, mountain_goat: 8, mountain_lion: 8 },
     color: "#16A34A",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://myodfw.com/hunting",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "PDX (Portland International)",
       secondaryAirports: ["RDM (Redmond/Bend)", "MFR (Medford)"],
@@ -582,6 +606,9 @@ export const STATES: State[] = [
     drawResultDates: { elk: "2026-02-15", mule_deer: "2026-02-15", black_bear: "2026-06-01", moose: "2026-02-15", whitetail: "2026-02-15", grizzly: "2026-02-15", pronghorn: "2026-02-15", bighorn_sheep: "2026-02-15", mountain_goat: "2026-02-15", mountain_lion: "2026-02-15", wolf: "2026-02-15" },
     pointCost: { elk: 0, mule_deer: 0, black_bear: 0, grizzly: 0, moose: 0, whitetail: 0, pronghorn: 0, bighorn_sheep: 0, mountain_goat: 0, mountain_lion: 0, wolf: 0 },
     color: "#0891B2",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://idfg.idaho.gov/hunt",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "BOI (Boise Airport)",
       secondaryAirports: ["IDA (Idaho Falls)", "SUN (Sun Valley)", "LWS (Lewiston)"],
@@ -633,6 +660,9 @@ export const STATES: State[] = [
     drawResultDates: { mule_deer: "2026-06-01", whitetail: "2026-06-01", pronghorn: "2026-06-01" },
     pointCost: { mule_deer: 27.50, whitetail: 27.50, pronghorn: 27.50 },
     color: "#CA8A04",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://ksoutdoors.com/Hunting",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "MCI (Kansas City International)",
       secondaryAirports: ["ICT (Wichita)", "GCK (Garden City)"],
@@ -955,6 +985,9 @@ export const STATES: State[] = [
     drawResultDates: { moose: "2026-02-15", black_bear: "2026-02-15", grizzly: "2026-02-15", elk: "2026-02-15", bison: "2026-02-15", dall_sheep: "2026-02-15", caribou: "2026-02-15", sitka_blacktail: "2026-02-15", mountain_goat: "2026-02-15", muskox: "2026-02-15", wolf: "2026-02-15" },
     pointCost: { elk: 0, moose: 0, black_bear: 0, grizzly: 0, sitka_blacktail: 0, mountain_goat: 0, dall_sheep: 0, bison: 0, caribou: 0, muskox: 0, wolf: 0 },
     color: "#14532D",
+    lastScrapedAt: "2025-11-15",
+    sourceUrl: "https://www.adfg.alaska.gov/index.cfm?adfg=hunting.main",
+    dataVersion: "2026.1",
     logistics: {
       primaryAirport: "ANC (Ted Stevens Anchorage International)",
       secondaryAirports: ["FAI (Fairbanks)", "JNU (Juneau)"],

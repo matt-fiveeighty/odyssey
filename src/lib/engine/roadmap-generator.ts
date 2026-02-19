@@ -32,6 +32,7 @@ import { findBestRoutes, getPrimaryAirport, HUNTING_AIRPORTS } from "@/lib/const
 import {
   estimateCreepRate,
   yearsToDrawWithCreep,
+  drawConfidenceBand,
 } from "./point-creep";
 import { calculateAnnualSubscription, calculatePointYearCost, getEstimatedTagCost } from "./roi-calculator";
 import { resolveFees } from "./fee-resolver";
@@ -589,10 +590,13 @@ export function generateStrategicAssessment(
           const creepRate = estimateCreepRate(unit.trophyRating);
           const years = yearsToDrawWithCreep(userPts, unit.pointsRequiredNonresident, creepRate);
 
+          const confidence = drawConfidenceBand(userPts, unit.pointsRequiredNonresident, creepRate);
+
           return {
             unitCode: unit.unitCode,
             unitName: unit.unitName ?? unit.unitCode,
             drawTimeline: years === 0 ? "Drawable now" : `Year ${years} with points (est. ${currentYear + years})`,
+            drawConfidence: years === 0 ? undefined : confidence,
             successRate: unit.successRate,
             trophyRating: unit.trophyRating,
             tacticalNotes: unit.tacticalNotes,

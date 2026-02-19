@@ -32,6 +32,8 @@ export interface FeeLineItem {
   frequency: "annual" | "per_species" | "once";
   required: boolean;
   notes?: string;         // "Required before applying"
+  sourceUrl?: string;     // Official F&G URL where this fee is documented
+  lastVerified?: string;  // ISO date when fee was last verified (e.g. "2025-11-15")
 }
 
 export interface CostLineItem {
@@ -65,6 +67,8 @@ export interface Milestone {
   totalCost: number;
   completed: boolean;
   completedAt?: string;
+  drawOutcome?: "drew" | "didnt_draw" | null; // Set after draw results are released
+  drawOutcomeAt?: string;                     // ISO date when outcome was recorded
   applicationApproach?: ApplicationApproach;
   applicationTip?: string; // "Apply per-unit. List first + second choice."
 }
@@ -250,6 +254,8 @@ export interface State {
   pointCost: Record<string, number>;
   color: string;
   lastScrapedAt?: string;
+  sourceUrl?: string;           // Authoritative F&G URL for this state's data
+  dataVersion?: string;         // Semver of the state data snapshot (e.g. "2026.1")
   // v3: Travel logistics
   logistics?: StateLogistics;
   // v3: Point-only application instructions
@@ -519,6 +525,7 @@ export interface StateRecommendation {
     unitCode: string;
     unitName: string;
     drawTimeline: string;   // "Year 3-5 with preference points"
+    drawConfidence?: { optimistic: number; expected: number; pessimistic: number };
     successRate: number;
     trophyRating: number;
     tacticalNotes?: UnitTacticalNotes;

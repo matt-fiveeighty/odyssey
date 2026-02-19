@@ -34,3 +34,41 @@ const SPECIES_DISPLAY: Record<string, string> = {
 export function formatSpeciesName(id: string): string {
   return SPECIES_DISPLAY[id] ?? id.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
 }
+
+/**
+ * Format a number as USD currency.
+ * - Whole numbers: "$1,234"
+ * - Decimals: "$1,234.50"
+ * Uses toLocaleString for consistent comma-separated formatting.
+ */
+export function formatCurrency(amount: number): string {
+  const rounded = Math.round(amount * 100) / 100;
+  if (Number.isInteger(rounded)) {
+    return `$${rounded.toLocaleString("en-US")}`;
+  }
+  return `$${rounded.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+/**
+ * Compact currency for large values: "$1.2k", "$12.5k"
+ */
+export function formatCurrencyCompact(amount: number): string {
+  if (amount >= 1000) {
+    const k = amount / 1000;
+    return `$${k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)}k`;
+  }
+  return formatCurrency(amount);
+}
+
+/**
+ * Production-safe logger. Suppresses console output in production
+ * unless NEXT_PUBLIC_DEBUG=true is set.
+ */
+const isDev = process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_DEBUG === "true";
+
+export const logger = {
+  log: (...args: unknown[]) => { if (isDev) console.log(...args); },
+  warn: (...args: unknown[]) => { if (isDev) console.warn(...args); },
+  error: (...args: unknown[]) => { console.error(...args); }, // errors always log
+  info: (...args: unknown[]) => { if (isDev) console.info(...args); },
+};

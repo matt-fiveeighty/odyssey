@@ -71,3 +71,20 @@ export function yearsToDrawWithCreep(
 
   return 30; // cap at 30 years
 }
+
+/**
+ * Confidence band for draw timelines.
+ * Returns optimistic (low creep), expected, and pessimistic (high creep) estimates.
+ * Confidence multipliers: optimistic = 0.5x creep, pessimistic = 1.5x creep.
+ */
+export function drawConfidenceBand(
+  currentUserPoints: number,
+  currentRequired: number,
+  creepRate: number
+): { optimistic: number; expected: number; pessimistic: number } {
+  return {
+    optimistic: yearsToDrawWithCreep(currentUserPoints, currentRequired, creepRate * 0.5),
+    expected: yearsToDrawWithCreep(currentUserPoints, currentRequired, creepRate),
+    pessimistic: yearsToDrawWithCreep(currentUserPoints, currentRequired, creepRate * 1.5),
+  };
+}

@@ -230,6 +230,7 @@ interface AppState {
   addMilestones: (milestones: Milestone[]) => void;
   completeMilestone: (id: string) => void;
   uncompleteMilestone: (id: string) => void;
+  setDrawOutcome: (id: string, outcome: "drew" | "didnt_draw" | null) => void;
 
   setConfirmedAssessment: (assessment: StrategicAssessment) => void;
   clearConfirmedAssessment: () => void;
@@ -378,6 +379,14 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           milestones: state.milestones.map((m) =>
             m.id === id ? { ...m, completed: false, completedAt: undefined } : m
+          ),
+        })),
+      setDrawOutcome: (id, outcome) =>
+        set((state) => ({
+          milestones: state.milestones.map((m) =>
+            m.id === id
+              ? { ...m, drawOutcome: outcome, drawOutcomeAt: outcome ? new Date().toISOString() : undefined }
+              : m
           ),
         })),
 

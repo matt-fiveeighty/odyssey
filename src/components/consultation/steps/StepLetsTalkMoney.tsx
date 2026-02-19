@@ -10,11 +10,12 @@ const BUDGET_TIERS: Record<string, string> = {
   low: "At this level, focus on 2\u20133 states with the cheapest point costs. Every dollar counts.",
   mid: "A solid portfolio budget. You can maintain 4\u20135 states and still have room for a hunt year.",
   high: "With this budget, you can run a full 6\u20137 state portfolio and invest in long-term trophy states like NV and AZ.",
+  premium: "At this level, you can run 8+ states with aggressive burn schedules, guided trophy hunts, and full travel logistics.",
 };
 
 function getBudgetInsight(pointBudget: number): string {
-  const stateCount = pointBudget < 1000 ? "2\u20133" : pointBudget < 2500 ? "4\u20135" : "6\u20137";
-  const tier = pointBudget < 1000 ? "low" : pointBudget < 2500 ? "mid" : "high";
+  const stateCount = pointBudget < 1000 ? "2\u20133" : pointBudget < 2500 ? "4\u20135" : pointBudget < 5000 ? "6\u20137" : "8+";
+  const tier = pointBudget < 1000 ? "low" : pointBudget < 2500 ? "mid" : pointBudget < 5000 ? "high" : "premium";
   return `At $${pointBudget.toLocaleString()}/yr, you can comfortably maintain ${stateCount} states in your point portfolio. ${BUDGET_TIERS[tier]}`;
 }
 
@@ -35,11 +36,11 @@ export function StepLetsTalkMoney() {
             <label htmlFor="point-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block"><HuntingTerm term="annual subscription">Point-Year Subscription</HuntingTerm></label>
             <p className="text-xs text-muted-foreground mb-3">Your annual <HuntingTerm term="portfolio">portfolio</HuntingTerm> maintenance cost. In years you&apos;re only building <HuntingTerm term="preference points">points</HuntingTerm>, what feels comfortable?</p>
             <div className="flex items-center gap-4 mb-2">
-              <input id="point-year-budget" type="range" min={500} max={5000} step={100} value={wizard.pointYearBudget} onChange={(e) => wizard.setField("pointYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
+              <input id="point-year-budget" type="range" min={500} max={10000} step={100} value={wizard.pointYearBudget} onChange={(e) => wizard.setField("pointYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
               <span className="text-2xl font-bold text-primary w-28 text-right">${wizard.pointYearBudget.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>$500</span><span>$2,500</span><span>$5,000</span>
+              <span>$500</span><span>$5,000</span><span>$10,000</span>
             </div>
           </div>
 
@@ -47,11 +48,11 @@ export function StepLetsTalkMoney() {
             <label htmlFor="hunt-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block"><HuntingTerm term="hunt year">Hunt-Year Deployment</HuntingTerm></label>
             <p className="text-xs text-muted-foreground mb-3">When you <HuntingTerm term="draw">draw</HuntingTerm> the <HuntingTerm term="tag">tag</HuntingTerm> and it&apos;s go-time, what can you deploy? Tags, flights, gear, processing &mdash; the full mission.</p>
             <div className="flex items-center gap-4 mb-2">
-              <input id="hunt-year-budget" type="range" min={2000} max={15000} step={500} value={wizard.huntYearBudget} onChange={(e) => wizard.setField("huntYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
+              <input id="hunt-year-budget" type="range" min={2000} max={30000} step={500} value={wizard.huntYearBudget} onChange={(e) => wizard.setField("huntYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
               <span className="text-2xl font-bold text-chart-2 w-28 text-right">${wizard.huntYearBudget.toLocaleString()}</span>
             </div>
             <div className="flex justify-between text-[10px] text-muted-foreground">
-              <span>$2,000</span><span>$8,000</span><span>$15,000</span>
+              <span>$2,000</span><span>$15,000</span><span>$30,000</span>
             </div>
           </div>
         </div>

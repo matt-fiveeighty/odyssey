@@ -12,6 +12,7 @@
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import { logger } from "@/lib/utils";
 
 interface LlmMessage {
   role: "user" | "assistant";
@@ -60,7 +61,7 @@ export async function callClaude(
 ): Promise<LlmResponse | null> {
   const client = getClient();
   if (!client) {
-    console.warn("[llm/client] ANTHROPIC_API_KEY not set — skipping LLM call");
+    logger.warn("[llm/client] ANTHROPIC_API_KEY not set — skipping LLM call");
     return null;
   }
 

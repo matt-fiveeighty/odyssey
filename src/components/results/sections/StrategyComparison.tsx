@@ -39,8 +39,12 @@ interface StrategyVariant {
 /**
  * Generates 3 strategy variants from the confirmed assessment:
  * - Aggressive: More states, earlier burns, higher spend
- * - Balanced: The actual generated plan
+ * - Balanced: The actual generated plan (engine-scored)
  * - Conservative: Fewer states, longer build, lower annual cost
+ *
+ * Note: Aggressive and Conservative variants are derived from the
+ * Balanced plan using adjusted parameters, not re-scored through the
+ * full engine. The Balanced plan is the only engine-scored result.
  */
 function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
   const currentYear = new Date().getFullYear();
@@ -51,17 +55,18 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
   const firstHunt = roadmap.find((y) => y.isHuntYear)?.year ?? currentYear + 5;
   const burnYear = roadmap.find((y) => y.phase === "burn")?.year ?? currentYear + 4;
 
-  // Aggressive: +30% cost, +2 states, hunts 2 years earlier
+  // Aggressive: scale cost by per-state addition + earlier hunt year bump
   const aggressiveStates = Math.min(recs.length + 2, 8);
+  const costPerState = recs.length > 0 ? totalCost / recs.length : totalCost;
   const aggressiveFirstHunt = Math.max(currentYear + 1, firstHunt - 2);
   const aggressiveHunts = Math.min(huntYears + 3, 8);
-  const aggressiveCost = Math.round(totalCost * 1.35);
+  const aggressiveCost = Math.round(costPerState * aggressiveStates * 1.05); // 5% premium for accelerated timeline
 
-  // Conservative: -25% cost, -1 state, hunts 2 years later
+  // Conservative: reduce to fewer states, scale proportionally
   const conservativeStates = Math.max(recs.length - 1, 1);
   const conservativeFirstHunt = firstHunt + 2;
   const conservativeHunts = Math.max(huntYears - 1, 1);
-  const conservativeCost = Math.round(totalCost * 0.7);
+  const conservativeCost = Math.round(costPerState * conservativeStates * 0.95); // 5% savings from longer build
 
   return [
     {
@@ -302,6 +307,12 @@ export function StrategyComparison({ assessment }: StrategyComparisonProps) {
           </Card>
         );
       })()}
+
+      {/* Methodology disclosure */}
+      <p className="text-[10px] text-muted-foreground/50 text-center leading-relaxed">
+        The Balanced strategy is your engine-scored recommendation. Aggressive and Conservative variants are estimates
+        derived from the Balanced plan using adjusted state counts and timelines &mdash; they are not independently scored.
+      </p>
     </div>
   );
 }

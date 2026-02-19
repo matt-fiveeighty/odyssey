@@ -14,6 +14,7 @@ import {
   Clock,
   Crosshair,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -70,6 +71,44 @@ export default function DashboardPage() {
           </Button>
         </Link>
       </div>
+
+      {/* Deadline Warning Banner */}
+      {(() => {
+        const criticalDeadlines = upcomingDeadlines.filter(d => {
+          const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+          return daysLeft <= 14 && daysLeft > 0;
+        });
+        if (criticalDeadlines.length === 0) return null;
+        return (
+          <div className="p-3 rounded-xl border border-chart-4/30 bg-chart-4/5">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="w-4 h-4 text-chart-4 shrink-0" />
+              <span className="text-sm font-semibold text-chart-4">
+                {criticalDeadlines.length} deadline{criticalDeadlines.length > 1 ? "s" : ""} closing soon
+              </span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {criticalDeadlines.map((d, i) => {
+                const state = STATES_MAP[d.stateId];
+                const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                return (
+                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-chart-4/10 text-xs">
+                    {state && (
+                      <span className="w-5 h-5 rounded flex items-center justify-center text-[7px] font-bold text-white" style={{ backgroundColor: state.color }}>
+                        {state.abbreviation}
+                      </span>
+                    )}
+                    <span className="font-medium">{formatSpeciesName(d.species)}</span>
+                    <span className={`font-bold ${daysLeft <= 3 ? "text-destructive" : daysLeft <= 7 ? "text-chart-4" : "text-chart-4/70"}`}>
+                      {daysLeft}d
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
