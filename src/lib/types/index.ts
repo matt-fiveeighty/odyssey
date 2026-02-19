@@ -196,6 +196,7 @@ export interface PointOnlyGuideEntry {
   deadline: string;
   annualCost: number;
   url: string;
+  inPlan?: boolean;          // true if state is in user's active plan
 }
 
 // ============================================================================
@@ -216,14 +217,26 @@ export interface State {
   fgUrl: string;
   buyPointsUrl: string;
   applicationDeadlines: Record<string, { open: string; close: string }>;
-  // Legacy flat fees (still used for backwards compat)
+  // IANA timezone for deadline interpretation (e.g. "America/Denver")
+  deadlineTimezone?: string;
+  // Legacy flat fees — NR (still used for backwards compat)
   licenseFees: {
     qualifyingLicense?: number;
     appFee?: number;
     pointFee?: number;
   };
-  // Itemized fee schedule
+  // Itemized NR fee schedule
   feeSchedule: FeeLineItem[];
+  // Resident flat fees (mirrors licenseFees structure)
+  residentLicenseFees?: {
+    qualifyingLicense?: number;
+    appFee?: number;
+    pointFee?: number;
+  };
+  // Itemized resident fee schedule
+  residentFeeSchedule?: FeeLineItem[];
+  // Resident point costs (per species) — defaults to NR pointCost if absent
+  residentPointCost?: Record<string, number>;
   // Application approach
   applicationApproach: ApplicationApproach;
   applicationApproachDescription: string;
@@ -467,11 +480,21 @@ export interface StateRecommendation {
   scoreBreakdown: StateScoreBreakdown;
 }
 
+export interface AlsoConsideredState {
+  stateId: string;
+  totalScore: number;
+  maxPossibleScore: number;
+  topReasons: string[];     // Top 2-3 factor explanations
+  annualCost: number;
+  speciesAvailable: string[];
+}
+
 export interface StrategicAssessment {
   id: string;
   profileSummary: string;
   strategyOverview: string;
   stateRecommendations: StateRecommendation[];
+  alsoConsidered?: AlsoConsideredState[];
   roadmap: RoadmapYear[];
   insights: string[];
   keyYears: { year: number; description: string }[];

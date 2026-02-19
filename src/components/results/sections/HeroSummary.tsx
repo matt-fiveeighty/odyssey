@@ -48,6 +48,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
       </div>
 
       <p className="text-xs text-muted-foreground/70 mt-4 italic">{assessment.strategyOverview}</p>
+      <p className="text-[9px] text-muted-foreground/50 mt-2">All costs in 2026 dollars. Fees subject to annual state adjustments.</p>
     </div>
   );
 }

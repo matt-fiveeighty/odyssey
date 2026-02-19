@@ -25,20 +25,20 @@ const plans = [
     annual: "Free",
     period: "forever",
     description:
-      "See how western states stack up for your goals. A quick snapshot to get started.",
+      "The full strategy engine. All 15 states, unlimited runs, personalized 10-year roadmaps.",
     icon: Compass,
-    featured: false,
+    featured: true,
     features: [
       { name: "Species & state explorer", included: true },
-      { name: "Top 3 state recommendations", included: true },
-      { name: "Basic budget estimate", included: true },
-      { name: "1 strategy engine run", included: true },
-      { name: "Summary roadmap only", included: true },
-      { name: "Full draw odds data", included: false },
-      { name: "Goal tracking", included: false },
-      { name: "Data export", included: false },
+      { name: "All 15 states scored & ranked", included: true },
+      { name: "Unlimited strategy engine runs", included: true },
+      { name: "Full 10-year roadmap", included: true },
+      { name: "Budget projections & cost breakdowns", included: true },
+      { name: "Goal tracking & point portfolio", included: true },
+      { name: "Deadline calendar", included: true },
+      { name: "Data export", included: true },
     ],
-    cta: "Get Started",
+    cta: "Get Started Free",
     href: "/auth/sign-up",
   },
   {
@@ -47,21 +47,22 @@ const plans = [
     annual: "$79.99",
     annualSavings: "Save 33%",
     period: "/year",
+    badge: "Coming Soon",
     description:
-      "The full strategy engine. Personalized roadmaps, draw odds, portfolio tracking, and deadline alerts.",
+      "Enhanced analytics, unit-level recommendations, and deadline alerts. Launching soon.",
     icon: Binoculars,
-    featured: true,
+    featured: false,
     features: [
       { name: "Everything in Basecamp", included: true },
-      { name: "All 11 states scored", included: true },
-      { name: "Full draw odds (all species)", included: true },
-      { name: "Unlimited strategy re-runs", included: true },
-      { name: "Full 10-year roadmap", included: true },
-      { name: "Goal tracking & point portfolio", included: true },
-      { name: "Deadline reminders", included: true },
-      { name: "Budget projections", included: true },
+      { name: "Unit-level scoring & recommendations", included: true },
+      { name: "Deadline email reminders", included: true },
+      { name: "Draw odds deep dives", included: true },
+      { name: "Historical point creep data", included: true },
+      { name: "Auto-fill applications helper", included: true },
+      { name: "Priority support", included: false },
+      { name: "Advanced analytics", included: false },
     ],
-    cta: "Get Scout",
+    cta: "Join Waitlist",
     href: "/auth/sign-up",
   },
   {
@@ -70,20 +71,21 @@ const plans = [
     annual: "$129.99",
     annualSavings: "Save 28%",
     period: "/year",
+    badge: "Coming Soon",
     description:
-      "For the serious multi-state hunter. Advanced analytics, historical trends, and data exports.",
+      "For the serious multi-state hunter. Advanced analytics, historical trends, and collaboration tools.",
     icon: Crown,
     featured: false,
     features: [
       { name: "Everything in Scout", included: true },
-      { name: "Unit recommendations", included: true },
       { name: "Historical draw trends", included: true },
       { name: "Multi-year comparison", included: true },
-      { name: "Advanced analytics", included: true },
+      { name: "Advanced analytics dashboard", included: true },
+      { name: "Group application planning", included: true },
       { name: "Data export (JSON/CSV)", included: true },
       { name: "Priority support", included: true },
     ],
-    cta: "Get Outfitter",
+    cta: "Join Waitlist",
     href: "/auth/sign-up",
   },
 ];
@@ -142,7 +144,14 @@ export default function PricingPage() {
                 {plan.featured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider">
-                      Most Popular
+                      Full Access
+                    </span>
+                  </div>
+                )}
+                {!plan.featured && "badge" in plan && plan.badge && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] font-bold uppercase tracking-wider border border-border">
+                      {plan.badge}
                     </span>
                   </div>
                 )}

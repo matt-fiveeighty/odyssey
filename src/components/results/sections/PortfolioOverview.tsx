@@ -77,6 +77,9 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
             <span className="text-sm font-semibold">10-Year Total</span>
             <span className="text-sm font-bold text-primary">${assessment.financialSummary.tenYearTotal.toLocaleString()}</span>
           </div>
+          <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
+            All costs shown in 2026 dollars. Actual fees may increase over time due to state fee adjustments and inflation. Expect 2-5% annual increases on license and application fees.
+          </p>
         </div>
       </CollapsibleSection>
 

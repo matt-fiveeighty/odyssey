@@ -64,8 +64,8 @@ const features = [
 
 const rtbs = [
   {
-    value: "Western States",
-    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS, AK — and expanding. Every major western draw state covered.",
+    value: "15 States",
+    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS, WA, NE, SD, ND, AK — every major western draw state covered.",
     icon: MapPin,
   },
   {
@@ -79,8 +79,8 @@ const rtbs = [
     icon: Calendar,
   },
   {
-    value: "5 Min Setup",
-    detail: "Answer a few questions. Get a scored state portfolio, unit picks, and a full action timeline.",
+    value: "Quick Setup",
+    detail: "Answer a few questions about your goals and budget. Get a scored state portfolio, unit picks, and a full action timeline.",
     icon: Users,
   },
 ];
@@ -448,7 +448,7 @@ export default function LandingPage() {
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={200} once={false}>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Build your personalized strategy in under 5 minutes. Get a
+              Build your personalized strategy across 15 states. Get a
               multi-year roadmap with state rankings, unit picks, cost
               breakdowns, and an action timeline.
             </p>
