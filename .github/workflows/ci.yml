@@ -20,11 +20,15 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint
-        run: npx next lint
-
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Lint
+        run: npx eslint src --max-warnings 0
+
       - name: Build
         run: npx next build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk_test_placeholder
