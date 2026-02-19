@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Map as MapIcon } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { buildJourneyData } from "@/lib/engine/journey-data";
@@ -10,6 +10,7 @@ import { YearTimeline } from "@/components/journey/YearTimeline";
 import { MapLegend } from "@/components/journey/MapLegend";
 import { StateDetailModal } from "@/components/journey/StateDetailModal";
 import { PointAccumulationTrack } from "@/components/journey/PointAccumulationTrack";
+import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
 export default function JourneyPage() {
   const { confirmedAssessment, userPoints } = useAppStore();
@@ -66,18 +67,11 @@ export default function JourneyPage() {
           </div>
           <MapLegend />
 
-          <Card className="bg-card border-border">
-            <CardContent className="p-8 text-center">
-              <MapIcon className="w-12 h-12 text-muted-foreground/20 mx-auto mb-3" />
-              <h3 className="text-lg font-semibold mb-2">
-                No journey data yet
-              </h3>
-              <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                Complete a strategic assessment to see your states light up with hunts,
-                draw entries, and point-building actions across the timeline.
-              </p>
-            </CardContent>
-          </Card>
+          <NoPlanGate
+            icon={MapIcon}
+            title="No journey data yet"
+            description="Complete a strategic assessment in the Plan Builder to see your states light up with hunts, draw entries, and point-building actions across the timeline."
+          />
         </>
       ) : (
         <>
@@ -125,6 +119,7 @@ export default function JourneyPage() {
         stateId={selectedStateId}
         onClose={() => setSelectedStateId(null)}
         journeyData={journeyData}
+        assessment={confirmedAssessment}
       />
     </div>
   );

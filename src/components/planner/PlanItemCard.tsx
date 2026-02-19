@@ -16,6 +16,9 @@ export interface PlanItem {
   stateId?: string;
   speciesId?: string;
   month: number; // 1-12
+  day?: number; // 1-31 for specific dates (e.g. deadline day)
+  endDay?: number; // for multi-day events (hunt windows)
+  endMonth?: number; // if event spans months (e.g. Sep 25 → Oct 5)
   estimatedCost?: number;
   completed: boolean;
 }

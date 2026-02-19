@@ -62,65 +62,7 @@ export function AutoFillButton({ selectedYear, existingItems, onAutoFill }: Auto
     setPreviewItems([]);
   }
 
-  // Show inline CTA when no items exist
-  if (existingItems.length === 0) {
-    return (
-      <Card className="border-primary/20 bg-primary/5">
-        <CardContent className="p-6 text-center">
-          <Sparkles className="w-8 h-8 text-primary mx-auto mb-3" />
-          <h3 className="font-semibold mb-1">Auto-fill your year</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Based on your strategic assessment, we can generate recommended
-            hunts, application deadlines, and scouting trips.
-          </p>
-          <Button onClick={handleGenerate}>
-            <Sparkles className="w-4 h-4 mr-2" />
-            Generate Plan
-          </Button>
-
-          {/* Confirmation dialog */}
-          {showConfirm && (
-            <div className="mt-4 text-left">
-              <div className="border border-border rounded-lg p-4 bg-card">
-                <p className="text-sm font-medium mb-2">
-                  {previewItems.length} items will be added:
-                </p>
-                <ul className="text-xs text-muted-foreground space-y-1 max-h-40 overflow-y-auto mb-3">
-                  {previewItems.map((item, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        item.priority === "high" ? "bg-destructive/15 text-destructive" :
-                        item.priority === "medium" ? "bg-warning/15 text-warning" :
-                        "bg-muted text-muted-foreground"
-                      }`}>
-                        {item.itemType}
-                      </span>
-                      {item.title}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex gap-2">
-                  <Button size="sm" onClick={handleConfirm} className="flex-1">
-                    Confirm
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setShowConfirm(false)}
-                    className="flex-1"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Compact inline button when items already exist
+  // Always show compact inline button (defaults auto-populate from plan)
   return (
     <>
       <Button variant="outline" size="sm" className="gap-2" onClick={handleGenerate}>

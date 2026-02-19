@@ -7,6 +7,8 @@
 
 import type { RoadmapYear, UserGoal, UserPoints } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
+import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
+import { parseSeasonDates } from "./season-parser";
 
 // ============================================================================
 // Types
@@ -273,4 +275,143 @@ export function generateAutoFillItems(input: AutoFillInput): AutoFillItem[] {
   });
 
   return deduped;
+}
+
+// ============================================================================
+// Plan-Scoped Default Generator
+// ============================================================================
+
+export interface PlanDefaultItem {
+  itemType: AutoFillItem["itemType"];
+  title: string;
+  description: string;
+  stateId: string;
+  speciesId: string;
+  month: number;
+  day?: number;
+  endDay?: number;
+  endMonth?: number;
+  estimatedCost: number;
+  priority: "high" | "medium" | "low";
+}
+
+/**
+ * Generate default plan items scoped to the user's selected species/states
+ * from their roadmap. Only creates items for state-species pairs that appear
+ * in the roadmap — not every species in every state.
+ *
+ * Also adds hunt windows with parsed season dates for calendar blocking.
+ */
+export function generatePlanDefaultItems(
+  year: number,
+  roadmap: RoadmapYear[]
+): PlanDefaultItem[] {
+  const items: PlanDefaultItem[] = [];
+  const seen = new Set<string>();
+
+  // Extract unique state-species pairs from the entire roadmap
+  const planPairs = new Set<string>();
+  for (const ry of roadmap) {
+    for (const action of ry.actions) {
+      planPairs.add(`${action.stateId}|${action.speciesId}`);
+    }
+  }
+
+  // Generate deadline items for plan-relevant species only
+  for (const pair of planPairs) {
+    const [stateId, speciesId] = pair.split("|");
+    const state = STATES_MAP[stateId];
+    if (!state) continue;
+
+    const deadline = state.applicationDeadlines[speciesId] as
+      | { open: string; close: string }
+      | undefined;
+    if (!deadline) continue;
+
+    const closeDate = new Date(deadline.close);
+    if (closeDate.getFullYear() !== year) continue;
+
+    const key = `deadline-${stateId}-${speciesId}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    items.push({
+      itemType: "deadline",
+      title: `${state.abbreviation} ${formatSpecies(speciesId)} app deadline`,
+      description: `Application closes ${deadline.close}`,
+      stateId,
+      speciesId,
+      month: closeDate.getMonth() + 1,
+      day: closeDate.getDate(),
+      estimatedCost: 0,
+      priority: "high",
+    });
+  }
+
+  // Add hunt windows from the current year's roadmap actions
+  const roadmapYear = roadmap.find((ry) => ry.year === year);
+  if (roadmapYear) {
+    for (const action of roadmapYear.actions) {
+      if (action.type !== "hunt") continue;
+
+      const state = STATES_MAP[action.stateId];
+      if (!state) continue;
+
+      const key = `hunt-${action.stateId}-${action.speciesId}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      // Try to find season dates from unit tactical notes or season tiers
+      let tierLabel = "Fall";
+      let parsed: ReturnType<typeof parseSeasonDates> = null;
+
+      // Check unit's bestSeasonTier
+      if (action.unitCode) {
+        const unit = SAMPLE_UNITS.find(
+          (u) =>
+            u.stateId === action.stateId &&
+            u.speciesId === action.speciesId &&
+            u.unitCode === action.unitCode
+        );
+        if (unit?.tacticalNotes?.bestSeasonTier && state.seasonTiers) {
+          const tier = state.seasonTiers.find((t) =>
+            t.tier.toLowerCase().includes(unit.tacticalNotes!.bestSeasonTier!.toLowerCase())
+          );
+          if (tier) {
+            tierLabel = tier.tier;
+            parsed = parseSeasonDates(tier.dates);
+          }
+        }
+      }
+
+      // Fallback: use first season tier
+      if (!parsed && state.seasonTiers?.length) {
+        const fallbackTier = state.seasonTiers[0];
+        tierLabel = fallbackTier.tier;
+        parsed = parseSeasonDates(fallbackTier.dates);
+      }
+
+      items.push({
+        itemType: "hunt",
+        title: `Hunt: ${state.abbreviation} ${formatSpecies(action.speciesId)} (${tierLabel})`,
+        description: action.description || `${state.name} ${formatSpecies(action.speciesId)} hunt`,
+        stateId: action.stateId,
+        speciesId: action.speciesId,
+        month: parsed?.startMonth ?? 10,
+        day: parsed?.startDay,
+        endDay: parsed?.endDay,
+        endMonth: parsed?.endMonth,
+        estimatedCost: action.cost,
+        priority: "high",
+      });
+    }
+  }
+
+  // Sort by month, then day
+  items.sort((a, b) => {
+    if (a.month !== b.month) return a.month - b.month;
+    return (a.day ?? 1) - (b.day ?? 1);
+  });
+
+  return items;
 }
