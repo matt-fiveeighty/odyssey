@@ -6,8 +6,9 @@ import dynamic from "next/dynamic";
 import type { StrategicAssessment, RoadmapAction } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
+import { PlanExport } from "@/components/shared/PlanExport";
 import { Button } from "@/components/ui/button";
-import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw } from "lucide-react";
+import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows } from "lucide-react";
 
 export interface EditableAction extends RoadmapAction {
   _edited?: boolean;
@@ -18,6 +19,7 @@ const PortfolioOverview = dynamic(() => import("./sections/PortfolioOverview").t
 const StatePortfolio = dynamic(() => import("./sections/StatePortfolio").then(m => ({ default: m.StatePortfolio })));
 const TimelineRoadmap = dynamic(() => import("./sections/TimelineRoadmap").then(m => ({ default: m.TimelineRoadmap })));
 const LogisticsTab = dynamic(() => import("./sections/LogisticsTab").then(m => ({ default: m.LogisticsTab })));
+const StrategyComparison = dynamic(() => import("./sections/StrategyComparison").then(m => ({ default: m.StrategyComparison })));
 
 interface ResultsShellProps {
   assessment: StrategicAssessment;
@@ -28,6 +30,7 @@ const TABS = [
   { id: "states", label: "States", icon: MapPin },
   { id: "timeline", label: "Timeline", icon: Clock },
   { id: "logistics", label: "Logistics", icon: Plane },
+  { id: "compare", label: "Compare", icon: GitCompareArrows },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -109,6 +112,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
         {activeTab === "states" && <StatePortfolio assessment={assessment} />}
         {activeTab === "timeline" && <TimelineRoadmap assessment={assessment} editedActions={timelineEdits} onEditedActionsChange={handleTimelineEditsChange} />}
         {activeTab === "logistics" && <LogisticsTab assessment={assessment} />}
+        {activeTab === "compare" && <StrategyComparison assessment={assessment} />}
       </div>
 
       {/* Action buttons */}
@@ -116,9 +120,12 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
         <Button variant="ghost" onClick={handleStartOver} className="gap-1.5">
           <RotateCcw className="w-4 h-4" /> Start Over
         </Button>
-        <Button onClick={handleConfirmPlan} className="gap-1.5">
-          <Check className="w-4 h-4" /> Confirm &amp; Track This Plan
-        </Button>
+        <div className="flex items-center gap-2">
+          <PlanExport assessment={assessment} milestones={assessment.milestones} />
+          <Button onClick={handleConfirmPlan} className="gap-1.5">
+            <Check className="w-4 h-4" /> Confirm &amp; Track This Plan
+          </Button>
+        </div>
       </div>
     </div>
   );

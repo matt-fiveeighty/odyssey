@@ -56,10 +56,25 @@ const DEFAULT_POINTS_BY_SYSTEM: Record<PointSystemType, number> = {
 // Filters
 // ============================================================================
 
+export interface OpportunityWeights {
+  pointPosition: number;   // default 1.0
+  drawAccess: number;      // default 1.0
+  huntQuality: number;     // default 1.0
+  cost: number;            // default 1.0
+}
+
+export const DEFAULT_WEIGHTS: OpportunityWeights = {
+  pointPosition: 1.0,
+  drawAccess: 1.0,
+  huntQuality: 1.0,
+  cost: 1.0,
+};
+
 export interface OpportunityFilters {
   species?: string[];
   states?: string[];
   timeline?: "this_year" | "1_3" | "3_7" | "any";
+  weights?: OpportunityWeights;
 }
 
 // ============================================================================
@@ -328,7 +343,12 @@ export function generateAllOpportunities(
       const totalAnnualCost = annualPointCost + (state.licenseFees.appFee ?? 0);
       const costScore = getCostScore(totalAnnualCost);
 
-      const opportunityScore = pointPositionScore + drawAccessScore + huntQualityScore + costScore;
+      const w = filters.weights ?? DEFAULT_WEIGHTS;
+      const opportunityScore =
+        pointPositionScore * w.pointPosition +
+        drawAccessScore * w.drawAccess +
+        huntQualityScore * w.huntQuality +
+        costScore * w.cost;
 
       // Timeline filter
       if (filters.timeline && filters.timeline !== "any") {

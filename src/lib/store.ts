@@ -53,6 +53,7 @@ interface ConsultationState {
   huntFrequency: HuntFrequency | null;
   timeAvailable: TimeAvailable | null;
   travelWillingness: TravelWillingness | null;
+  huntDaysPerYear: number; // PTO / available hunt days per year
 
   // Step 7: Point portfolio
   hasExistingPoints: boolean;
@@ -120,6 +121,7 @@ const consultationInitial: Omit<ConsultationState,
   huntFrequency: null,
   timeAvailable: null,
   travelWillingness: null,
+  huntDaysPerYear: 0,
   hasExistingPoints: false,
   existingPoints: {},
   previewScores: [],

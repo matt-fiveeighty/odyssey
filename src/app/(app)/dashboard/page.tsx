@@ -23,6 +23,7 @@ import { useAppStore, useWizardStore } from "@/lib/store";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
+import { BeginnerGuide } from "@/components/shared/BeginnerGuide";
 import { formatSpeciesName } from "@/lib/utils";
 
 export default function DashboardPage() {
@@ -434,6 +435,11 @@ export default function DashboardPage() {
           </Card>
         );
       })()}
+
+      {/* Beginner Guide — show for new users without a plan */}
+      {!hasPlan && userGoals.length === 0 && (
+        <BeginnerGuide />
+      )}
 
       {/* State Investment Overview */}
       <Card className="bg-card border-border">

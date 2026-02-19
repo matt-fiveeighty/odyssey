@@ -1,6 +1,8 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import {
   ArrowRight,
   Trophy,
@@ -13,18 +15,28 @@ import {
   DollarSign,
   Shuffle,
   AlertTriangle,
+  ExternalLink,
+  Calendar,
+  Plus,
+  Check,
+  Clock,
 } from "lucide-react";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
-import type { OpportunityResult, OpportunityTier } from "@/lib/types";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { getEstimatedTagCost } from "@/lib/engine/roi-calculator";
+import { DataSourceBadge } from "@/components/shared/DataSourceBadge";
+import type { OpportunityResult, OpportunityTier, FeeLineItem } from "@/lib/types";
 
 interface OpportunityResultCardProps {
   result: OpportunityResult;
   rank: number;
   isExpanded: boolean;
   onToggleExpand: () => void;
+  onAddToGoals: (result: OpportunityResult) => void;
+  isAlreadyGoal: boolean;
 }
 
 const TIER_STYLES: Record<
@@ -49,16 +61,84 @@ const TIER_STYLES: Record<
   },
 };
 
+function getDeadlineStatus(deadline?: { open: string; close: string }): {
+  label: string;
+  color: string;
+} | null {
+  if (!deadline) return null;
+  const now = new Date();
+  const open = new Date(deadline.open);
+  const close = new Date(deadline.close);
+
+  if (now < open) {
+    return {
+      label: `Opens ${open.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+      color: "text-muted-foreground bg-secondary/50",
+    };
+  }
+  if (now >= open && now <= close) {
+    const daysLeft = Math.ceil((close.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    return {
+      label: daysLeft <= 14 ? `${daysLeft}d left` : `Open — closes ${close.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`,
+      color: daysLeft <= 14 ? "text-warning bg-warning/10 font-semibold" : "text-success bg-success/10",
+    };
+  }
+  return {
+    label: `Closed — reopens ${open.toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
+    color: "text-muted-foreground/60 bg-secondary/30",
+  };
+}
+
+function computeFirstYearCost(
+  result: OpportunityResult,
+): { total: number; items: { label: string; amount: number }[]; isHuntYear: boolean } | null {
+  const state = STATES_MAP[result.stateId];
+  if (!state) return null;
+
+  // Use NR fees as default (most users are NR)
+  const fees = resolveFees(state, "");
+  const items: { label: string; amount: number }[] = [];
+  const isDrawableNow = result.yearsToUnlock === 0;
+
+  if (fees.qualifyingLicense > 0) {
+    const licenseName = fees.feeSchedule.find((f: FeeLineItem) => f.name.includes("License"))?.name ?? "License";
+    items.push({ label: licenseName, amount: fees.qualifyingLicense });
+  }
+  if (fees.appFee > 0) {
+    items.push({ label: "Application Fee", amount: fees.appFee });
+  }
+
+  const pointCost = fees.pointCost[result.speciesId] ?? 0;
+  if (pointCost > 0 && !isDrawableNow) {
+    items.push({ label: "Preference Point", amount: pointCost });
+  }
+
+  // Only show tag cost if drawable now (buy-a-tag-and-go or random draw)
+  if (isDrawableNow) {
+    const tagCost = getEstimatedTagCost(result.stateId, result.speciesId);
+    if (tagCost > 0) {
+      items.push({ label: "Tag (estimated)", amount: tagCost });
+    }
+  }
+
+  const total = items.reduce((s, i) => s + i.amount, 0);
+  return { total, items, isHuntYear: isDrawableNow };
+}
+
 export function OpportunityResultCard({
   result,
   rank,
   isExpanded,
   onToggleExpand,
+  onAddToGoals,
+  isAlreadyGoal,
 }: OpportunityResultCardProps) {
   const state = STATES_MAP[result.stateId];
   const species = SPECIES_MAP[result.speciesId];
   const vis = STATE_VISUALS[result.stateId];
   const tierStyle = TIER_STYLES[result.tier];
+  const deadlineStatus = getDeadlineStatus(result.applicationDeadline);
+  const firstYearCost = isExpanded ? computeFirstYearCost(result) : null;
 
   return (
     <Card
@@ -159,6 +239,14 @@ export function OpportunityResultCard({
                   : `$${result.annualPointCost}/yr`}
               </div>
 
+              {/* Deadline status badge */}
+              {deadlineStatus && (
+                <div className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs ${deadlineStatus.color}`}>
+                  <Calendar className="w-3 h-3" />
+                  {deadlineStatus.label}
+                </div>
+              )}
+
               {/* Success rate (only if unit data) */}
               {result.bestUnit && (
                 <div
@@ -209,40 +297,151 @@ export function OpportunityResultCard({
               </p>
             )}
 
-            {/* Unit detail preview when expanded */}
-            {result.hasUnitData && result.bestUnit && isExpanded && (
-              <div className="mt-2 p-2 rounded-lg bg-secondary/30 border border-border">
-                <p className="text-[10px] font-semibold text-muted-foreground mb-1">
-                  Top Unit: {result.bestUnit.unitCode}{" "}
-                  {result.bestUnit.unitName !== result.bestUnit.unitCode &&
-                    `(${result.bestUnit.unitName})`}
-                </p>
-                <div className="flex gap-3 text-[10px] text-muted-foreground">
-                  <span>
-                    {Math.round(result.bestUnit.successRate * 100)}% success
-                  </span>
-                  <span>Trophy {result.bestUnit.trophyRating}/10</span>
-                  <span>
-                    {Math.round(result.bestUnit.publicLandPct * 100)}% public
-                  </span>
-                  <span>{result.bestUnit.pressureLevel} pressure</span>
-                </div>
-                {result.unitCount > 1 && (
-                  <p className="text-[10px] text-muted-foreground/60 mt-1">
-                    +{result.unitCount - 1} more unit
-                    {result.unitCount - 1 > 1 ? "s" : ""} with data
-                  </p>
+            {/* ============================================================ */}
+            {/* EXPANDED: Action Hub */}
+            {/* ============================================================ */}
+            {isExpanded && (
+              <div className="mt-3 space-y-3 fade-in-up">
+                {/* Unit detail preview */}
+                {result.hasUnitData && result.bestUnit && (
+                  <div className="p-2 rounded-lg bg-secondary/30 border border-border">
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-1">
+                      Top Unit: {result.bestUnit.unitCode}{" "}
+                      {result.bestUnit.unitName !== result.bestUnit.unitCode &&
+                        `(${result.bestUnit.unitName})`}
+                    </p>
+                    <div className="flex gap-3 text-[10px] text-muted-foreground">
+                      <span>
+                        {Math.round(result.bestUnit.successRate * 100)}% success
+                      </span>
+                      <span>Trophy {result.bestUnit.trophyRating}/10</span>
+                      <span>
+                        {Math.round(result.bestUnit.publicLandPct * 100)}% public
+                      </span>
+                      <span>{result.bestUnit.pressureLevel} pressure</span>
+                    </div>
+                    {result.unitCount > 1 && (
+                      <p className="text-[10px] text-muted-foreground/60 mt-1">
+                        +{result.unitCount - 1} more unit
+                        {result.unitCount - 1 > 1 ? "s" : ""} with data
+                      </p>
+                    )}
+                  </div>
                 )}
+
+                {/* Cost breakdown */}
+                {firstYearCost && firstYearCost.items.length > 0 && (
+                  <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      {firstYearCost.isHuntYear ? "Year 1 — Draw & Hunt (NR)" : "Year 1 — Build Points (NR)"}
+                    </p>
+                    <div className="space-y-1">
+                      {firstYearCost.items.map((item, idx) => (
+                        <div key={idx} className="flex items-center justify-between text-xs">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-medium font-mono">${item.amount.toLocaleString()}</span>
+                        </div>
+                      ))}
+                      <Separator className="my-1.5" />
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span>Total Year 1</span>
+                        <span className="text-primary font-mono">${firstYearCost.total.toLocaleString()}</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Data source citation */}
+                <DataSourceBadge stateId={result.stateId} dataType="Fee Schedule" />
+
+                {/* Application timeline */}
+                {result.applicationDeadline && (
+                  <div className="p-3 rounded-lg bg-secondary/30 border border-border">
+                    <p className="text-[10px] font-semibold text-muted-foreground mb-2 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      Application Timeline
+                    </p>
+                    <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                      <div>
+                        <span className="text-[10px] text-muted-foreground/60 block">Opens</span>
+                        <span className="font-medium">
+                          {new Date(result.applicationDeadline.open).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-muted-foreground/40" />
+                      <div>
+                        <span className="text-[10px] text-muted-foreground/60 block">Closes</span>
+                        <span className="font-medium">
+                          {new Date(result.applicationDeadline.close).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}
+                        </span>
+                      </div>
+                      {state?.drawResultDates?.[result.speciesId] && (
+                        <>
+                          <ArrowRight className="w-3 h-3 text-muted-foreground/40" />
+                          <div>
+                            <span className="text-[10px] text-muted-foreground/60 block">Results</span>
+                            <span className="font-medium">
+                              {new Date(state.drawResultDates[result.speciesId]).toLocaleDateString("en-US", { month: "long", day: "numeric" })}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Why bullets (all of them when expanded) */}
+                {result.whyBullets.length > 0 && (
+                  <div className="space-y-1">
+                    {result.whyBullets.map((bullet, i) => (
+                      <div
+                        key={i}
+                        className="flex items-start gap-1.5 text-[11px] text-muted-foreground"
+                      >
+                        <ArrowRight className="w-3 h-3 text-primary/60 shrink-0 mt-0.5" />
+                        <span>{bullet}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Action buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  {isAlreadyGoal ? (
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/10 text-success text-xs font-medium">
+                      <Check className="w-3.5 h-3.5" />
+                      Added to Goals
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => onAddToGoals(result)}
+                      size="sm"
+                      className="gap-1.5 text-xs h-8"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      Add to Goals
+                    </Button>
+                  )}
+                  {state && (
+                    <a
+                      href={state.buyPointsUrl || state.fgUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 text-primary text-xs font-medium hover:bg-primary/20 transition-colors h-8"
+                    >
+                      <ExternalLink className="w-3 h-3" />
+                      {state.name} F&G
+                    </a>
+                  )}
+                </div>
               </div>
             )}
 
-            {/* Why bullets */}
-            {result.whyBullets.length > 0 && (
+            {/* Collapsed: show first 2 bullets + expand toggle */}
+            {!isExpanded && result.whyBullets.length > 0 && (
               <div className="mt-2 space-y-1">
-                {(isExpanded
-                  ? result.whyBullets
-                  : result.whyBullets.slice(0, 2)
-                ).map((bullet, i) => (
+                {result.whyBullets.slice(0, 2).map((bullet, i) => (
                   <div
                     key={i}
                     className="flex items-start gap-1.5 text-[11px] text-muted-foreground"
@@ -255,23 +454,21 @@ export function OpportunityResultCard({
             )}
 
             {/* Expand toggle */}
-            {(result.whyBullets.length > 2 || result.hasUnitData) && (
-              <button
-                onClick={onToggleExpand}
-                className="flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
-              >
-                {isExpanded ? (
-                  <>
-                    <ChevronUp className="w-3 h-3" /> Show less
-                  </>
-                ) : (
-                  <>
-                    <ChevronDown className="w-3 h-3" />
-                    {result.hasUnitData ? "Show unit details" : "Show more"}
-                  </>
-                )}
-              </button>
-            )}
+            <button
+              onClick={onToggleExpand}
+              className="flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
+            >
+              {isExpanded ? (
+                <>
+                  <ChevronUp className="w-3 h-3" /> Show less
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="w-3 h-3" />
+                  {result.hasUnitData ? "Details & actions" : "Cost breakdown & actions"}
+                </>
+              )}
+            </button>
           </div>
         </div>
       </CardContent>

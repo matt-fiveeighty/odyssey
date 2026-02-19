@@ -7,6 +7,7 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
 import { DollarSign, TrendingUp, Lightbulb, PieChart } from "lucide-react";
+import { WhatIfModeler } from "./WhatIfModeler";
 
 interface PortfolioOverviewProps {
   assessment: StrategicAssessment;
@@ -126,6 +127,9 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           </div>
         </CollapsibleSection>
       )}
+
+      {/* What-If Modeler */}
+      <WhatIfModeler assessment={assessment} />
     </div>
   );
 }

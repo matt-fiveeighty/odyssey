@@ -91,6 +91,52 @@ export function StepTravelReality() {
           </div>
         )}
 
+        {/* PTO / Hunt days per year */}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            How many days per year can you dedicate to hunting?
+          </label>
+          <p className="text-xs text-muted-foreground/60 mb-3">
+            Include travel days. This helps us avoid recommending hunts that won&apos;t fit your schedule.
+          </p>
+          <div className="flex items-center gap-4 justify-center">
+            <button
+              onClick={() => wizard.setField("huntDaysPerYear", Math.max(0, wizard.huntDaysPerYear - 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >-</button>
+            <div className="text-center">
+              <span className="text-3xl font-bold font-mono w-16 inline-block">{wizard.huntDaysPerYear || "—"}</span>
+              <p className="text-[10px] text-muted-foreground mt-0.5">days / year</p>
+            </div>
+            <button
+              onClick={() => wizard.setField("huntDaysPerYear", Math.min(60, wizard.huntDaysPerYear + 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >+</button>
+          </div>
+          <div className="flex justify-center gap-2 mt-3">
+            {[7, 10, 14, 21].map((d) => (
+              <button
+                key={d}
+                onClick={() => wizard.setField("huntDaysPerYear", d)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  wizard.huntDaysPerYear === d
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {d} days
+              </button>
+            ))}
+          </div>
+          {wizard.huntDaysPerYear > 0 && wizard.huntDaysPerYear < 7 && (
+            <div className="mt-3 p-2 rounded-lg bg-chart-4/5 border border-chart-4/10">
+              <p className="text-[10px] text-chart-4 font-medium">
+                With fewer than 7 days, most western elk hunts will feel rushed. We&apos;ll prioritize states with shorter travel and truck-camp accessible units.
+              </p>
+            </div>
+          )}
+        </div>
+
         {wizard.huntFrequency === "every_year" && wizard.travelWillingness === "will_fly_anywhere" && (
           <AdvisorInsight text="Hunting every year with no travel restrictions means maximum portfolio flexibility. We can spread across 6+ states and target the best draw timing regardless of geography." icon={Globe} />
         )}

@@ -18,6 +18,8 @@ import {
   Check,
   Calendar,
   ArrowRight,
+  CalendarDays,
+  List,
 } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES, SPECIES_MAP } from "@/lib/constants/species";
@@ -31,6 +33,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuggestedUnit from "@/components/goals/SuggestedUnit";
 import { GoalConfirmation } from "@/components/goals/GoalConfirmation";
+import { MilestoneCalendar } from "@/components/goals/MilestoneCalendar";
 import { formatSpeciesName } from "@/lib/utils";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
@@ -120,6 +123,7 @@ export default function GoalsPage() {
   const router = useRouter();
   const [showAddModal, setShowAddModal] = useState(false);
   const [filter, setFilter] = useState<"all" | "active" | "dream" | "completed">("all");
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("calendar");
   const modalRef = useFocusTrap<HTMLDivElement>(showAddModal);
 
   // Backfill: generate milestones for existing goals that have none
@@ -566,15 +570,45 @@ export default function GoalsPage() {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="flex gap-2">
-            {(["all", "active", "completed"] as const).map((f) => (
-              <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
-                {f === "all" ? `All (${milestones.length})` : f === "active" ? `Active (${milestones.length - completedCount})` : `Done (${completedCount})`}
+          {/* Filters + View Toggle */}
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {(["all", "active", "completed"] as const).map((f) => (
+                <button key={f} onClick={() => setFilter(f)} className={`px-3 py-1.5 rounded-full text-xs font-medium capitalize transition-all ${filter === f ? "bg-primary text-primary-foreground" : "bg-secondary text-secondary-foreground hover:bg-accent"}`}>
+                  {f === "all" ? `All (${milestones.length})` : f === "active" ? `Active (${milestones.length - completedCount})` : `Done (${completedCount})`}
+                </button>
+              ))}
+            </div>
+            <div className="flex gap-1 bg-secondary/50 rounded-lg p-0.5">
+              <button
+                onClick={() => setViewMode("calendar")}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === "calendar" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-label="Calendar view"
+              >
+                <CalendarDays className="w-4 h-4" />
               </button>
-            ))}
+              <button
+                onClick={() => setViewMode("list")}
+                className={`p-1.5 rounded-md transition-colors ${viewMode === "list" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+                aria-label="List view"
+              >
+                <List className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
+          {/* Calendar View */}
+          {viewMode === "calendar" && (
+            <MilestoneCalendar
+              milestones={filter === "all" ? milestones : filteredMilestones}
+              userGoals={userGoals}
+              completeMilestone={completeMilestone}
+              uncompleteMilestone={uncompleteMilestone}
+            />
+          )}
+
+          {/* List View */}
+          {viewMode === "list" && (
           <div className="grid lg:grid-cols-3 gap-6">
             {/* Milestone Cards */}
             <div className="lg:col-span-2 space-y-3">
@@ -777,6 +811,7 @@ export default function GoalsPage() {
               )}
             </div>
           </div>
+          )}
         </>
       )}
 
