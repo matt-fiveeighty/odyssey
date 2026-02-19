@@ -13,7 +13,6 @@ import type {
   Unit,
 } from "@/lib/types";
 import { STATES } from "@/lib/constants/states";
-import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { estimateCreepRate, yearsToDrawWithCreep } from "./point-creep";

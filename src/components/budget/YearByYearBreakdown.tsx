@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, ChevronDown, ChevronUp, Crosshair, DollarSign } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
