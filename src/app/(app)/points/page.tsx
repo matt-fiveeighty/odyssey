@@ -27,6 +27,7 @@ import { PointImpactViz } from "@/components/points/PointImpactViz";
 import { pointsFormSchema } from "@/lib/validations";
 import type { UserPoints } from "@/lib/types";
 import { formatSpeciesName } from "@/lib/utils";
+import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
 export default function PointsPage() {
   const { userPoints, addUserPoint, updateUserPoint, removeUserPoint } =
@@ -194,24 +195,11 @@ export default function PointsPage() {
 
       {/* Points by State */}
       {Object.keys(pointsByState).length === 0 ? (
-        <Card className="bg-card border-border">
-          <CardContent className="p-12 text-center">
-            <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-              <Wallet className="w-8 h-8 text-primary/50" />
-            </div>
-            <h3 className="text-lg font-semibold mb-2">
-              No points tracked yet
-            </h3>
-            <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-              Start by adding your current preference and bonus point balances
-              from each state you&apos;re applying in.
-            </p>
-            <Button onClick={() => setShowAddModal(true)} className="gap-2">
-              <Plus className="w-4 h-4" />
-              Add Your First Points
-            </Button>
-          </CardContent>
-        </Card>
+        <NoPlanGate
+          icon={Wallet}
+          title="No points tracked yet"
+          description="Complete a strategic assessment in the Plan Builder to get started, then track your preference and bonus point balances here."
+        />
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {Object.entries(pointsByState).map(([stateId, points]) => {

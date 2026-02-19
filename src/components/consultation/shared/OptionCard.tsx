@@ -16,6 +16,55 @@ interface OptionCardProps {
 }
 
 export function OptionCard({ selected, onClick, icon: Icon, title, description, compact, gradient, imageSrc, imageAlt }: OptionCardProps) {
+  // Image variant: photo card with bottom gradient overlay
+  if (imageSrc) {
+    return (
+      <button
+        role="radio"
+        aria-checked={selected}
+        aria-label={title}
+        onClick={onClick}
+        className={`group relative overflow-hidden rounded-xl text-left transition-all duration-200 cursor-pointer border-2 ${
+          selected
+            ? "border-primary ring-1 ring-primary/30 glow-primary"
+            : "border-border hover:border-primary/50 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
+        }`}
+      >
+        <div className="relative aspect-[4/3] w-full overflow-hidden">
+          <Image
+            src={imageSrc}
+            alt={imageAlt || title}
+            fill
+            className={`object-cover transition-transform duration-300 ${
+              selected ? "scale-105" : "group-hover:scale-105"
+            }`}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          />
+          {/* Subtle bottom gradient for text legibility */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          {/* Check indicator */}
+          {selected && (
+            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+              <Check className="w-3 h-3 text-primary-foreground" />
+            </div>
+          )}
+          {/* Text overlay pinned to bottom */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            <span className="text-sm font-semibold text-white block leading-tight">
+              {title}
+            </span>
+            {description && (
+              <span className="text-[10px] text-white/70 block mt-0.5 line-clamp-2">
+                {description}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+    );
+  }
+
+  // Non-image variant: icon/text card
   return (
     <button
       role="radio"
@@ -30,47 +79,23 @@ export function OptionCard({ selected, onClick, icon: Icon, title, description, 
           : "border-border hover:border-primary/30 hover:bg-secondary/30 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-primary/5 active:scale-[0.98]"
       }`}
     >
-      {/* Background image (fills entire card behind content) */}
-      {imageSrc && (
-        <>
-          <Image
-            src={imageSrc}
-            alt={imageAlt || title}
-            fill
-            className={`object-cover transition-all duration-500 ${
-              selected ? "scale-105 brightness-[0.55]" : "brightness-[0.35] group-hover:scale-110 group-hover:brightness-[0.7]"
-            }`}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          />
-          {/* Default: full dark overlay — fades out on hover to reveal animal */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/40 via-[40%] to-transparent transition-opacity duration-500 group-hover:opacity-0 pointer-events-none" />
-          {/* Hover: thin bottom gradient only — keeps text readable, animal fully visible */}
-          <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-transparent via-[35%] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100 pointer-events-none" />
-        </>
-      )}
-
       {/* Gradient background (no image) */}
-      {!imageSrc && gradient && (
+      {gradient && (
         <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-10`} />
       )}
 
-      {/* Content — always rendered the same way */}
       <div className="relative z-10">
         {selected && (
           <div className="absolute top-0 right-0">
-            <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-              imageSrc ? "bg-primary" : ""
-            }`}>
-              <Check className={`w-4 h-4 ${imageSrc ? "text-primary-foreground w-3 h-3" : "text-primary"}`} />
-            </div>
+            <Check className="w-4 h-4 text-primary" />
           </div>
         )}
-        {Icon && !imageSrc && <Icon className={`${compact ? "w-5 h-5" : "w-7 h-7"} text-primary/70 mb-2`} />}
-        <h3 className={`font-semibold ${compact ? "text-sm" : ""} ${imageSrc ? "text-white" : ""}`}>
+        {Icon && <Icon className={`${compact ? "w-5 h-5" : "w-7 h-7"} text-primary/70 mb-2`} />}
+        <h3 className={`font-semibold ${compact ? "text-sm" : ""}`}>
           {title}
         </h3>
         {description && (
-          <p className={`mt-1 text-xs ${imageSrc ? "text-white/70" : "text-muted-foreground"}`}>
+          <p className="mt-1 text-xs text-muted-foreground">
             {description}
           </p>
         )}

@@ -18,15 +18,38 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SPECIES_IMAGES } from "@/lib/constants/species-images";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { StateOutline } from "@/components/shared/StateOutline";
-import { useWizardStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { resolveFees } from "@/lib/engine/fee-resolver";
+import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
 export default function CalculatorPage() {
+  const confirmedAssessment = useAppStore((s) => s.confirmedAssessment);
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedSpecies, setSelectedSpecies] = useState<string>("elk");
   const [currentPoints, setCurrentPoints] = useState(0);
   const [targetPoints, setTargetPoints] = useState(4);
   const homeState = useWizardStore((s) => s.homeState);
+
+  if (!confirmedAssessment) {
+    return (
+      <div className="p-6 space-y-6 fade-in-up">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            <Calculator className="w-6 h-6 text-primary" />
+            Investment Calculator
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Calculate your point investment and total hunt costs per state
+          </p>
+        </div>
+        <NoPlanGate
+          icon={Calculator}
+          title="No plan built yet"
+          description="Complete a strategic assessment in the Plan Builder to power the Investment Calculator with personalized cost data."
+        />
+      </div>
+    );
+  }
 
   const state = STATES.find((s) => s.id === selectedState);
 

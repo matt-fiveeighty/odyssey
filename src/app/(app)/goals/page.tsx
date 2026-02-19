@@ -32,6 +32,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuggestedUnit from "@/components/goals/SuggestedUnit";
 import { formatSpeciesName } from "@/lib/utils";
+import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
 const currentYear = new Date().getFullYear();
 const ROADMAP_YEARS = Array.from({ length: 10 }, (_, i) => currentYear + i);
@@ -725,25 +726,11 @@ export default function GoalsPage() {
             </div>
 
             {userGoals.length === 0 ? (
-              <Card className="bg-card border-border">
-                <CardContent className="p-12 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                    <Crosshair className="w-8 h-8 text-primary/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">No goals set yet</h3>
-                  <p className="text-sm text-muted-foreground mb-6 max-w-md mx-auto">
-                    Build a strategic plan first, or add individual goals manually.
-                  </p>
-                  <div className="flex gap-3 justify-center">
-                    <Link href="/plan-builder">
-                      <Button className="gap-2"><Crosshair className="w-4 h-4" /> Build a Plan</Button>
-                    </Link>
-                    <Button variant="outline" onClick={() => setShowAddModal(true)} className="gap-2">
-                      <Plus className="w-4 h-4" /> Add Goal
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
+              <NoPlanGate
+                icon={Target}
+                title="No goals set yet"
+                description="Complete a strategic assessment in the Plan Builder to generate goals automatically, or add individual goals manually."
+              />
             ) : (
               <div className="space-y-3">
                 {userGoals.filter(g => filter === "all" || g.status === filter).map((goal) => {
