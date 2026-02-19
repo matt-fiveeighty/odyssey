@@ -1,8 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Target, Crosshair, Timer } from "lucide-react";
+import { ODDS_FINDER_IMAGES, SPECIES_IMAGES } from "@/lib/constants/species-images";
 import type { Species } from "@/lib/types";
 
 type Step = "species" | "weapon" | "timeline" | "results";
@@ -37,6 +39,10 @@ const TIMELINE_OPTIONS: { id: Timeline; label: string; desc: string }[] = [
   { id: "3_7", label: "3-7 Years", desc: "Medium investment" },
   { id: "any", label: "Any Timeline", desc: "Show all options" },
 ];
+
+function getSpeciesImage(speciesId: string) {
+  return ODDS_FINDER_IMAGES[speciesId] ?? SPECIES_IMAGES[speciesId];
+}
 
 export function OddsFinderWizard({
   step,
@@ -91,23 +97,46 @@ export function OddsFinderWizard({
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {speciesOptions.map((sp) => (
-                <button
-                  key={sp.id}
-                  onClick={() => onSelectSpecies(sp.id)}
-                  className={`p-4 rounded-xl border text-left transition-all hover:border-primary/50 hover:bg-primary/5 ${
-                    selectedSpecies === sp.id
-                      ? "border-primary bg-primary/10 ring-1 ring-primary"
-                      : "border-border bg-card"
-                  }`}
-                >
-                  <span className="text-2xl block mb-1">{sp.icon}</span>
-                  <span className="text-sm font-medium">{sp.name}</span>
-                  <span className="text-[10px] text-muted-foreground block mt-0.5">
-                    {unitCountBySpecies[sp.id] ?? 0} units available
-                  </span>
-                </button>
-              ))}
+              {speciesOptions.map((sp) => {
+                const img = getSpeciesImage(sp.id);
+                return (
+                  <button
+                    key={sp.id}
+                    onClick={() => onSelectSpecies(sp.id)}
+                    className={`group relative overflow-hidden rounded-xl border text-left transition-all hover:border-primary/50 ${
+                      selectedSpecies === sp.id
+                        ? "border-primary ring-1 ring-primary"
+                        : "border-border"
+                    }`}
+                  >
+                    {/* Photo background */}
+                    <div className="relative aspect-[4/3] w-full overflow-hidden">
+                      {img ? (
+                        <Image
+                          src={img.src}
+                          alt={img.alt}
+                          fill
+                          sizes="(max-width: 640px) 50vw, 33vw"
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-muted to-muted-foreground/20" />
+                      )}
+                      {/* Gradient overlay for text legibility */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      {/* Text overlay */}
+                      <div className="absolute bottom-0 left-0 right-0 p-3">
+                        <span className="text-sm font-semibold text-white block leading-tight">
+                          {sp.name}
+                        </span>
+                        <span className="text-[10px] text-white/70 block mt-0.5">
+                          {unitCountBySpecies[sp.id] ?? 0} units available
+                        </span>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </CardContent>
         </Card>

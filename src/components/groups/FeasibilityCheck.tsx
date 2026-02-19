@@ -44,23 +44,23 @@ const STATUS_CONFIG: Record<
   green: {
     label: "Good to go",
     icon: CheckCircle,
-    color: "text-green-400",
-    bg: "bg-green-400/10",
-    border: "border-green-400/20",
+    color: "text-success",
+    bg: "bg-success/10",
+    border: "border-success/20",
   },
   yellow: {
     label: "Possible issues",
     icon: AlertTriangle,
-    color: "text-amber-400",
-    bg: "bg-amber-400/10",
-    border: "border-amber-400/20",
+    color: "text-warning",
+    bg: "bg-warning/10",
+    border: "border-warning/20",
   },
   red: {
     label: "Not feasible",
     icon: XCircle,
-    color: "text-red-400",
-    bg: "bg-red-400/10",
-    border: "border-red-400/20",
+    color: "text-destructive",
+    bg: "bg-destructive/10",
+    border: "border-destructive/20",
   },
 };
 
@@ -116,7 +116,7 @@ export function FeasibilityCheck({
           <div className="space-y-1.5">
             {result.warnings.map((warning, i) => (
               <div key={i} className="flex items-start gap-2">
-                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-3.5 h-3.5 text-warning shrink-0 mt-0.5" />
                 <p className="text-xs text-muted-foreground">{warning}</p>
               </div>
             ))}
@@ -143,7 +143,7 @@ export function FeasibilityCheck({
 
         {/* Group allows info */}
         {!result.allowsGroupApplication && (
-          <p className="text-xs text-red-400 font-medium">
+          <p className="text-xs text-destructive font-medium">
             This state does not support group applications.
           </p>
         )}

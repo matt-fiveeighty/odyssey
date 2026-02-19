@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin } from "lucide-react";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import type { HuntStyle } from "@/lib/types";
+import { formatSpeciesName } from "@/lib/utils";
 
 const STYLE_OPTIONS: { id: HuntStyle; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { id: "diy_backpack", label: "DIY Backpack", desc: "Self-reliant, deep backcountry, minimal camp", icon: Tent },
@@ -95,7 +96,7 @@ export function StepHuntingDNA() {
             {wizard.openToGuided && (
               <div className="flex flex-wrap gap-2">
                 {wizard.species.map((sp) => (
-                  <ToggleChip key={sp} selected={wizard.guidedForSpecies.includes(sp)} onClick={() => wizard.toggleArrayField("guidedForSpecies", sp)} label={sp.replace("_", " ")} />
+                  <ToggleChip key={sp} selected={wizard.guidedForSpecies.includes(sp)} onClick={() => wizard.toggleArrayField("guidedForSpecies", sp)} label={formatSpeciesName(sp)} />
                 ))}
               </div>
             )}

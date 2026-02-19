@@ -4,24 +4,39 @@
  */
 
 export const SPECIES_IMAGES: Record<string, { src: string; alt: string }> = {
-  elk: { src: "/images/species/elk.png", alt: "Bull elk bugling in a mountain meadow" },
-  mule_deer: { src: "/images/species/mule-deer.png", alt: "Mule deer buck in sagebrush" },
-  whitetail: { src: "/images/species/whitetail.png", alt: "Whitetail buck in morning fog" },
-  coues_deer: { src: "/images/species/coues-deer.png", alt: "Coues deer buck in Sonoran desert" },
-  blacktail: { src: "/images/species/blacktail.png", alt: "Columbia blacktail buck in old-growth forest" },
-  sitka_blacktail: { src: "/images/species/sitka-blacktail.png", alt: "Sitka blacktail deer in coastal rainforest" },
-  black_bear: { src: "/images/species/black-bear.png", alt: "Black bear walking through timber" },
-  grizzly: { src: "/images/species/grizzly.png", alt: "Grizzly bear crossing a mountain river" },
-  moose: { src: "/images/species/moose.png", alt: "Bull moose in timber" },
-  pronghorn: { src: "/images/species/pronghorn.png", alt: "Pronghorn buck on open prairie" },
-  bighorn_sheep: { src: "/images/species/bighorn-sheep.png", alt: "Bighorn ram on alpine ridge" },
-  dall_sheep: { src: "/images/species/dall-sheep.png", alt: "Dall sheep ram in mountain terrain" },
-  mountain_goat: { src: "/images/species/mountain-goat.png", alt: "Mountain goat on rocky cliff" },
-  bison: { src: "/images/species/bison.png", alt: "Bison bull on frosty morning prairie" },
-  caribou: { src: "/images/species/caribou.png", alt: "Caribou bull on tundra" },
-  mountain_lion: { src: "/images/species/mountain-lion.png", alt: "Mountain lion in rocky terrain" },
-  muskox: { src: "/images/species/muskox.png", alt: "Muskox on arctic tundra" },
-  wolf: { src: "/images/species/wolf.png", alt: "Gray wolf in mountain wilderness" },
+  elk: { src: "/images/species/elk.jpg", alt: "Bull elk bugling in a mountain meadow" },
+  mule_deer: { src: "/images/species/mule-deer.jpg", alt: "Mule deer buck in sagebrush" },
+  whitetail: { src: "/images/species/whitetail.jpg", alt: "Whitetail buck in morning fog" },
+  coues_deer: { src: "/images/species/coues-deer.jpg", alt: "Coues deer buck in Sonoran desert" },
+  blacktail: { src: "/images/species/blacktail.jpg", alt: "Columbia blacktail buck in old-growth forest" },
+  sitka_blacktail: { src: "/images/species/sitka-blacktail.jpg", alt: "Sitka blacktail deer in coastal rainforest" },
+  black_bear: { src: "/images/species/black-bear.jpg", alt: "Black bear walking through timber" },
+  grizzly: { src: "/images/species/grizzly.jpg", alt: "Grizzly bear crossing a mountain river" },
+  moose: { src: "/images/species/moose.jpg", alt: "Bull moose in timber" },
+  pronghorn: { src: "/images/species/pronghorn.jpg", alt: "Pronghorn buck on open prairie" },
+  bighorn_sheep: { src: "/images/species/bighorn-sheep.jpg", alt: "Bighorn ram on alpine ridge" },
+  dall_sheep: { src: "/images/species/dall-sheep.jpg", alt: "Dall sheep ram in mountain terrain" },
+  mountain_goat: { src: "/images/species/mountain-goat.jpg", alt: "Mountain goat on rocky cliff" },
+  bison: { src: "/images/species/bison.jpg", alt: "Bison bull on frosty morning prairie" },
+  caribou: { src: "/images/species/caribou.jpg", alt: "Caribou bull on tundra" },
+  mountain_lion: { src: "/images/species/mountain-lion.jpg", alt: "Mountain lion in rocky terrain" },
+  muskox: { src: "/images/species/muskox.jpg", alt: "Muskox on arctic tundra" },
+  wolf: { src: "/images/species/wolf.jpg", alt: "Gray wolf in mountain wilderness" },
+};
+
+/**
+ * Alternate species imagery for the Odds Finder.
+ * Uses different photos than the consultation wizard / goals to keep the experience fresh.
+ * Falls back to primary SPECIES_IMAGES if a species isn't listed here.
+ */
+export const ODDS_FINDER_IMAGES: Record<string, { src: string; alt: string }> = {
+  elk: { src: "/images/species-alt/elk.jpg", alt: "Bull elk bugling on a mountain ridge at sunset" },
+  mule_deer: { src: "/images/species-alt/mule-deer.jpg", alt: "Mule deer buck standing on a ridge at golden hour" },
+  whitetail: { src: "/images/species-alt/whitetail.jpg", alt: "Whitetail buck in misty forest with morning light rays" },
+  black_bear: { src: "/images/species-alt/black-bear.jpg", alt: "Black bear wading through a misty stream at dawn" },
+  moose: { src: "/images/species-alt/moose.jpg", alt: "Bull moose crossing a river at sunrise with mountain mist" },
+  pronghorn: { src: "/images/species-alt/pronghorn.jpg", alt: "Pronghorn buck on open prairie at sunset" },
+  mountain_goat: { src: "/images/species-alt/mountain-goat.jpg", alt: "Mountain goat on alpine cliff at sunrise" },
 };
 
 export const SPECIES_GRADIENTS: Record<string, string> = {

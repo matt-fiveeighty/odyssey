@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import {
   Clock,
   Check,
   ExternalLink,
+  Home,
 } from "lucide-react";
 import { STATES } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
@@ -17,19 +18,29 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SPECIES_IMAGES } from "@/lib/constants/species-images";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { StateOutline } from "@/components/shared/StateOutline";
+import { useWizardStore } from "@/lib/store";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 
 export default function CalculatorPage() {
   const [selectedState, setSelectedState] = useState<string | null>(null);
   const [selectedSpecies, setSelectedSpecies] = useState<string>("elk");
   const [currentPoints, setCurrentPoints] = useState(0);
   const [targetPoints, setTargetPoints] = useState(4);
+  const homeState = useWizardStore((s) => s.homeState);
 
   const state = STATES.find((s) => s.id === selectedState);
-  const pointCost = state?.pointCost[selectedSpecies] ?? 0;
+
+  // Resolve R vs NR fees based on hunter's home state
+  const fees = useMemo(() => {
+    if (!state) return null;
+    return resolveFees(state, homeState);
+  }, [state, homeState]);
+
+  const pointCost = fees ? (fees.pointCost[selectedSpecies] ?? 0) : 0;
   const pointsNeeded = Math.max(0, targetPoints - currentPoints);
   const totalPointCost = pointsNeeded * pointCost;
-  const licenseFee = state?.licenseFees.qualifyingLicense ?? 0;
-  const appFee = state?.licenseFees.appFee ?? 0;
+  const licenseFee = fees?.qualifyingLicense ?? 0;
+  const appFee = fees?.appFee ?? 0;
   const annualCost = pointCost + appFee + (licenseFee > 0 ? licenseFee : 0);
   const TAG_COST_ESTIMATES: Record<string, number> = {
     elk: 600, mule_deer: 400, whitetail: 350, coues_deer: 250, blacktail: 300, sitka_blacktail: 600,
@@ -88,7 +99,8 @@ export default function CalculatorPage() {
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {STATES.map((s) => {
-                  const cost = s.pointCost[selectedSpecies];
+                  const sFees = resolveFees(s, homeState);
+                  const cost = sFees.pointCost[selectedSpecies] ?? 0;
                   const isSelected = selectedState === s.id;
                   const visual = STATE_VISUALS[s.id];
                   return (
@@ -238,56 +250,90 @@ export default function CalculatorPage() {
             </CardContent>
           </Card>
 
-          {/* Breakdown */}
+          {/* Itemized Fee Schedule */}
+          {state && fees && fees.feeSchedule.length > 0 && (
+            <Card className="bg-card border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+                  {state.abbreviation} Fee Schedule
+                  <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${fees.isResident ? "bg-success/15 text-success" : "bg-info/15 text-info"}`}>
+                    <Home className="w-2.5 h-2.5 inline mr-0.5" />
+                    {fees.label}
+                  </span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {fees.feeSchedule.map((fee, i) => (
+                  <div key={i} className="p-2 rounded-lg bg-secondary/30">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium ${fee.required ? "text-foreground" : "text-muted-foreground"}`}>
+                          {fee.name}
+                        </span>
+                        {fee.required && (
+                          <span className="text-[8px] px-1 py-0.5 rounded bg-destructive/10 text-destructive font-medium uppercase">Required</span>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <span className="text-sm font-bold">${fee.amount}</span>
+                        <span className="text-[9px] text-muted-foreground ml-1">
+                          {fee.frequency === "annual" ? "/yr" : fee.frequency === "per_species" ? "/species" : "once"}
+                        </span>
+                      </div>
+                    </div>
+                    {fee.notes && (
+                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{fee.notes}</p>
+                    )}
+                  </div>
+                ))}
+                <Separator className="my-2" />
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    <HuntingTerm term="annual subscription">Annual cost (1 species)</HuntingTerm>
+                  </span>
+                  <span className="font-bold text-chart-2">${annualCost}/yr</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cost Breakdown (accumulation) */}
           {selectedState && (
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">
-                  Cost Breakdown
+                  Cost to Draw
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    {pointsNeeded} pts x ${pointCost}
-                  </span>
-                  <span className="font-medium">${totalPointCost}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">App fees</span>
-                  <span className="font-medium">
-                    ${pointsNeeded * appFee}
-                  </span>
-                </div>
                 {licenseFee > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">License</span>
-                    <span className="font-medium">
-                      ${licenseFee.toFixed(2)}
-                    </span>
+                    <span className="text-muted-foreground">{fees?.isResident ? "Hunting License" : "Qualifying License"}</span>
+                    <span className="font-medium">${licenseFee.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Est. tag cost
+                    Point fees ({pointsNeeded} yrs × ${pointCost})
                   </span>
+                  <span className="font-medium">${totalPointCost}</span>
+                </div>
+                {appFee > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      App fees ({pointsNeeded} yrs × ${appFee})
+                    </span>
+                    <span className="font-medium">${pointsNeeded * appFee}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Est. tag cost</span>
                   <span className="font-medium">${estimatedTagCost}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm font-bold">
-                  <span>Total</span>
-                  <span className="text-primary">
-                    ${totalCost.toLocaleString()}
-                  </span>
-                </div>
-                <Separator />
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    <HuntingTerm term="annual subscription">Annual subscription</HuntingTerm>
-                  </span>
-                  <span className="font-medium text-chart-2">
-                    ${annualCost}/yr
-                  </span>
+                  <span>Total Investment</span>
+                  <span className="text-primary">${totalCost.toLocaleString()}</span>
                 </div>
               </CardContent>
             </Card>

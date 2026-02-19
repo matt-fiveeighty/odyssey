@@ -53,6 +53,7 @@ export function AddPlanItemDialog({ open, onClose, onAdd, selectedYear }: AddPla
           <CardTitle className="text-base">Add Plan Item</CardTitle>
           <button
             onClick={onClose}
+            aria-label="Close dialog"
             className="text-muted-foreground hover:text-foreground"
           >
             &#x2715;

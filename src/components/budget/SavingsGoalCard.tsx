@@ -51,7 +51,8 @@ function SavingsGoalItem({
           <CardTitle className="text-sm">{goal.title}</CardTitle>
           <button
             onClick={() => onRemove(goal.id)}
-            className="text-muted-foreground hover:text-destructive"
+            aria-label="Remove savings goal"
+            className="text-muted-foreground hover:text-destructive p-2 -m-1"
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
@@ -153,14 +154,16 @@ export function SavingsGoalsSection() {
   }
 
   function removeGoal(goalId: string) {
-    setSavingsGoals((prev) => prev.filter((g) => g.id !== goalId));
+    if (window.confirm("Delete this savings goal? This cannot be undone.")) {
+      setSavingsGoals((prev) => prev.filter((g) => g.id !== goalId));
+    }
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-bold flex items-center gap-2">
-          <PiggyBank className="w-5 h-5 text-amber-400" />
+          <PiggyBank className="w-5 h-5 text-warning" />
           Dream Hunt Savings
         </h2>
         <Button size="sm" className="gap-2" onClick={() => setShowAddGoal(true)}>
@@ -210,7 +213,8 @@ export function SavingsGoalsSection() {
               <CardTitle className="text-base">New Savings Goal</CardTitle>
               <button
                 onClick={() => setShowAddGoal(false)}
-                className="text-muted-foreground hover:text-foreground"
+                aria-label="Close dialog"
+                className="text-muted-foreground hover:text-foreground p-2 -m-2"
               >
                 <X className="w-4 h-4" />
               </button>

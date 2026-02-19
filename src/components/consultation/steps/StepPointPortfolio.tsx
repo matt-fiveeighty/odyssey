@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { STATES_MAP } from "@/lib/constants/states";
 import { Wallet } from "lucide-react";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
+import { formatSpeciesName } from "@/lib/utils";
 
 export function StepPointPortfolio() {
   const wizard = useWizardStore();
@@ -67,10 +68,10 @@ export function StepPointPortfolio() {
                       const pts = wizard.existingPoints[stateId]?.[speciesId] ?? 0;
                       return (
                         <div key={speciesId} className="flex items-center gap-1.5">
-                          <span className="text-xs text-muted-foreground capitalize w-16">{speciesId.replace("_", " ")}</span>
-                          <button aria-label={`Decrease ${speciesId.replace("_", " ")} points for ${state.name}`} onClick={() => wizard.setExistingPoints(stateId, speciesId, Math.max(0, pts - 1))} className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent">-</button>
+                          <span className="text-xs text-muted-foreground w-16">{formatSpeciesName(speciesId)}</span>
+                          <button aria-label={`Decrease ${formatSpeciesName(speciesId)} points for ${state.name}`} onClick={() => wizard.setExistingPoints(stateId, speciesId, Math.max(0, pts - 1))} className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent">-</button>
                           <span className="w-6 text-center font-bold text-sm">{pts}</span>
-                          <button aria-label={`Increase ${speciesId.replace("_", " ")} points for ${state.name}`} onClick={() => wizard.setExistingPoints(stateId, speciesId, pts + 1)} className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent">+</button>
+                          <button aria-label={`Increase ${formatSpeciesName(speciesId)} points for ${state.name}`} onClick={() => wizard.setExistingPoints(stateId, speciesId, pts + 1)} className="w-7 h-7 rounded bg-secondary flex items-center justify-center text-sm hover:bg-accent">+</button>
                         </div>
                       );
                     })}

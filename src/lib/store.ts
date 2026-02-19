@@ -318,7 +318,8 @@ export const useAppStore = create<AppState>()(
       setUserGoals: (userGoals) => set({ userGoals }),
       addUserGoal: (goal) =>
         set((state) => {
-          const goalMs = generateMilestonesForGoal(goal);
+          const hs = useWizardStore.getState().homeState;
+          const goalMs = generateMilestonesForGoal(goal, hs);
           return {
             userGoals: [...state.userGoals, goal],
             milestones: [...state.milestones, ...goalMs],
@@ -336,8 +337,9 @@ export const useAppStore = create<AppState>()(
             oldGoalMs.filter((m) => m.completed).map((m) => [m.id, m.completedAt])
           );
           const otherMs = state.milestones.filter((m) => m.planId !== id);
+          const hs = useWizardStore.getState().homeState;
           const newGoalMs = updatedGoal
-            ? generateMilestonesForGoal(updatedGoal).map((m) =>
+            ? generateMilestonesForGoal(updatedGoal, hs).map((m) =>
                 completedMap.has(m.id)
                   ? { ...m, completed: true, completedAt: completedMap.get(m.id) }
                   : m

@@ -169,6 +169,7 @@ export function SharePlanDialog({ planId, isOpen, onClose }: SharePlanDialogProp
               size="sm"
               onClick={handleShare}
               disabled={!email.trim() || isSubmitting}
+              aria-label="Invite user"
             >
               <UserPlus className="w-4 h-4" />
             </Button>
@@ -204,7 +205,8 @@ export function SharePlanDialog({ planId, isOpen, onClose }: SharePlanDialogProp
                   </div>
                   <button
                     onClick={() => handleRemove(share.id)}
-                    className="text-muted-foreground hover:text-destructive shrink-0 ml-2"
+                    aria-label={`Remove ${share.email} access`}
+                    className="text-muted-foreground hover:text-destructive shrink-0 ml-2 p-2 -m-2"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>

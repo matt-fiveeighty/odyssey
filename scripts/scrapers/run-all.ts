@@ -28,6 +28,10 @@ import { OregonScraper } from "./or-draw-data";
 import { IdahoScraper } from "./id-draw-data";
 import { KansasScraper } from "./ks-draw-data";
 import { AlaskaScraper } from "./ak-draw-data";
+import { WashingtonScraper } from "./wa-draw-data";
+import { NebraskaScraper } from "./ne-draw-data";
+import { SouthDakotaScraper } from "./sd-draw-data";
+import { NorthDakotaScraper } from "./nd-draw-data";
 
 // ---------------------------------------------------------------------------
 // Scraper registry
@@ -45,6 +49,10 @@ const ALL_SCRAPERS: BaseScraper[] = [
   new IdahoScraper(),
   new KansasScraper(),
   new AlaskaScraper(),
+  new WashingtonScraper(),
+  new NebraskaScraper(),
+  new SouthDakotaScraper(),
+  new NorthDakotaScraper(),
 ];
 
 // ---------------------------------------------------------------------------

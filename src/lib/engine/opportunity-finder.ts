@@ -9,6 +9,7 @@
 import type { Unit, UserPoints } from "@/lib/types";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
+import { resolveFees } from "./fee-resolver";
 
 // ============================================================================
 // Types
@@ -60,12 +61,13 @@ function getUserPoints(
 }
 
 /** Estimate base cost for a hunt in a state (license + app + tag) */
-function estimateHuntCost(stateId: string): number {
+function estimateHuntCost(stateId: string, homeState?: string): number {
   const state = STATES_MAP[stateId];
   if (!state) return 1000;
-  const license = state.licenseFees.qualifyingLicense ?? 0;
-  const appFee = state.licenseFees.appFee ?? 0;
-  // Rough tag estimate for NR
+  const fees = resolveFees(state, homeState ?? "");
+  const license = fees.qualifyingLicense;
+  const appFee = fees.appFee;
+  // Rough tag estimate
   const tagEstimate = stateId === "CO" ? 700 : stateId === "ID" ? 600 : 800;
   return license + appFee + tagEstimate;
 }
@@ -130,7 +132,7 @@ export function findOpportunities(input: OpportunityInput): Opportunity[] {
       stateId: unit.stateId,
       speciesId: unit.speciesId,
       unitCode: unit.unitCode,
-      estimatedCost: estimateHuntCost(unit.stateId),
+      estimatedCost: estimateHuntCost(unit.stateId, input.homeState),
       confidence: unit.successRate > 0.25 ? "high" : "medium",
       reason: `No draw required. ${unit.tagQuotaNonresident} NR tags available. Good for ${year} planning.`,
     });
@@ -155,7 +157,7 @@ export function findOpportunities(input: OpportunityInput): Opportunity[] {
       stateId: unit.stateId,
       speciesId: unit.speciesId,
       unitCode: unit.unitCode,
-      estimatedCost: estimateHuntCost(unit.stateId),
+      estimatedCost: estimateHuntCost(unit.stateId, input.homeState),
       confidence: latest.oddsPercent > 75 ? "high" : "medium",
       reason: `Near-guaranteed draw with strong recent odds. Apply in ${year} for a solid shot.`,
     });
@@ -182,7 +184,7 @@ export function findOpportunities(input: OpportunityInput): Opportunity[] {
         description: `${state.name} uses a ${state.pointSystem} system — every applicant has a chance regardless of points. ${state.pointSystemDetails.description}`,
         stateId: state.id,
         speciesId: topSpecies,
-        estimatedCost: estimateHuntCost(state.id),
+        estimatedCost: estimateHuntCost(state.id, input.homeState),
         confidence: "medium",
         reason: `${state.abbreviation} is not in your current plan but offers ${matchingSpecies.length} of your target species with a lottery-friendly draw system.`,
       });
@@ -224,7 +226,7 @@ export function findOpportunities(input: OpportunityInput): Opportunity[] {
         stateId: unit.stateId,
         speciesId: unit.speciesId,
         unitCode: unit.unitCode,
-        estimatedCost: estimateHuntCost(unit.stateId),
+        estimatedCost: estimateHuntCost(unit.stateId, input.homeState),
         confidence: "medium",
         reason: `Under-the-radar unit in a state you're already investing in. Good trophy-to-pressure ratio.`,
       });

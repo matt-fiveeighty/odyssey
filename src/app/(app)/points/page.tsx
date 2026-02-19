@@ -19,16 +19,19 @@ import {
 } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { UnlockHorizon } from "@/components/points/UnlockHorizon";
 import { PointImpactViz } from "@/components/points/PointImpactViz";
 import { pointsFormSchema } from "@/lib/validations";
 import type { UserPoints } from "@/lib/types";
+import { formatSpeciesName } from "@/lib/utils";
 
 export default function PointsPage() {
   const { userPoints, addUserPoint, updateUserPoint, removeUserPoint } =
     useAppStore();
+  const homeState = useWizardStore((s) => s.homeState);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const modalRef = useFocusTrap<HTMLDivElement>(showAddModal);
@@ -61,8 +64,8 @@ export default function PointsPage() {
   const totalInvested = userPoints.reduce((sum, p) => {
     const state = STATES_MAP[p.stateId];
     if (!state) return sum;
-    const costPerPoint =
-      (state.pointCost[p.speciesId] ?? 0) + (state.licenseFees.appFee ?? 0);
+    const fees = resolveFees(state, homeState);
+    const costPerPoint = (fees.pointCost[p.speciesId] ?? 0) + fees.appFee;
     return sum + p.points * costPerPoint;
   }, 0);
 
@@ -251,7 +254,7 @@ export default function PointsPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-sm capitalize">
-                            {pt.speciesId.replace("_", " ")}
+                            {formatSpeciesName(pt.speciesId)}
                           </span>
                           <span className="text-[10px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground">
                             {pt.pointType}
@@ -313,14 +316,18 @@ export default function PointsPage() {
                                   setEditingId(pt.id);
                                   setEditPoints(pt.points);
                                 }}
-                                aria-label={`Edit ${pt.speciesId.replace("_", " ")} points`}
+                                aria-label={`Edit ${formatSpeciesName(pt.speciesId)} points`}
                                 className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-accent transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
                               </button>
                               <button
-                                onClick={() => removeUserPoint(pt.id)}
-                                aria-label={`Delete ${pt.speciesId.replace("_", " ")} points`}
+                                onClick={() => {
+                                  if (window.confirm(`Delete ${formatSpeciesName(pt.speciesId)} points for ${state?.name ?? stateId}? This cannot be undone.`)) {
+                                    removeUserPoint(pt.id);
+                                  }
+                                }}
+                                aria-label={`Delete ${formatSpeciesName(pt.speciesId)} points`}
                                 className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -336,13 +343,15 @@ export default function PointsPage() {
                     <span>Annual subscription</span>
                     <span className="font-medium text-chart-2">
                       $
-                      {points
-                        .reduce((sum, pt) => {
-                          const cost = state.pointCost[pt.speciesId] ?? 0;
-                          const fee = state.licenseFees.appFee ?? 0;
-                          return sum + cost + fee;
-                        }, (state.licenseFees.qualifyingLicense ?? 0))
-                        .toLocaleString()}
+                      {(() => {
+                        const fees = resolveFees(state, homeState);
+                        return points
+                          .reduce((sum, pt) => {
+                            const cost = fees.pointCost[pt.speciesId] ?? 0;
+                            return sum + cost + fees.appFee;
+                          }, fees.qualifyingLicense)
+                          .toLocaleString();
+                      })()}
                       /yr
                     </span>
                   </div>
@@ -388,16 +397,12 @@ export default function PointsPage() {
                     .reduce((total, [stateId, points]) => {
                       const state = STATES_MAP[stateId];
                       if (!state) return total;
+                      const fees = resolveFees(state, homeState);
                       const speciesCost = points.reduce((sum, pt) => {
-                        const cost = state.pointCost[pt.speciesId] ?? 0;
-                        const fee = state.licenseFees.appFee ?? 0;
-                        return sum + cost + fee;
+                        const cost = fees.pointCost[pt.speciesId] ?? 0;
+                        return sum + cost + fees.appFee;
                       }, 0);
-                      return (
-                        total +
-                        speciesCost +
-                        (state.licenseFees.qualifyingLicense ?? 0)
-                      );
+                      return total + speciesCost + fees.qualifyingLicense;
                     }, 0)
                     .toLocaleString()}
                 </p>

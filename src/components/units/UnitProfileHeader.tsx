@@ -54,7 +54,7 @@ export default function UnitProfileHeader({
               key={i}
               className={`w-4 h-4 ${
                 filled
-                  ? "text-amber-400 fill-amber-400"
+                  ? "text-warning fill-warning"
                   : "text-muted-foreground/30"
               }`}
             />

@@ -3,11 +3,15 @@
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
-import type { StrategicAssessment } from "@/lib/types";
+import type { StrategicAssessment, RoadmapAction } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
 import { Button } from "@/components/ui/button";
 import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw } from "lucide-react";
+
+export interface EditableAction extends RoadmapAction {
+  _edited?: boolean;
+}
 
 // Lazy load tab content — only HeroSummary is above the fold
 const PortfolioOverview = dynamic(() => import("./sections/PortfolioOverview").then(m => ({ default: m.PortfolioOverview })));
@@ -33,6 +37,18 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
   const wizard = useWizardStore();
   const appStore = useAppStore();
   const router = useRouter();
+
+  // Lift timeline edits to survive tab switches (dynamic imports unmount children)
+  const [timelineEdits, setTimelineEdits] = useState<Record<number, EditableAction[]>>(() => {
+    const map: Record<number, EditableAction[]> = {};
+    for (const yr of assessment.roadmap) {
+      map[yr.year] = yr.actions.map((a) => ({ ...a }));
+    }
+    return map;
+  });
+  const handleTimelineEditsChange = useCallback((edits: Record<number, EditableAction[]>) => {
+    setTimelineEdits(edits);
+  }, []);
 
   function handleConfirmPlan() {
     wizard.confirmPlan(assessment);
@@ -91,7 +107,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
       <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} className="fade-in-up">
         {activeTab === "overview" && <PortfolioOverview assessment={assessment} />}
         {activeTab === "states" && <StatePortfolio assessment={assessment} />}
-        {activeTab === "timeline" && <TimelineRoadmap assessment={assessment} />}
+        {activeTab === "timeline" && <TimelineRoadmap assessment={assessment} editedActions={timelineEdits} onEditedActionsChange={handleTimelineEditsChange} />}
         {activeTab === "logistics" && <LogisticsTab assessment={assessment} />}
       </div>
 

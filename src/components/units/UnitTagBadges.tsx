@@ -28,9 +28,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "trophy_potential",
       label: "Trophy Potential",
       icon: <Trophy className="w-3 h-3" />,
-      bg: "bg-amber-500/10",
-      text: "text-amber-400",
-      border: "border-amber-500/20",
+      bg: "bg-warning/10",
+      text: "text-warning",
+      border: "border-warning/20",
     });
   }
 
@@ -39,9 +39,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "beginner_friendly",
       label: "Beginner Friendly",
       icon: <Target className="w-3 h-3" />,
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400",
-      border: "border-emerald-500/20",
+      bg: "bg-success/10",
+      text: "text-success",
+      border: "border-success/20",
     });
   }
 
@@ -50,9 +50,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "low_pressure",
       label: "Low Pressure",
       icon: <Users className="w-3 h-3" />,
-      bg: "bg-blue-500/10",
-      text: "text-blue-400",
-      border: "border-blue-500/20",
+      bg: "bg-info/10",
+      text: "text-info",
+      border: "border-info/20",
     });
   }
 
@@ -61,9 +61,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "otc_available",
       label: "OTC Available",
       icon: <Shield className="w-3 h-3" />,
-      bg: "bg-emerald-500/10",
-      text: "text-emerald-400",
-      border: "border-emerald-500/20",
+      bg: "bg-success/10",
+      text: "text-success",
+      border: "border-success/20",
     });
   }
 
@@ -86,9 +86,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "backpack_country",
       label: "Backpack Country",
       icon: <Mountain className="w-3 h-3" />,
-      bg: "bg-purple-500/10",
-      text: "text-purple-400",
-      border: "border-purple-500/20",
+      bg: "bg-premium/10",
+      text: "text-premium",
+      border: "border-premium/20",
     });
   }
 
@@ -97,9 +97,9 @@ function computeTags(unit: Unit): TagDef[] {
       id: "high_public_land",
       label: `${Math.round(unit.publicLandPct * 100)}% Public`,
       icon: <TreePine className="w-3 h-3" />,
-      bg: "bg-teal-500/10",
-      text: "text-teal-400",
-      border: "border-teal-500/20",
+      bg: "bg-chart-5/10",
+      text: "text-chart-5",
+      border: "border-chart-5/20",
     });
   }
 

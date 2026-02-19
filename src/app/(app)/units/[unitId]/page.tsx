@@ -92,7 +92,7 @@ export default function UnitProfilePage() {
       label: "Public Land",
       value: Math.round(unit.publicLandPct * 100),
       max: 100,
-      icon: <TreePine className="w-3.5 h-3.5 text-teal-400" />,
+      icon: <TreePine className="w-3.5 h-3.5 text-chart-5" />,
       suffix: "%",
     },
     {
@@ -104,7 +104,7 @@ export default function UnitProfilePage() {
             ? 50
             : 20,
       max: 100,
-      icon: <Users className="w-3.5 h-3.5 text-purple-400" />,
+      icon: <Users className="w-3.5 h-3.5 text-premium" />,
       suffix: "",
       display:
         unit.pressureLevel === "Low"
@@ -124,7 +124,7 @@ export default function UnitProfilePage() {
       label: "Points Needed (NR)",
       value: unit.pointsRequiredNonresident,
       max: 20,
-      icon: <Shield className="w-3.5 h-3.5 text-blue-400" />,
+      icon: <Shield className="w-3.5 h-3.5 text-info" />,
       suffix: " pts",
     },
   ];
@@ -200,7 +200,7 @@ export default function UnitProfilePage() {
         <Card className="bg-card border-border">
           <CardContent className="p-4">
             <div className="flex items-center gap-1.5 mb-1">
-              <Users className="w-3.5 h-3.5 text-purple-400" />
+              <Users className="w-3.5 h-3.5 text-premium" />
               <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
                 Pressure
               </span>
@@ -208,10 +208,10 @@ export default function UnitProfilePage() {
             <p
               className={`text-2xl font-bold ${
                 unit.pressureLevel === "Low"
-                  ? "text-emerald-400"
+                  ? "text-success"
                   : unit.pressureLevel === "Moderate"
-                    ? "text-amber-400"
-                    : "text-red-400"
+                    ? "text-warning"
+                    : "text-destructive"
               }`}
             >
               {unit.pressureLevel}

@@ -155,7 +155,7 @@ export default function SuggestedUnit({ stateId, speciesId }: SuggestedUnitProps
                 {recommended.pointsRequiredNonresident} pts
               </span>
               <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                <TreePine className="w-3 h-3 text-teal-400" />
+                <TreePine className="w-3 h-3 text-chart-5" />
                 {Math.round(recommended.publicLandPct * 100)}% pub
               </span>
               <span className="text-[10px] text-muted-foreground flex items-center gap-1">

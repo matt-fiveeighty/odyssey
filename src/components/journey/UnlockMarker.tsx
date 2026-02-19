@@ -14,7 +14,7 @@ export function UnlockMarker({ stateId, unitCode, unitName }: UnlockMarkerProps)
   const displayCode = unitName ?? unitCode;
 
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-green-400">
+    <div className="flex items-center gap-1.5 text-[10px] text-success">
       <Lock className="w-3 h-3 shrink-0" />
       <span className="truncate">
         {state?.abbreviation ?? stateId} {displayCode} unlocked

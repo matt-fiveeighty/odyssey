@@ -46,6 +46,46 @@ function canProceed(step: number, wizard: ReturnType<typeof useWizardStore.getSt
   }
 }
 
+/** Returns a short hint about what's missing for the current step. */
+function getValidationHint(step: number, wizard: ReturnType<typeof useWizardStore.getState>): string | null {
+  switch (step) {
+    case 1: {
+      const missing: string[] = [];
+      if (!wizard.homeState) missing.push("home state");
+      if (!wizard.experienceLevel) missing.push("experience level");
+      if (!wizard.physicalComfort) missing.push("physical comfort");
+      return missing.length > 0 ? `Select your ${missing.join(", ")}` : null;
+    }
+    case 2:
+      return wizard.species.length === 0 ? "Select at least one species" : null;
+    case 3:
+      return wizard.trophyVsMeat === null ? "Choose your priority: trophy, meat, or balanced" : null;
+    case 4: {
+      const missing: string[] = [];
+      if (wizard.pointYearBudget <= 0) missing.push("point-year budget");
+      if (wizard.huntYearBudget <= 0) missing.push("hunt-year budget");
+      return missing.length > 0 ? `Set your ${missing.join(" and ")}` : null;
+    }
+    case 5: {
+      const missing: string[] = [];
+      if (!wizard.huntStylePrimary) missing.push("hunt style");
+      if (wizard.importantFactors.length === 0) missing.push("at least one important factor");
+      return missing.length > 0 ? `Select ${missing.join(" and ")}` : null;
+    }
+    case 6: {
+      const missing: string[] = [];
+      if (!wizard.huntFrequency) missing.push("hunt frequency");
+      if (!wizard.timeAvailable) missing.push("time available");
+      if (!wizard.travelWillingness) missing.push("travel willingness");
+      return missing.length > 0 ? `Choose your ${missing.join(", ")}` : null;
+    }
+    case 8:
+      return wizard.selectedStatesConfirmed.length === 0 ? "Confirm at least one state" : null;
+    default:
+      return null;
+  }
+}
+
 export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShellProps) {
   const wizard = useWizardStore();
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
@@ -90,6 +130,9 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
     }
   };
 
+  const isComplete = canProceed(wizard.step, wizard);
+  const hint = getValidationHint(wizard.step, wizard);
+
   return (
     <div className="space-y-4">
       <ConsultationProgress currentStep={wizard.step} onStepClick={handleStepClick} />
@@ -115,13 +158,20 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
           )}
 
           {wizard.step < 9 ? (
-            <Button
-              onClick={handleNext}
-              disabled={!canProceed(wizard.step, wizard)}
-              className="gap-1.5"
-            >
-              Continue <ChevronRight className="w-4 h-4" />
-            </Button>
+            <div className="flex items-center gap-3">
+              {!isComplete && hint && (
+                <span className="text-[11px] text-muted-foreground/70 hidden sm:block max-w-[200px] text-right">
+                  {hint}
+                </span>
+              )}
+              <Button
+                onClick={handleNext}
+                disabled={!isComplete}
+                className="gap-1.5"
+              >
+                Continue <ChevronRight className="w-4 h-4" />
+              </Button>
+            </div>
           ) : (
             <Button
               onClick={handleNext}

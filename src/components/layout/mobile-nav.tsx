@@ -55,11 +55,12 @@ export function MobileNav() {
             onClick={() => setShowMore(false)}
             role="presentation"
           />
-          <div className="absolute bottom-16 left-0 right-0 bg-background border-t border-border rounded-t-2xl p-4 shadow-2xl animate-slide-up">
+          <div className="absolute bottom-16 left-0 right-0 bg-background border-t border-border rounded-t-2xl p-4 shadow-2xl fade-in-up">
             <div className="flex items-center justify-between mb-3">
               <p className="text-sm font-semibold">More</p>
               <button
                 onClick={() => setShowMore(false)}
+                aria-label="Close menu"
                 className="w-7 h-7 rounded-full bg-secondary flex items-center justify-center"
               >
                 <X className="w-4 h-4" />

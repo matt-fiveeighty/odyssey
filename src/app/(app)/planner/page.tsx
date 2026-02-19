@@ -10,6 +10,7 @@ import { AddPlanItemDialog } from "@/components/planner/AddPlanItemDialog";
 import { AutoFillButton } from "@/components/planner/AutoFillButton";
 import { OpportunityCards } from "@/components/planner/OpportunityCards";
 import type { PlanItem } from "@/components/planner/PlanItemCard";
+import { formatSpeciesName } from "@/lib/utils";
 
 export default function PlannerPage() {
   const currentYear = new Date().getFullYear();
@@ -115,7 +116,7 @@ export default function PlannerPage() {
         </Card>
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-green-400">{completedCount}</p>
+            <p className="text-2xl font-bold text-success">{completedCount}</p>
             <p className="text-xs text-muted-foreground">Completed</p>
           </CardContent>
         </Card>
@@ -177,7 +178,7 @@ function generateDefaultItems(year: number): PlanItem[] {
         items.push({
           id: `${year}-deadline-${state.id}-${speciesId}`,
           type: "deadline",
-          title: `${state.abbreviation} ${speciesId.replace("_", " ")} app deadline`,
+          title: `${state.abbreviation} ${formatSpeciesName(speciesId)} app deadline`,
           stateId: state.id,
           speciesId,
           month: closeDate.getMonth() + 1,

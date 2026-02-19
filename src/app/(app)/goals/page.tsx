@@ -31,6 +31,7 @@ import { goalFormSchema } from "@/lib/validations";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuggestedUnit from "@/components/goals/SuggestedUnit";
+import { formatSpeciesName } from "@/lib/utils";
 
 const currentYear = new Date().getFullYear();
 const ROADMAP_YEARS = Array.from({ length: 10 }, (_, i) => currentYear + i);
@@ -129,7 +130,8 @@ export default function GoalsPage() {
     const goalMsIds = new Set(milestones.filter((m) => m.planId && goalIds.has(m.planId)).map((m) => m.planId));
     const goalsWithoutMs = userGoals.filter((g) => !goalMsIds.has(g.id));
     if (goalsWithoutMs.length > 0) {
-      const newMs = goalsWithoutMs.flatMap((g) => generateMilestonesForGoal(g));
+      const hs = useWizardStore.getState().homeState;
+      const newMs = goalsWithoutMs.flatMap((g) => generateMilestonesForGoal(g, hs));
       if (newMs.length > 0) addMilestones(newMs);
     }
   }, [userGoals, milestones, addMilestones]);
@@ -762,7 +764,7 @@ export default function GoalsPage() {
                               <div>
                                 <h3 className="font-semibold text-sm">{goal.title}</h3>
                                 <div className="flex items-center gap-2 mt-1">
-                                  <span className="text-xs text-muted-foreground capitalize">{goal.speciesId.replace("_", " ")}</span>
+                                  <span className="text-xs text-muted-foreground">{formatSpeciesName(goal.speciesId)}</span>
                                   <span className="text-muted-foreground">&middot;</span>
                                   <span className="text-xs text-muted-foreground">{state?.name}</span>
                                 </div>
@@ -817,7 +819,11 @@ export default function GoalsPage() {
                                   <Star className="w-3.5 h-3.5" />
                                 </button>
                               )}
-                              <button onClick={() => removeUserGoal(goal.id)} aria-label={`Delete ${goal.title}`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
+                              <button onClick={() => {
+                                if (window.confirm(`Delete "${goal.title}"? This will also remove all associated milestones and cannot be undone.`)) {
+                                  removeUserGoal(goal.id);
+                                }
+                              }} aria-label={`Delete ${goal.title}`} className="w-7 h-7 rounded bg-secondary flex items-center justify-center hover:bg-destructive/15 hover:text-destructive transition-colors">
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>

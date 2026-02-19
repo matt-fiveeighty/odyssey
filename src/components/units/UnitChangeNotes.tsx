@@ -20,27 +20,27 @@ const typeConfig: Record<
 > = {
   regulation: {
     icon: <AlertTriangle className="w-3.5 h-3.5" />,
-    accent: "text-amber-400",
-    bg: "bg-amber-500/10",
-    border: "border-amber-500/20",
+    accent: "text-warning",
+    bg: "bg-warning/10",
+    border: "border-warning/20",
   },
   positive: {
     icon: <TrendingUp className="w-3.5 h-3.5" />,
-    accent: "text-emerald-400",
-    bg: "bg-emerald-500/10",
-    border: "border-emerald-500/20",
+    accent: "text-success",
+    bg: "bg-success/10",
+    border: "border-success/20",
   },
   negative: {
     icon: <TrendingDown className="w-3.5 h-3.5" />,
-    accent: "text-red-400",
-    bg: "bg-red-500/10",
-    border: "border-red-500/20",
+    accent: "text-destructive",
+    bg: "bg-destructive/10",
+    border: "border-destructive/20",
   },
   info: {
     icon: <Info className="w-3.5 h-3.5" />,
-    accent: "text-blue-400",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/20",
+    accent: "text-info",
+    bg: "bg-info/10",
+    border: "border-info/20",
   },
 };
 

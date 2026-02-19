@@ -21,12 +21,12 @@ export interface PlanItem {
 }
 
 export const ITEM_TYPE_CONFIG: Record<ItemType, { label: string; icon: typeof Target; color: string }> = {
-  hunt: { label: "Hunt", icon: Target, color: "text-red-400" },
-  scout: { label: "Scout", icon: Binoculars, color: "text-blue-400" },
-  deadline: { label: "Deadline", icon: AlertTriangle, color: "text-amber-400" },
-  prep: { label: "Prep", icon: Clock, color: "text-green-400" },
-  application: { label: "Application", icon: Calendar, color: "text-purple-400" },
-  point_purchase: { label: "Buy Points", icon: MapPin, color: "text-teal-400" },
+  hunt: { label: "Hunt", icon: Target, color: "text-destructive" },
+  scout: { label: "Scout", icon: Binoculars, color: "text-info" },
+  deadline: { label: "Deadline", icon: AlertTriangle, color: "text-warning" },
+  prep: { label: "Prep", icon: Clock, color: "text-success" },
+  application: { label: "Application", icon: Calendar, color: "text-premium" },
+  point_purchase: { label: "Buy Points", icon: MapPin, color: "text-chart-5" },
 };
 
 // ============================================================================
@@ -50,15 +50,18 @@ export function PlanItemCard({ item, expanded, onToggleComplete, onRemove }: Pla
     >
       <button
         onClick={() => onToggleComplete(item.id)}
-        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
-          item.completed
-            ? "bg-green-400/20 border-green-400/50"
-            : "border-border hover:border-primary/50"
-        }`}
+        aria-label={item.completed ? `Mark "${item.title}" incomplete` : `Mark "${item.title}" complete`}
+        className="relative p-2 -m-2 shrink-0"
       >
-        {item.completed && (
-          <Check className="w-2.5 h-2.5 text-green-400" />
-        )}
+        <span className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${
+          item.completed
+            ? "bg-success/20 border-success/50"
+            : "border-border hover:border-primary/50"
+        }`}>
+          {item.completed && (
+            <Check className="w-2.5 h-2.5 text-success" />
+          )}
+        </span>
       </button>
       <cfg.icon className={`w-3 h-3 ${cfg.color} shrink-0`} />
       <span
@@ -68,8 +71,13 @@ export function PlanItemCard({ item, expanded, onToggleComplete, onRemove }: Pla
       </span>
       {expanded && (
         <button
-          onClick={() => onRemove(item.id)}
-          className="ml-auto shrink-0 text-muted-foreground hover:text-destructive"
+          onClick={() => {
+            if (window.confirm(`Remove "${item.title}" from the plan?`)) {
+              onRemove(item.id);
+            }
+          }}
+          aria-label={`Remove "${item.title}" from plan`}
+          className="ml-auto shrink-0 text-muted-foreground hover:text-destructive p-2 -m-2"
         >
           <Trash2 className="w-3 h-3" />
         </button>

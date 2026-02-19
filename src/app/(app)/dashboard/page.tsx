@@ -20,11 +20,14 @@ import { useRouter } from "next/navigation";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { useAppStore, useWizardStore } from "@/lib/store";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
+import { formatSpeciesName } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { milestones, confirmedAssessment, userPoints, userGoals } = useAppStore();
+  const homeState = useWizardStore((s) => s.homeState);
   const router = useRouter();
 
   const hasPlan = confirmedAssessment !== null;
@@ -322,7 +325,7 @@ export default function DashboardPage() {
                                     {state.abbreviation}
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium capitalize">{d.species.replace("_", " ")}</p>
+                                    <p className="text-xs font-medium">{formatSpeciesName(d.species)}</p>
                                     <p className="text-[10px] text-muted-foreground">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
                                   </div>
                                 </div>
@@ -367,7 +370,8 @@ export default function DashboardPage() {
               const hasPoints = userPoints.some(p => p.stateId === s.id && p.speciesId === species);
               if (hasGoal || hasPoints) {
                 const pts = userPoints.find(p => p.stateId === s.id && p.speciesId === species)?.points ?? 0;
-                const cost = (s.pointCost[species] ?? 0) + (s.licenseFees.appFee ?? 0);
+                const dlFees = resolveFees(s, homeState);
+                const cost = (dlFees.pointCost[species] ?? 0) + dlFees.appFee;
                 items.push({
                   stateId: s.id,
                   species,
@@ -413,7 +417,7 @@ export default function DashboardPage() {
                           {state.abbreviation}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold capitalize truncate">{item.species.replace("_", " ")}</p>
+                          <p className="text-sm font-semibold truncate">{formatSpeciesName(item.species)}</p>
                         </div>
                         {urgent && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-4/15 text-chart-4 font-bold shrink-0">URGENT</span>}
                       </div>

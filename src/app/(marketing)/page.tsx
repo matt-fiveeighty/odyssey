@@ -422,7 +422,7 @@ export default function LandingPage() {
       {/* ================================================================ */}
       <section className="border-t border-border relative overflow-hidden">
         <ParallaxImage
-          src="/images/species/moose.png"
+          src="/images/species/moose.jpg"
           alt=""
           className="opacity-50 pointer-events-none"
           speed={0.3}

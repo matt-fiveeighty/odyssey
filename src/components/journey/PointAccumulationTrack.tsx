@@ -40,13 +40,13 @@ export function PointAccumulationTrack({ track }: PointAccumulationTrackProps) {
             >
               {hasUnlock && (
                 <div className="mb-0.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-success" />
                 </div>
               )}
               <div
                 className={`w-full rounded-t-sm transition-all ${
                   hasUnlock
-                    ? "bg-green-400/60"
+                    ? "bg-success/60"
                     : "bg-primary/30"
                 }`}
                 style={{ height: `${heightPct}%` }}

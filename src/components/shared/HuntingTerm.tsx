@@ -62,10 +62,9 @@ interface HuntingTermProps {
   term: string;
   children?: React.ReactNode;
   className?: string;
-  iconSize?: number;
 }
 
-export function HuntingTerm({ term, children, className, iconSize = 3 }: HuntingTermProps) {
+export function HuntingTerm({ term, children, className }: HuntingTermProps) {
   const definition = GLOSSARY[term.toLowerCase()];
   if (!definition) return <>{children ?? term}</>;
 
@@ -77,7 +76,7 @@ export function HuntingTerm({ term, children, className, iconSize = 3 }: Hunting
             className={`inline-flex items-center gap-1 cursor-help border-b border-dotted border-muted-foreground/40 ${className ?? ""}`}
           >
             {children ?? term}
-            <HelpCircle className={`w-${iconSize} h-${iconSize} text-muted-foreground/60 shrink-0`} />
+            <HelpCircle className="w-3 h-3 text-muted-foreground/60 shrink-0" />
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">

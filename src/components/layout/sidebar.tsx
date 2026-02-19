@@ -45,7 +45,7 @@ const navSections = [
     label: "Tools",
     items: [
       { href: "/budget", label: "Budget", icon: DollarSign },
-      { href: "/groups", label: "Groups", icon: Users },
+      { href: "/groups", label: "Hunt Plans", icon: Users },
       { href: "/plan-builder", label: "Plan Builder", icon: Compass },
     ],
   },

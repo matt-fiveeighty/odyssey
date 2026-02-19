@@ -10,6 +10,8 @@ import {
   estimateCreepRate,
   yearsToDrawWithCreep,
 } from "@/lib/engine/point-creep";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { useWizardStore } from "@/lib/store";
 
 interface PointImpactVizProps {
   stateId: string;
@@ -74,11 +76,13 @@ export function PointImpactViz({
     return results.slice(0, 5);
   }, [stateId, speciesId, currentPoints]);
 
+  const homeState = useWizardStore((s) => s.homeState);
+
   if (impacts.length === 0) return null;
 
   const species = SPECIES_MAP[speciesId];
   const state = STATES_MAP[stateId];
-  const pointCost = state?.pointCost[speciesId] ?? 0;
+  const pointCost = state ? (resolveFees(state, homeState).pointCost[speciesId] ?? 0) : 0;
 
   return (
     <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-transparent">
@@ -129,7 +133,7 @@ export function PointImpactViz({
                 {impact.yearsAfter === 0 ? "Now" : `${impact.yearsAfter}yr`}
               </span>
             </div>
-            <div className="flex items-center gap-0.5 text-green-400 shrink-0">
+            <div className="flex items-center gap-0.5 text-success shrink-0">
               <TrendingUp className="w-3 h-3" />
               <span className="text-[10px] font-bold">
                 {impact.yearsSaved > 1 ? `-${impact.yearsSaved}yr` : "-1yr"}

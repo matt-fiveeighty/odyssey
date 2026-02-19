@@ -156,8 +156,13 @@ export function PlanComments({ planItemId }: PlanCommentsProps) {
                   </span>
                   {comment.authorId === "me" && (
                     <button
-                      onClick={() => handleDelete(comment.id)}
-                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                      onClick={() => {
+                        if (window.confirm("Delete this comment?")) {
+                          handleDelete(comment.id);
+                        }
+                      }}
+                      aria-label="Delete comment"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive p-2 -m-2"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
@@ -196,6 +201,7 @@ export function PlanComments({ planItemId }: PlanCommentsProps) {
           variant="outline"
           onClick={handleSubmit}
           disabled={!newComment.trim() || isSubmitting}
+          aria-label="Send comment"
         >
           <Send className="w-4 h-4" />
         </Button>

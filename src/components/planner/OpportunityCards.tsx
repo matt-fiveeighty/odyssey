@@ -28,8 +28,8 @@ const TYPE_LABELS: Record<Opportunity["type"], string> = {
 };
 
 const CONFIDENCE_COLORS: Record<Opportunity["confidence"], string> = {
-  high: "text-green-400 bg-green-400/15",
-  medium: "text-amber-400 bg-amber-400/15",
+  high: "text-success bg-success/15",
+  medium: "text-warning bg-warning/15",
   low: "text-muted-foreground bg-muted",
 };
 
@@ -58,7 +58,7 @@ export function OpportunityCards({ selectedYear, existingStateIds }: Opportunity
   return (
     <div className="space-y-3">
       <h3 className="text-sm font-semibold flex items-center gap-2">
-        <Lightbulb className="w-4 h-4 text-amber-400" />
+        <Lightbulb className="w-4 h-4 text-warning" />
         Opportunity Finder
       </h3>
       <div className="grid md:grid-cols-2 gap-3">

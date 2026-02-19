@@ -94,9 +94,9 @@ export function YearNode({
                 className="flex items-center gap-1.5 text-[10px]"
               >
                 {hunt.type === "hunt" ? (
-                  <Target className="w-3 h-3 text-red-400 shrink-0" />
+                  <Target className="w-3 h-3 text-destructive shrink-0" />
                 ) : (
-                  <Zap className="w-3 h-3 text-amber-400 shrink-0" />
+                  <Zap className="w-3 h-3 text-warning shrink-0" />
                 )}
                 <span
                   className="w-5 h-5 rounded text-[8px] font-bold text-white flex items-center justify-center shrink-0"
@@ -131,7 +131,7 @@ export function YearNode({
             return (
               <div
                 key={`milestone-${i}`}
-                className="flex items-center gap-1.5 text-[10px] text-purple-400"
+                className="flex items-center gap-1.5 text-[10px] text-premium"
               >
                 <Milestone className="w-3 h-3 shrink-0" />
                 <span className="truncate">

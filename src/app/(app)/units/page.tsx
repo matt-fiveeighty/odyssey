@@ -233,10 +233,10 @@ export default function UnitsPage() {
                       variant="secondary"
                       className={`text-[10px] px-2 py-0.5 ${
                         unit.pressureLevel === "Low"
-                          ? "bg-green-500/10 text-green-400 border-green-500/20"
+                          ? "bg-success/10 text-success border-success/20"
                           : unit.pressureLevel === "Moderate"
-                          ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/20"
-                          : "bg-red-500/10 text-red-400 border-red-500/20"
+                          ? "bg-warning/10 text-warning border-warning/20"
+                          : "bg-destructive/10 text-destructive border-destructive/20"
                       }`}
                     >
                       <Users className="w-3 h-3 mr-1" />

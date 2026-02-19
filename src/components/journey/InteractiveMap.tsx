@@ -1,0 +1,213 @@
+"use client";
+
+/**
+ * Interactive SVG Map — composite rendering of all 15 system states.
+ * States are colored dynamically based on the selected year's journey actions.
+ * Clicking a state opens the detail modal; hovering shows a tooltip.
+ */
+
+import { useState, useCallback, useRef } from "react";
+import { STATE_PATHS, STATE_LABEL_OFFSETS } from "@/lib/constants/state-paths";
+import { STATES_MAP } from "@/lib/constants/states";
+import type { JourneyYearData } from "@/lib/engine/journey-data";
+
+// Action-type color palette (matches MapLegend)
+const COLOR_HUNT = "#22c55e";     // green — planned hunt / OTC
+const COLOR_DRAW = "#f97316";     // orange — enter draw / apply
+const COLOR_POINTS = "#3b82f6";   // blue — build points
+const COLOR_INACTIVE = "oklch(0.20 0.01 260)";
+const STROKE_ACTIVE = "oklch(0.85 0 0)";
+const STROKE_INACTIVE = "oklch(0.30 0.01 260)";
+
+interface InteractiveMapProps {
+  yearData: JourneyYearData | null;
+  onStateClick: (stateId: string) => void;
+  selectedYear: number;
+}
+
+export function InteractiveMap({ yearData, onStateClick, selectedYear }: InteractiveMapProps) {
+  const [hoveredState, setHoveredState] = useState<string | null>(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const getStateFill = useCallback(
+    (stateId: string): string => {
+      if (!yearData) {
+        // No assessment — show all states in their brand colors
+        return STATES_MAP[stateId]?.color ?? COLOR_INACTIVE;
+      }
+      const hasHunt = yearData.hunts.some((h) => h.stateId === stateId);
+      const hasApp = yearData.applications.some((a) => a.stateId === stateId);
+      const hasPoints = yearData.pointPurchases.some((p) => p.stateId === stateId);
+
+      if (hasHunt) return COLOR_HUNT;
+      if (hasApp) return COLOR_DRAW;
+      if (hasPoints) return COLOR_POINTS;
+      return COLOR_INACTIVE;
+    },
+    [yearData]
+  );
+
+  const isStateActive = useCallback(
+    (stateId: string): boolean => {
+      if (!yearData) return true; // No data = all states shown
+      return yearData.activeStates.includes(stateId);
+    },
+    [yearData]
+  );
+
+  const getActionLabel = useCallback(
+    (stateId: string): string => {
+      if (!yearData) return "";
+      const hunt = yearData.hunts.find((h) => h.stateId === stateId);
+      if (hunt) return "Planned Hunt";
+      const app = yearData.applications.find((a) => a.stateId === stateId);
+      if (app) return "Enter Draw";
+      const pts = yearData.pointPurchases.find((p) => p.stateId === stateId);
+      if (pts) return "Build Points";
+      return "";
+    },
+    [yearData]
+  );
+
+  const handleMouseMove = useCallback(
+    (e: React.MouseEvent, stateId: string) => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      setTooltipPos({
+        x: e.clientX - rect.left + 12,
+        y: e.clientY - rect.top - 8,
+      });
+      setHoveredState(stateId);
+    },
+    []
+  );
+
+  return (
+    <div ref={containerRef} className="relative">
+      <svg
+        viewBox="0 0 540 460"
+        className="w-full h-auto max-h-[500px] lg:max-h-[550px]"
+        preserveAspectRatio="xMidYMid meet"
+        role="img"
+        aria-label={`Interactive hunt plan map for ${selectedYear}`}
+      >
+        {/* Continental states */}
+        {Object.entries(STATE_PATHS)
+          .filter(([id]) => id !== "AK")
+          .map(([stateId, stateData]) => {
+            const fill = getStateFill(stateId);
+            const active = isStateActive(stateId);
+            const isHovered = hoveredState === stateId;
+            const [vx, vy, vw, vh] = stateData.viewBox.split(" ").map(Number);
+            const offset = STATE_LABEL_OFFSETS[stateId] ?? { dx: 0, dy: 0 };
+            const cx = vx + vw / 2 + offset.dx;
+            const cy = vy + vh / 2 + offset.dy;
+
+            return (
+              <g key={stateId}>
+                <path
+                  d={stateData.path}
+                  fill={fill}
+                  stroke={active ? STROKE_ACTIVE : STROKE_INACTIVE}
+                  strokeWidth={isHovered ? 2.5 : 1.5}
+                  opacity={active || !yearData ? 1 : 0.35}
+                  className="cursor-pointer transition-all duration-200"
+                  style={isHovered ? { filter: "brightness(1.25)" } : undefined}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`${STATES_MAP[stateId]?.name ?? stateId}${getActionLabel(stateId) ? ` — ${getActionLabel(stateId)}` : ""}`}
+                  onClick={() => onStateClick(stateId)}
+                  onMouseMove={(e) => handleMouseMove(e, stateId)}
+                  onMouseLeave={() => setHoveredState(null)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      onStateClick(stateId);
+                    }
+                  }}
+                />
+                <text
+                  x={cx}
+                  y={cy}
+                  textAnchor="middle"
+                  dominantBaseline="central"
+                  fill="white"
+                  fontSize="11"
+                  fontWeight="700"
+                  className="pointer-events-none select-none"
+                  opacity={active || !yearData ? 0.9 : 0.3}
+                >
+                  {stateId}
+                </text>
+              </g>
+            );
+          })}
+
+        {/* Alaska — scaled inset in bottom-left */}
+        {STATE_PATHS.AK && (() => {
+          const stateId = "AK";
+          const stateData = STATE_PATHS.AK;
+          const fill = getStateFill(stateId);
+          const active = isStateActive(stateId);
+          const isHovered = hoveredState === stateId;
+
+          return (
+            <g transform="translate(-50, -120) scale(0.45)">
+              <path
+                d={stateData.path}
+                fill={fill}
+                stroke={active ? STROKE_ACTIVE : STROKE_INACTIVE}
+                strokeWidth={isHovered ? 4 : 2.5}
+                opacity={active || !yearData ? 1 : 0.35}
+                className="cursor-pointer transition-all duration-200"
+                style={isHovered ? { filter: "brightness(1.25)" } : undefined}
+                role="button"
+                tabIndex={0}
+                aria-label={`Alaska${getActionLabel(stateId) ? ` — ${getActionLabel(stateId)}` : ""}`}
+                onClick={() => onStateClick(stateId)}
+                onMouseMove={(e) => handleMouseMove(e, stateId)}
+                onMouseLeave={() => setHoveredState(null)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onStateClick(stateId);
+                  }
+                }}
+              />
+              {/* AK label positioned inside mainland area */}
+              <text
+                x={120}
+                y={520}
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="white"
+                fontSize="22"
+                fontWeight="700"
+                className="pointer-events-none select-none"
+                opacity={active || !yearData ? 0.9 : 0.3}
+              >
+                AK
+              </text>
+            </g>
+          );
+        })()}
+      </svg>
+
+      {/* Tooltip */}
+      {hoveredState && (
+        <div
+          className="absolute pointer-events-none z-10 bg-card border border-border rounded-lg px-3 py-1.5 text-xs shadow-lg"
+          style={{ left: tooltipPos.x, top: tooltipPos.y }}
+        >
+          <span className="font-semibold">{STATES_MAP[hoveredState]?.name ?? hoveredState}</span>
+          {getActionLabel(hoveredState) && (
+            <span className="text-muted-foreground ml-1.5">
+              {getActionLabel(hoveredState)}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

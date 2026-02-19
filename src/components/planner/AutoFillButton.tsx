@@ -89,8 +89,8 @@ export function AutoFillButton({ selectedYear, existingItems, onAutoFill }: Auto
                   {previewItems.map((item, i) => (
                     <li key={i} className="flex items-center gap-2">
                       <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                        item.priority === "high" ? "bg-red-400/15 text-red-400" :
-                        item.priority === "medium" ? "bg-amber-400/15 text-amber-400" :
+                        item.priority === "high" ? "bg-destructive/15 text-destructive" :
+                        item.priority === "medium" ? "bg-warning/15 text-warning" :
                         "bg-muted text-muted-foreground"
                       }`}>
                         {item.itemType}
@@ -147,8 +147,8 @@ export function AutoFillButton({ selectedYear, existingItems, onAutoFill }: Auto
                 {previewItems.map((item, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${
-                      item.priority === "high" ? "bg-red-400/15 text-red-400" :
-                      item.priority === "medium" ? "bg-amber-400/15 text-amber-400" :
+                      item.priority === "high" ? "bg-destructive/15 text-destructive" :
+                      item.priority === "medium" ? "bg-warning/15 text-warning" :
                       "bg-muted text-muted-foreground"
                     }`}>
                       {item.itemType}

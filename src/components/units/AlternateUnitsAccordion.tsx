@@ -20,23 +20,23 @@ const TRADEOFF_STYLES: Record<
   { bg: string; text: string; label: string }
 > = {
   higher_success: {
-    bg: "bg-emerald-500/10",
-    text: "text-emerald-400",
+    bg: "bg-success/10",
+    text: "text-success",
     label: "Higher Success",
   },
   fewer_points: {
-    bg: "bg-blue-500/10",
-    text: "text-blue-400",
+    bg: "bg-info/10",
+    text: "text-info",
     label: "Fewer Points",
   },
   lower_pressure: {
-    bg: "bg-purple-500/10",
-    text: "text-purple-400",
+    bg: "bg-premium/10",
+    text: "text-premium",
     label: "Lower Pressure",
   },
   different_terrain: {
-    bg: "bg-amber-500/10",
-    text: "text-amber-400",
+    bg: "bg-warning/10",
+    text: "text-warning",
     label: "Different Terrain",
   },
   nearby_state: {

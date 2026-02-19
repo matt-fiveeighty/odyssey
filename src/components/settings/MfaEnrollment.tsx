@@ -187,7 +187,7 @@ export function MfaEnrollment() {
             <button
               type="button"
               onClick={() => navigator.clipboard.writeText(secret)}
-              className="text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground p-2 -m-2"
               aria-label="Copy secret"
             >
               <Copy className="w-3.5 h-3.5" />

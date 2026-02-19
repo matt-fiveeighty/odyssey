@@ -145,7 +145,8 @@ export function GroupRoster({
                 {canEdit && !member.isLeader && onRemove && (
                   <button
                     onClick={() => onRemove(member.id)}
-                    className="text-muted-foreground hover:text-destructive transition-colors"
+                    aria-label={`Remove ${member.name} from party`}
+                    className="text-muted-foreground hover:text-destructive transition-colors p-2 -m-2"
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -172,6 +173,7 @@ export function GroupRoster({
             variant="outline"
             onClick={handleInvite}
             disabled={!inviteEmail.trim()}
+            aria-label="Send invite"
           >
             <UserPlus className="w-4 h-4" />
           </Button>
