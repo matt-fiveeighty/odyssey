@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 interface AnimatedBarProps {
   value: number;
   maxValue: number;
@@ -9,7 +11,7 @@ interface AnimatedBarProps {
   delay?: number;
 }
 
-export function AnimatedBar({ value, maxValue, label, sublabel, color = "bg-primary/70", delay = 0 }: AnimatedBarProps) {
+export const AnimatedBar = memo(function AnimatedBar({ value, maxValue, label, sublabel, color = "bg-primary/70", delay = 0 }: AnimatedBarProps) {
   const pct = maxValue > 0 ? (value / maxValue) * 100 : 0;
 
   return (
@@ -25,4 +27,4 @@ export function AnimatedBar({ value, maxValue, label, sublabel, color = "bg-prim
       {sublabel && <span className="text-[9px] text-muted-foreground/60 w-32 truncate hidden md:block">{sublabel}</span>}
     </div>
   );
-}
+});

@@ -2,6 +2,7 @@
 
 import type { StrategicAssessment } from "@/lib/types";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
+import { getDataStatus } from "@/lib/engine/data-loader";
 import { Sparkles } from "lucide-react";
 
 interface HeroSummaryProps {
@@ -10,6 +11,7 @@ interface HeroSummaryProps {
 
 export function HeroSummary({ assessment }: HeroSummaryProps) {
   const { financialSummary, stateRecommendations, macroSummary } = assessment;
+  const dataStatus = getDataStatus();
 
   return (
     <div className="fade-in-up rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-primary/20 p-6 md:p-8 glow-primary-lg">
@@ -49,6 +51,11 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
 
       <p className="text-xs text-muted-foreground/70 mt-4 italic">{assessment.strategyOverview}</p>
       <p className="text-[9px] text-muted-foreground/50 mt-2">All costs in 2026 dollars. Fees subject to annual state adjustments.</p>
+      {dataStatus.isUsingConstants && (
+        <p className="text-[9px] text-muted-foreground/40 mt-1">
+          Data source: baseline estimates. Connect to live data for real-time draw odds and fees.
+        </p>
+      )}
     </div>
   );
 }

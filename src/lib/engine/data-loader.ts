@@ -23,6 +23,40 @@ import type { State, Unit } from "@/lib/types";
 let _lastLoadedAt: number | null = null;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Concurrent request deduplication — prevents double-load from
+// simultaneous preview + full generation calls
+let _pendingLoad: Promise<void> | null = null;
+
+// Data source tracking for staleness indicators
+let _dataSource: "db" | "constants" = "constants";
+let _dbUnitCount = 0;
+let _dbDeadlineCount = 0;
+
+/**
+ * Returns metadata about the current data context.
+ * Components can use this to show staleness warnings.
+ */
+export function getDataStatus(): {
+  source: "db" | "constants";
+  lastLoadedAt: number | null;
+  staleMinutes: number | null;
+  dbUnitCount: number;
+  dbDeadlineCount: number;
+  isUsingConstants: boolean;
+} {
+  const staleMinutes = _lastLoadedAt
+    ? Math.round((Date.now() - _lastLoadedAt) / 60_000)
+    : null;
+  return {
+    source: _dataSource,
+    lastLoadedAt: _lastLoadedAt,
+    staleMinutes,
+    dbUnitCount: _dbUnitCount,
+    dbDeadlineCount: _dbDeadlineCount,
+    isUsingConstants: _dataSource === "constants",
+  };
+}
+
 /**
  * Load scraped data from Supabase and merge with hardcoded constants.
  * DB data takes precedence — constants fill gaps.
@@ -36,11 +70,28 @@ export async function loadDataContext(): Promise<void> {
     return; // Still fresh
   }
 
+  // Deduplicate concurrent calls — if a load is already in flight, piggyback on it
+  if (_pendingLoad) {
+    return _pendingLoad;
+  }
+
+  _pendingLoad = _loadDataContextInner();
+  try {
+    await _pendingLoad;
+  } finally {
+    _pendingLoad = null;
+  }
+}
+
+async function _loadDataContextInner(): Promise<void> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
     // No Supabase credentials — use constants (normal for local dev)
+    _dataSource = "constants";
+    _dbUnitCount = 0;
+    _dbDeadlineCount = 0;
     resetDataContext();
     return;
   }
@@ -57,6 +108,7 @@ export async function loadDataContext(): Promise<void> {
 
     if (unitsError) {
       console.warn("[data-loader] ref_units query failed:", unitsError.message);
+      _dataSource = "constants";
       resetDataContext();
       return;
     }
@@ -84,9 +136,13 @@ export async function loadDataContext(): Promise<void> {
       units: mergedUnits,
     });
 
+    _dataSource = "db";
+    _dbUnitCount = dbUnits?.length ?? 0;
+    _dbDeadlineCount = dbDeadlines?.length ?? 0;
     _lastLoadedAt = Date.now();
   } catch (err) {
     console.warn("[data-loader] Failed to load DB data, using constants:", (err as Error).message);
+    _dataSource = "constants";
     resetDataContext();
   }
 }

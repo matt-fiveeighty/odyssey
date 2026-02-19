@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import Image from "next/image";
 import { SPECIES_IMAGES, SPECIES_GRADIENTS } from "@/lib/constants/species-images";
 import { SPECIES_MAP } from "@/lib/constants/species";
@@ -10,7 +11,7 @@ interface SpeciesAvatarProps {
   className?: string;
 }
 
-export function SpeciesAvatar({ speciesId, size = 24, className = "" }: SpeciesAvatarProps) {
+export const SpeciesAvatar = memo(function SpeciesAvatar({ speciesId, size = 24, className = "" }: SpeciesAvatarProps) {
   const img = SPECIES_IMAGES[speciesId];
   const gradient = SPECIES_GRADIENTS[speciesId];
   const species = SPECIES_MAP[speciesId];
@@ -35,4 +36,4 @@ export function SpeciesAvatar({ speciesId, size = 24, className = "" }: SpeciesA
       )}
     </div>
   );
-}
+});

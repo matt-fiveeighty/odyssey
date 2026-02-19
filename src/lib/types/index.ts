@@ -241,6 +241,8 @@ export interface State {
   applicationApproach: ApplicationApproach;
   applicationApproachDescription: string;
   applicationTips: string[];
+  // Species that are once-in-a-lifetime draws (successful draw = lifetime ban from species)
+  onceInALifetime?: string[];
   // Which species this state offers
   availableSpecies: string[];
   // Draw result dates per species

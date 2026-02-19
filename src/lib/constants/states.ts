@@ -24,6 +24,7 @@ export const STATES: State[] = [
       mountain_lion: { open: "2026-03-01", close: "2026-04-07" },
     },
     deadlineTimezone: "America/Denver",
+    onceInALifetime: ["moose", "bighorn_sheep", "mountain_goat"],
     licenseFees: { qualifyingLicense: 101.54, appFee: 10, pointFee: 40 },
     feeSchedule: [
       { name: "NR Qualifying License", amount: 101.54, frequency: "annual", required: true, notes: "Required before applying. One-time annual purchase covers all species." },
@@ -99,6 +100,7 @@ export const STATES: State[] = [
       wolf: { open: "2026-01-02", close: "2026-03-15" },
     },
     deadlineTimezone: "America/Denver",
+    onceInALifetime: ["moose", "bighorn_sheep", "mountain_goat", "bison"],
     licenseFees: { qualifyingLicense: 0, appFee: 15, pointFee: 55 },
     feeSchedule: [
       { name: "NR Application Fee", amount: 15, frequency: "per_species", required: true, notes: "Non-refundable application fee per species." },
@@ -170,6 +172,7 @@ export const STATES: State[] = [
       wolf: { open: "2026-03-01", close: "2026-04-01" },
     },
     deadlineTimezone: "America/Denver",
+    onceInALifetime: ["moose", "bighorn_sheep", "mountain_goat", "bison"],
     licenseFees: { qualifyingLicense: 0, appFee: 50, pointFee: 100 },
     feeSchedule: [
       { name: "NR Combo License Application", amount: 50, frequency: "annual", required: true, notes: "Combo license application fee (covers elk + deer)." },
@@ -235,6 +238,7 @@ export const STATES: State[] = [
       mountain_lion: { open: "2026-03-10", close: "2026-04-14" },
     },
     deadlineTimezone: "America/Los_Angeles",
+    onceInALifetime: ["bighorn_sheep"],
     licenseFees: { qualifyingLicense: 142, appFee: 15, pointFee: 0 },
     feeSchedule: [
       { name: "NR Hunting License", amount: 142, frequency: "annual", required: true, notes: "Required before applying. Your license IS your point entry." },
@@ -297,6 +301,7 @@ export const STATES: State[] = [
       mountain_lion: { open: "2026-06-03", close: "2026-07-08" },
     },
     deadlineTimezone: "America/Phoenix",
+    onceInALifetime: ["bighorn_sheep", "bison"],
     licenseFees: { qualifyingLicense: 160, appFee: 15, pointFee: 0 },
     feeSchedule: [
       { name: "NR Hunting License", amount: 160, frequency: "annual", required: true, notes: "Required before applying. Also serves as your point entry." },
@@ -361,6 +366,7 @@ export const STATES: State[] = [
       mountain_lion: { open: "2026-01-30", close: "2026-03-05" },
     },
     deadlineTimezone: "America/Denver",
+    onceInALifetime: ["moose", "bighorn_sheep", "mountain_goat", "bison"],
     licenseFees: { qualifyingLicense: 65, appFee: 10, pointFee: 0 },
     feeSchedule: [
       { name: "NR Hunting License", amount: 65, frequency: "annual", required: true, notes: "Required before applying." },
@@ -484,6 +490,7 @@ export const STATES: State[] = [
       mountain_lion: { open: "2026-03-01", close: "2026-05-15" },
     },
     deadlineTimezone: "America/Los_Angeles",
+    onceInALifetime: ["bighorn_sheep", "mountain_goat"],
     licenseFees: { qualifyingLicense: 0, appFee: 8, pointFee: 0 },
     feeSchedule: [
       { name: "NR Application Fee", amount: 8, frequency: "per_species", required: true, notes: "Cheap application. No license required to apply." },
@@ -549,6 +556,7 @@ export const STATES: State[] = [
       wolf: { open: "2025-12-05", close: "2025-12-15" },
     },
     deadlineTimezone: "America/Boise",
+    onceInALifetime: ["moose", "bighorn_sheep", "mountain_goat"],
     licenseFees: { qualifyingLicense: 185, appFee: 18, pointFee: 0 },
     feeSchedule: [
       { name: "NR Hunting License", amount: 185, frequency: "annual", required: true, notes: "Required to apply. Also serves as your elk/deer tag for general zones. Non-refundable." },

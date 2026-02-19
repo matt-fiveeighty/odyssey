@@ -3,16 +3,18 @@
  * Lightweight scoring for Step 8 "Help Me Choose" — runs the full 9-factor
  * scoring without generating the full roadmap, milestones, or narratives.
  * Also generates adaptive fine-tune questions for Step 9.
+ *
+ * Uses the shared DataContext from roadmap-generator to ensure preview
+ * and full generation always operate on the same data (DB or constants).
  */
 
-import { scoreStateForHunter } from "./roadmap-generator";
-import { STATES, STATES_MAP } from "@/lib/constants/states";
+import { scoreStateForHunter, getDataContext } from "./roadmap-generator";
 import type { ConsultationInput } from "./roadmap-generator";
 import type { StateScoreBreakdown } from "@/lib/types";
 
 export function generateStatePreview(input: ConsultationInput): StateScoreBreakdown[] {
-  // Uses the module-level data context from roadmap-generator (defaults to constants)
-  return STATES
+  const data = getDataContext();
+  return data.states
     .map((s) => scoreStateForHunter(s.id, input))
     .sort((a, b) => b.totalScore - a.totalScore);
 }
@@ -30,6 +32,7 @@ export function generateFineTuneQuestions(
   input: ConsultationInput
 ): FineTuneQuestion[] {
   const questions: FineTuneQuestion[] = [];
+  const data = getDataContext();
 
   // Colorado second-choice tactic
   if (confirmedStates.includes("CO")) {
@@ -61,11 +64,11 @@ export function generateFineTuneQuestions(
 
   // Random draw states
   const randomStates = confirmedStates.filter((s) => {
-    const state = STATES_MAP[s];
+    const state = data.statesMap[s];
     return state?.pointSystem === "random";
   });
   if (randomStates.length > 0) {
-    const names = randomStates.map((s) => STATES_MAP[s]?.name).join(" and ");
+    const names = randomStates.map((s) => data.statesMap[s]?.name).join(" and ");
     questions.push({
       id: "random-strategy",
       question: `${names} ${randomStates.length > 1 ? "are" : "is a"} pure random draw — no points matter. Do you want to apply every year as a lottery play?`,
@@ -107,11 +110,11 @@ export function generateFineTuneQuestions(
   // Guided hunt follow-up for trophy states
   if (input.openToGuided) {
     const trophyStates = confirmedStates.filter((s) => {
-      const state = STATES_MAP[s];
+      const state = data.statesMap[s];
       return state?.pointSystem === "bonus" || state?.pointSystem === "bonus_squared";
     });
     if (trophyStates.length > 0) {
-      const names = trophyStates.map((s) => STATES_MAP[s]?.name).join(" and ");
+      const names = trophyStates.map((s) => data.statesMap[s]?.name).join(" and ");
       questions.push({
         id: "guided-trophy",
         question: `For trophy-tier draws in ${names}, a local guide can be the difference between a tag and a trophy. Book a guide when you draw?`,

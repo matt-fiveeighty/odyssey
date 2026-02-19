@@ -76,6 +76,11 @@ export function resetDataContext() {
   _data = DEFAULT_DATA;
 }
 
+/** Get current data context (for state-preview to share same source as generator). */
+export function getDataContext(): DataContext {
+  return _data;
+}
+
 // --- Consultation Input (from store)
 
 export interface ConsultationInput {
@@ -252,10 +257,31 @@ export function scoreStateForHunter(
   }
   factors.push({ label: "Elevation Compatibility", score: elevScore, maxScore: 15, explanation: elevExplanation });
 
-  // --- Factor 2: Budget Fit (max 15) ---
+  // --- Pre-compute unit aggregates in a single pass (used by factors 2, 6, 7, 10) ---
   const stateUnits = _data.units.filter(
     (u) => u.stateId === stateId && input.species.some(s => state.availableSpecies.includes(s))
   );
+  // Single-pass aggregation to avoid repeated .some()/.filter() across 6+ factors
+  let _hasRoadAccess = false;
+  let _hasWildBackcountry = false;
+  let _hasTrophyUnits = false;
+  let _hasMidTrophy = false;
+  let _hasLowPressure = false;
+  let _hasPublicLand = false;
+  let _hasHighSuccess = false;
+  let _hasDecentSuccess = false;
+  const _terrainSet = new Set<string>();
+  for (const u of stateUnits) {
+    if (u.publicLandPct > 0.35) _hasRoadAccess = true;
+    if (u.publicLandPct > 0.6 && u.pressureLevel === "Low") _hasWildBackcountry = true;
+    if (u.trophyRating >= 8) _hasTrophyUnits = true;
+    if (u.trophyRating >= 6) _hasMidTrophy = true;
+    if (u.pressureLevel === "Low") _hasLowPressure = true;
+    if (u.publicLandPct > 0.5) _hasPublicLand = true;
+    if (u.successRate > 0.3) _hasHighSuccess = true;
+    if (u.successRate >= 0.25) _hasDecentSuccess = true;
+    for (const t of u.terrainType) _terrainSet.add(t);
+  }
   const relevantSpecies = getRelevantSpecies(input.species, state);
   const pointYearResult = calculatePointYearCost(stateId, relevantSpecies, input.homeState);
   const annualCostPerState = pointYearResult.total;
@@ -362,8 +388,7 @@ export function scoreStateForHunter(
   let styleExplanation = "";
 
   if (input.huntStylePrimary === "diy_truck") {
-    const hasRoadAccess = stateUnits.some((u) => u.publicLandPct > 0.35);
-    if (hasRoadAccess) {
+    if (_hasRoadAccess) {
       styleScore = 9;
       styleExplanation = "Good road access and public land for truck-based hunting";
     } else {
@@ -371,8 +396,7 @@ export function scoreStateForHunter(
       styleExplanation = "Limited road access — better suited for backpack or guided hunts";
     }
   } else if (input.huntStylePrimary === "diy_backpack") {
-    const hasWild = stateUnits.some((u) => u.publicLandPct > 0.6 && u.pressureLevel === "Low");
-    if (hasWild) {
+    if (_hasWildBackcountry) {
       styleScore = 9;
       styleExplanation = "Excellent backcountry access with low pressure";
     } else {
@@ -385,8 +409,7 @@ export function scoreStateForHunter(
 
   // Bonus if open to guided and state has trophy units
   if (input.openToGuided) {
-    const trophyUnits = stateUnits.filter(u => u.trophyRating >= 8);
-    if (trophyUnits.length > 0) {
+    if (_hasTrophyUnits) {
       styleScore = Math.min(10, styleScore + 2);
       styleExplanation += styleExplanation ? ". Open to guided — trophy units benefit from local knowledge" : "Trophy units where guided hunts shine";
     }
@@ -398,8 +421,8 @@ export function scoreStateForHunter(
   let terrainExplanation = "";
 
   if (input.preferredTerrain.length > 0) {
-    const terrainMatch = stateUnits.some((u) =>
-      u.terrainType.some((t) => input.preferredTerrain.includes(t.toLowerCase()))
+    const terrainMatch = input.preferredTerrain.some((pref) =>
+      _terrainSet.has(pref.charAt(0).toUpperCase() + pref.slice(1)) || _terrainSet.has(pref)
     );
     if (terrainMatch) {
       terrainScore = 8;
@@ -411,19 +434,19 @@ export function scoreStateForHunter(
   }
 
   if (input.importantFactors.includes("low_pressure")) {
-    if (stateUnits.some((u) => u.pressureLevel === "Low")) {
+    if (_hasLowPressure) {
       terrainScore = Math.min(10, terrainScore + 2);
       terrainExplanation += terrainExplanation ? ". Low-pressure units available" : "Low-pressure units available";
     }
   }
   if (input.importantFactors.includes("public_land")) {
-    if (stateUnits.some((u) => u.publicLandPct > 0.5)) {
+    if (_hasPublicLand) {
       terrainScore = Math.min(10, terrainScore + 2);
       terrainExplanation += terrainExplanation ? ". Strong public land access" : "Strong public land access";
     }
   }
   if (input.importantFactors.includes("high_success")) {
-    if (stateUnits.some((u) => u.successRate > 0.3)) {
+    if (_hasHighSuccess) {
       terrainScore = Math.min(10, terrainScore + 1);
     }
   }
@@ -464,11 +487,10 @@ export function scoreStateForHunter(
     const trophyKw = ["big", "giant", "trophy", "monster", "mature", "record", "book", "boone", "pope", "6x6", "7x7", "400", "380", "360", "crusty", "stud", "hog", "toad", "slammer"];
     const wantsTrophy = trophyKw.some(kw => dream.includes(kw));
     if (wantsTrophy) {
-      const trophyUnits = stateUnits.filter(u => u.trophyRating >= 8);
-      if (trophyUnits.length > 0) {
+      if (_hasTrophyUnits) {
         dreamScore = 5;
         dreamExplanation = "Trophy-class units align with your dream description";
-      } else if (stateUnits.some(u => u.trophyRating >= 6)) {
+      } else if (_hasMidTrophy) {
         dreamScore = 3;
         dreamExplanation = "Solid trophy potential matches your goals";
       }
@@ -483,7 +505,7 @@ export function scoreStateForHunter(
     };
     for (const [keyword, terrainTypes] of Object.entries(terrainMap)) {
       if (dream.includes(keyword)) {
-        if (stateUnits.some(u => u.terrainType.some(t => terrainTypes.includes(t)))) {
+        if (terrainTypes.some(t => _terrainSet.has(t))) {
           dreamScore = Math.min(5, dreamScore + 2);
           dreamExplanation += dreamExplanation ? `. Terrain matches "${keyword}"` : `Terrain matches your "${keyword}" preference`;
         }
@@ -493,7 +515,7 @@ export function scoreStateForHunter(
 
     // Opportunity intent
     const oppKw = ["first", "easy", "beginner", "meat", "opportunity", "freezer", "cow", "doe"];
-    if (oppKw.some(kw => dream.includes(kw)) && stateUnits.some(u => u.successRate >= 0.25)) {
+    if (oppKw.some(kw => dream.includes(kw)) && _hasDecentSuccess) {
       dreamScore = Math.min(5, dreamScore + 3);
       dreamExplanation += dreamExplanation ? ". High success rates match your goals" : "High success rates align with your opportunity focus";
     }
@@ -766,6 +788,14 @@ function generateMilestonesFromPlan(
           });
         }
       }
+    }
+  }
+
+  // Flag milestones with deadlines that have already passed
+  const today = new Date().toISOString().slice(0, 10);
+  for (const m of milestones) {
+    if (m.dueDate && m.dueDate < today && m.year === year) {
+      m.description = `⚠ Deadline may have passed (${m.dueDate}). Check with ${_data.statesMap[m.stateId]?.name ?? m.stateId} Fish & Game for late options. ` + m.description;
     }
   }
 

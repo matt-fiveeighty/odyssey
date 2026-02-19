@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import type { StrategicAssessment, StateRecommendation } from "@/lib/types";
 import { AnimatedBar } from "../shared/AnimatedBar";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
-import { ChevronDown, Target, Mountain } from "lucide-react";
+import { ChevronDown, Target, Mountain, Eye } from "lucide-react";
+import { formatSpeciesName } from "@/lib/utils";
+import type { AlsoConsideredState } from "@/lib/types";
 
 interface StatePortfolioProps {
   assessment: StrategicAssessment;
@@ -123,12 +125,86 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
   );
 }
 
+const AlsoConsideredCard = memo(function AlsoConsideredCard({ state: ac }: { state: AlsoConsideredState }) {
+  const state = STATES_MAP[ac.stateId];
+  const vis = STATE_VISUALS[ac.stateId];
+  if (!state) return null;
+
+  const pct = Math.round((ac.totalScore / ac.maxPossibleScore) * 100);
+
+  return (
+    <div className="p-3 rounded-xl border border-dashed border-border/60 bg-secondary/10 hover:bg-secondary/20 transition-colors">
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-[10px] font-bold text-white shrink-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-700 to-slate-900"} opacity-70`}>
+          {state.abbreviation}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-0.5">
+            <span className="text-sm font-semibold">{state.name}</span>
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-medium">
+              {pct}% match
+            </span>
+            <span className="text-xs text-muted-foreground ml-auto">${ac.annualCost}/yr</span>
+          </div>
+          {ac.speciesAvailable.length > 0 && (
+            <div className="flex gap-1 mb-1">
+              {ac.speciesAvailable.map((sp) => (
+                <SpeciesAvatar key={sp} speciesId={sp} size={14} />
+              ))}
+              <span className="text-[10px] text-muted-foreground ml-1">
+                {ac.speciesAvailable.map(formatSpeciesName).join(", ")}
+              </span>
+            </div>
+          )}
+          {ac.topReasons.length > 0 && (
+            <p className="text-[10px] text-muted-foreground/80 line-clamp-2">
+              {ac.topReasons.join(" · ")}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export function StatePortfolio({ assessment }: StatePortfolioProps) {
+  const [showAlsoConsidered, setShowAlsoConsidered] = useState(false);
+  const alsoConsidered = assessment.alsoConsidered ?? [];
+
   return (
     <div className="space-y-3">
       {assessment.stateRecommendations.map((rec) => (
         <StateCard key={rec.stateId} rec={rec} />
       ))}
+
+      {alsoConsidered.length > 0 && (
+        <div className="pt-2">
+          <button
+            onClick={() => setShowAlsoConsidered(!showAlsoConsidered)}
+            className="w-full flex items-center gap-2 px-4 py-3 rounded-xl border border-dashed border-border/50 text-muted-foreground hover:text-foreground hover:border-border transition-colors"
+          >
+            <Eye className="w-4 h-4" />
+            <span className="text-sm font-medium">
+              Also Considered ({alsoConsidered.length} states)
+            </span>
+            <span className="text-[10px] text-muted-foreground/70 ml-1">
+              Scored well but didn&apos;t make your selection
+            </span>
+            <ChevronDown className={`w-4 h-4 ml-auto transition-transform duration-200 ${showAlsoConsidered ? "rotate-180" : ""}`} />
+          </button>
+
+          <div className={`transition-all duration-300 ease-out overflow-hidden ${showAlsoConsidered ? "max-h-[2000px] opacity-100 mt-3" : "max-h-0 opacity-0"}`}>
+            <div className="space-y-2">
+              {alsoConsidered.map((ac) => (
+                <AlsoConsideredCard key={ac.stateId} state={ac} />
+              ))}
+              <p className="text-[10px] text-muted-foreground/60 italic text-center pt-1">
+                You can include these states by going back and toggling them on in the state selection step.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
