@@ -7,7 +7,6 @@ import { generateAllOpportunities } from "@/lib/engine/opportunity-scorer";
 import { OpportunityFilterBar } from "@/components/opportunity-finder/OpportunityFilterBar";
 import { OpportunityResultCard } from "@/components/opportunity-finder/OpportunityResultCard";
 
-type WeaponType = "archery" | "rifle" | "muzzleloader" | "any";
 type Timeline = "this_year" | "1_3" | "3_7" | "any";
 
 const MAX_VISIBLE = 30;
@@ -18,7 +17,6 @@ export default function OpportunityFinderPage() {
   // Filter state — defaults to show everything
   const [selectedSpecies, setSelectedSpecies] = useState<string[]>([]);
   const [selectedStates, setSelectedStates] = useState<string[]>([]);
-  const [selectedWeapon, setSelectedWeapon] = useState<WeaponType>("any");
   const [selectedTimeline, setSelectedTimeline] = useState<Timeline>("any");
   const [expandedResult, setExpandedResult] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
@@ -28,10 +26,9 @@ export default function OpportunityFinderPage() {
       generateAllOpportunities(userPoints, {
         species: selectedSpecies.length > 0 ? selectedSpecies : undefined,
         states: selectedStates.length > 0 ? selectedStates : undefined,
-        weapon: selectedWeapon,
         timeline: selectedTimeline,
       }),
-    [userPoints, selectedSpecies, selectedStates, selectedWeapon, selectedTimeline]
+    [userPoints, selectedSpecies, selectedStates, selectedTimeline]
   );
 
   const visibleResults = showAll ? results : results.slice(0, MAX_VISIBLE);
@@ -51,7 +48,6 @@ export default function OpportunityFinderPage() {
   const clearAll = useCallback(() => {
     setSelectedSpecies([]);
     setSelectedStates([]);
-    setSelectedWeapon("any");
     setSelectedTimeline("any");
   }, []);
 
@@ -73,11 +69,9 @@ export default function OpportunityFinderPage() {
       <OpportunityFilterBar
         selectedSpecies={selectedSpecies}
         selectedStates={selectedStates}
-        selectedWeapon={selectedWeapon}
         selectedTimeline={selectedTimeline}
         onToggleSpecies={toggleSpecies}
         onToggleState={toggleState}
-        onSetWeapon={setSelectedWeapon}
         onSetTimeline={setSelectedTimeline}
         onClearAll={clearAll}
       />

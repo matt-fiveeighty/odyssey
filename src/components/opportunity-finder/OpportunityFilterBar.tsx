@@ -7,27 +7,17 @@ import { SPECIES } from "@/lib/constants/species";
 import { STATES } from "@/lib/constants/states";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 
-type WeaponType = "archery" | "rifle" | "muzzleloader" | "any";
 type Timeline = "this_year" | "1_3" | "3_7" | "any";
 
 interface OpportunityFilterBarProps {
   selectedSpecies: string[];
   selectedStates: string[];
-  selectedWeapon: WeaponType;
   selectedTimeline: Timeline;
   onToggleSpecies: (id: string) => void;
   onToggleState: (id: string) => void;
-  onSetWeapon: (weapon: WeaponType) => void;
   onSetTimeline: (timeline: Timeline) => void;
   onClearAll: () => void;
 }
-
-const WEAPON_OPTIONS: { id: WeaponType; label: string }[] = [
-  { id: "any", label: "Any" },
-  { id: "rifle", label: "Rifle" },
-  { id: "archery", label: "Archery" },
-  { id: "muzzleloader", label: "Muzzleloader" },
-];
 
 const TIMELINE_OPTIONS: { id: Timeline; label: string; desc: string }[] = [
   { id: "this_year", label: "This Year", desc: "Drawable now" },
@@ -39,11 +29,9 @@ const TIMELINE_OPTIONS: { id: Timeline; label: string; desc: string }[] = [
 export function OpportunityFilterBar({
   selectedSpecies,
   selectedStates,
-  selectedWeapon,
   selectedTimeline,
   onToggleSpecies,
   onToggleState,
-  onSetWeapon,
   onSetTimeline,
   onClearAll,
 }: OpportunityFilterBarProps) {
@@ -52,7 +40,6 @@ export function OpportunityFilterBar({
   const activeFilterCount =
     selectedSpecies.length +
     selectedStates.length +
-    (selectedWeapon !== "any" ? 1 : 0) +
     (selectedTimeline !== "any" ? 1 : 0);
 
   return (
@@ -131,49 +118,26 @@ export function OpportunityFilterBar({
               </div>
             </div>
 
-            {/* Weapon + Timeline row */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                  Weapon
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {WEAPON_OPTIONS.map((w) => (
-                    <button
-                      key={w.id}
-                      onClick={() => onSetWeapon(w.id)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer active:scale-[0.97] ${
-                        selectedWeapon === w.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-accent"
-                      }`}
-                    >
-                      {w.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="text-xs font-medium text-muted-foreground mb-2 block">
-                  Timeline
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {TIMELINE_OPTIONS.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => onSetTimeline(t.id)}
-                      className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer active:scale-[0.97] ${
-                        selectedTimeline === t.id
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-secondary text-secondary-foreground hover:bg-accent"
-                      }`}
-                      title={t.desc}
-                    >
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
+            {/* Timeline filter */}
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-2 block">
+                Timeline
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {TIMELINE_OPTIONS.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => onSetTimeline(t.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all cursor-pointer active:scale-[0.97] ${
+                      selectedTimeline === t.id
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-secondary text-secondary-foreground hover:bg-accent"
+                    }`}
+                    title={t.desc}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -209,11 +173,6 @@ export function OpportunityFilterBar({
                 {id}
               </span>
             ))}
-            {selectedWeapon !== "any" && (
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
-                {selectedWeapon}
-              </span>
-            )}
             {selectedTimeline !== "any" && (
               <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium">
                 {selectedTimeline.replace("_", "-")}

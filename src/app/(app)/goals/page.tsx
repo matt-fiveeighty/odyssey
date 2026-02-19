@@ -23,7 +23,6 @@ import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { SPECIES, SPECIES_MAP } from "@/lib/constants/species";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { useAppStore, useWizardStore } from "@/lib/store";
-import { calculateDrawOdds } from "@/lib/engine/draw-odds";
 import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 import type { GoalStatus, WeaponType, SeasonPreference, HuntStyle, DreamHuntTier, UserGoal, Milestone } from "@/lib/types";
@@ -408,7 +407,6 @@ export default function GoalsPage() {
     const bestUnit = selectedUnit ?? units[0];
     let projectedDrawYear = newTargetYear;
     if (bestUnit) {
-      calculateDrawOdds({ stateId: newStateId, userPoints: 0, unit: bestUnit });
       const creepRate = estimateCreepRate(bestUnit.trophyRating);
       const years = yearsToDrawWithCreep(0, bestUnit.pointsRequiredNonresident, creepRate);
       projectedDrawYear = currentYear + years;
@@ -435,10 +433,9 @@ export default function GoalsPage() {
 
     addUserGoal(goalData);
 
-    // Generate milestones and compute confirmation data
+    // Compute milestones locally for confirmation data (store already persists them via addUserGoal)
     const hs = useWizardStore.getState().homeState;
     const generatedMs = generateMilestonesForGoal(goalData, hs);
-    if (generatedMs.length > 0) addMilestones(generatedMs);
 
     const goalTotalCost = generatedMs.reduce((s, m) => s + m.totalCost, 0);
     const monthsUntil = Math.max(1, (projectedDrawYear - currentYear) * 12);

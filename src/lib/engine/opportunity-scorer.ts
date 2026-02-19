@@ -59,7 +59,6 @@ const DEFAULT_POINTS_BY_SYSTEM: Record<PointSystemType, number> = {
 export interface OpportunityFilters {
   species?: string[];
   states?: string[];
-  weapon?: "archery" | "rifle" | "muzzleloader" | "any";
   timeline?: "this_year" | "1_3" | "3_7" | "any";
 }
 

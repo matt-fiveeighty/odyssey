@@ -29,7 +29,7 @@ const primaryItems = [
 ];
 
 const moreItems = [
-  { href: "/odds-finder", label: "Odds Finder", icon: Search },
+  { href: "/opportunity-finder", label: "Opportunities", icon: Search },
   { href: "/calculator", label: "Calculator", icon: Calculator },
   { href: "/journey", label: "Journey Map", icon: Route },
   { href: "/budget", label: "Budget", icon: DollarSign },
