@@ -30,6 +30,14 @@ export default function CalculatorPage() {
   const [targetPoints, setTargetPoints] = useState(4);
   const homeState = useWizardStore((s) => s.homeState);
 
+  const state = STATES.find((s) => s.id === selectedState);
+
+  // Resolve R vs NR fees based on hunter's home state
+  const fees = useMemo(() => {
+    if (!state) return null;
+    return resolveFees(state, homeState);
+  }, [state, homeState]);
+
   if (!confirmedAssessment) {
     return (
       <div className="p-6 space-y-6 fade-in-up">
@@ -50,14 +58,6 @@ export default function CalculatorPage() {
       </div>
     );
   }
-
-  const state = STATES.find((s) => s.id === selectedState);
-
-  // Resolve R vs NR fees based on hunter's home state
-  const fees = useMemo(() => {
-    if (!state) return null;
-    return resolveFees(state, homeState);
-  }, [state, homeState]);
 
   const pointCost = fees ? (fees.pointCost[selectedSpecies] ?? 0) : 0;
   const pointsNeeded = Math.max(0, targetPoints - currentPoints);
