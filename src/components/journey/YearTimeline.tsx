@@ -54,7 +54,7 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
             aria-label={`${yearData.year}${isCurrent ? " (current year)" : ""}${hasHunts ? " — has hunts" : ""}${hasApps ? " — has applications" : ""}`}
             aria-pressed={isSelected}
           >
-            <span className="tabular-nums">{yearData.year.toString().slice(-2)}</span>
+            <span className="tabular-nums">{yearData.year}</span>
 
             {/* Activity dots */}
             <span className="flex gap-0.5">
