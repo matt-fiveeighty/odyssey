@@ -1,63 +1,154 @@
 "use client";
 
-import { CheckCircle2, X } from "lucide-react";
+import {
+  planBlind,
+  planDisciplined,
+  type SamplePlan,
+  type SamplePlanYear,
+} from "@/lib/constants/sample-comparison-plans";
 
-const blindItems = [
-  "Apply to 5+ states with no scoring criteria",
-  "Spend $500–$1,000/yr on apps that never convert",
-  "Build points in states mismatched to your profile",
-  "Miss burn windows because you didn't know they existed",
-  "React to forum advice instead of following a plan",
-  "No visibility into when or where you'll actually draw",
-];
+/* ------------------------------------------------------------------ */
+/*  Mini timeline pill                                                 */
+/* ------------------------------------------------------------------ */
 
-const strategyItems = [
-  "Every state scored against your species, budget, and fitness",
-  "Point-year and hunt-year spending mapped to conversion windows",
-  "Build phase, burn phase, recovery — phased across your portfolio",
-  "Draw timelines projected so you know when to expect a tag",
-  "Discipline rules flag when your strategy drifts off course",
-  "One view of every state, every species, every dollar",
-];
+function TimelinePill({ year }: { year: SamplePlanYear }) {
+  const base = "flex flex-col items-center gap-1";
+  const dotBase = "w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold";
+
+  if (year.phase === "draw") {
+    return (
+      <div className={base}>
+        <div className={`${dotBase} bg-primary text-primary-foreground`}>
+          {year.year}
+        </div>
+        <span className="text-[9px] text-primary font-medium leading-tight text-center">
+          {year.species}
+        </span>
+      </div>
+    );
+  }
+
+  if (year.phase === "build") {
+    return (
+      <div className={base}>
+        <div className={`${dotBase} bg-muted-foreground/20 text-muted-foreground`}>
+          {year.year}
+        </div>
+        <span className="text-[9px] text-muted-foreground/60 leading-tight text-center">
+          {year.state}
+        </span>
+      </div>
+    );
+  }
+
+  // idle
+  return (
+    <div className={base}>
+      <div className={`${dotBase} bg-muted-foreground/10 text-muted-foreground/40`}>
+        {year.year}
+      </div>
+      <span className="text-[9px] text-muted-foreground/30 leading-tight">&mdash;</span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Blind-side timeline (chaotic — random-ish positions)               */
+/* ------------------------------------------------------------------ */
+
+function BlindTimeline({ plan }: { plan: SamplePlan }) {
+  return (
+    <div className="flex items-end gap-2 flex-wrap justify-center">
+      {plan.timeline.map((yr) => (
+        <TimelinePill key={yr.year} year={yr} />
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Disciplined timeline (clean, color-coded)                          */
+/* ------------------------------------------------------------------ */
+
+function DisciplinedTimeline({ plan }: { plan: SamplePlan }) {
+  return (
+    <div className="flex items-end gap-2 flex-wrap justify-center">
+      {plan.timeline.map((yr) => (
+        <TimelinePill key={yr.year} year={yr} />
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stat row                                                           */
+/* ------------------------------------------------------------------ */
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+        {label}
+      </p>
+      <p className="text-sm font-semibold">{value}</p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Main component                                                     */
+/* ------------------------------------------------------------------ */
 
 export function OutcomeComparison() {
   return (
-    <div className="grid md:grid-cols-2 gap-6">
-      {/* Applying Blind */}
-      <div className="p-6 rounded-xl bg-card border border-border">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center">
-            <X className="w-4 h-4 text-red-400" />
+    <div className="space-y-6">
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* LEFT — Applying Blind */}
+        <div className="p-6 rounded-xl bg-card border border-border space-y-5">
+          <h3 className="text-sm font-bold text-muted-foreground">
+            {planBlind.label}
+          </h3>
+
+          <div className="grid grid-cols-3 gap-4">
+            <Stat label="Annual Spend" value={`$${planBlind.annualSpend.toLocaleString()}/yr`} />
+            <Stat label="States" value={String(planBlind.states)} />
+            <Stat label="Burn Cycle" value="None" />
           </div>
-          <h3 className="text-sm font-bold text-red-400">Applying Blind</h3>
+
+          <div className="pt-2">
+            <BlindTimeline plan={planBlind} />
+          </div>
+
+          <p className="text-center text-lg font-bold text-muted-foreground/60 pt-2">
+            {planBlind.summary}
+          </p>
         </div>
-        <ul className="space-y-3">
-          {blindItems.map((item) => (
-            <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-              <X className="w-4 h-4 text-red-400/60 shrink-0 mt-0.5" />
-              {item}
-            </li>
-          ))}
-        </ul>
+
+        {/* RIGHT — Disciplined Strategy */}
+        <div className="p-6 rounded-xl bg-card border border-primary/20 space-y-5">
+          <h3 className="text-sm font-bold text-primary">
+            {planDisciplined.label}
+          </h3>
+
+          <div className="grid grid-cols-3 gap-4">
+            <Stat label="Annual Spend" value={`$${planDisciplined.annualSpend.toLocaleString()}/yr`} />
+            <Stat label="States" value={String(planDisciplined.states)} />
+            <Stat label="Burn Cycle" value="Coordinated" />
+          </div>
+
+          <div className="pt-2">
+            <DisciplinedTimeline plan={planDisciplined} />
+          </div>
+
+          <p className="text-center text-lg font-bold text-primary pt-2">
+            {planDisciplined.summary}
+          </p>
+        </div>
       </div>
 
-      {/* With a Strategy */}
-      <div className="p-6 rounded-xl bg-card border border-primary/20">
-        <div className="flex items-center gap-2 mb-5">
-          <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CheckCircle2 className="w-4 h-4 text-primary" />
-          </div>
-          <h3 className="text-sm font-bold text-primary">With a Strategy</h3>
-        </div>
-        <ul className="space-y-3">
-          {strategyItems.map((item) => (
-            <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
-              <CheckCircle2 className="w-4 h-4 text-primary/70 shrink-0 mt-0.5" />
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
+      <p className="text-center text-sm font-semibold text-muted-foreground">
+        Same budget. Different outcome.
+      </p>
     </div>
   );
 }

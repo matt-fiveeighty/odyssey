@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ import {
   Crosshair,
   ExternalLink,
   AlertTriangle,
+  Shield,
+  Activity,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -26,33 +29,119 @@ import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
 import { BeginnerGuide } from "@/components/shared/BeginnerGuide";
 import { formatSpeciesName } from "@/lib/utils";
+import { computeStrategyMetrics } from "@/lib/engine/strategy-metrics";
+import {
+  calculatePortfolioHealthScore,
+  type PortfolioHealthResult,
+} from "@/lib/engine/portfolio-health";
+
+// --- Health score color ---
+function healthColor(score: number): string {
+  if (score >= 80) return "text-chart-2"; // green
+  if (score >= 60) return "text-chart-4"; // amber
+  return "text-destructive"; // red
+}
+function healthBg(score: number): string {
+  if (score >= 80) return "bg-chart-2/15";
+  if (score >= 60) return "bg-chart-4/15";
+  return "bg-destructive/15";
+}
+
+// --- Mini timeline year pill ---
+function YearPill({
+  year,
+  isHunt,
+  label,
+}: {
+  year: number;
+  isHunt: boolean;
+  label?: string;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1 min-w-[48px]">
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold ${
+          isHunt
+            ? "bg-primary text-primary-foreground"
+            : "bg-muted text-muted-foreground"
+        }`}
+      >
+        {year}
+      </div>
+      {label && (
+        <span className="text-[9px] text-muted-foreground leading-tight text-center max-w-[56px] truncate">
+          {label}
+        </span>
+      )}
+      <span
+        className={`text-[8px] font-semibold uppercase tracking-wider ${
+          isHunt ? "text-primary" : "text-muted-foreground/50"
+        }`}
+      >
+        {isHunt ? "Hunt" : "Build"}
+      </span>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  const { milestones, confirmedAssessment, userPoints, userGoals } = useAppStore();
+  const { milestones, confirmedAssessment, userPoints, userGoals } =
+    useAppStore();
   const homeState = useWizardStore((s) => s.homeState);
   const router = useRouter();
 
   const hasPlan = confirmedAssessment !== null;
-  const completedMilestones = milestones.filter(m => m.completed).length;
-  const pendingMilestones = milestones.filter(m => !m.completed);
+  const completedMilestones = milestones.filter((m) => m.completed).length;
+  const pendingMilestones = milestones.filter((m) => !m.completed);
   const totalPoints = userPoints.reduce((s, p) => s + p.points, 0);
-  const activeStates = new Set(userPoints.map(p => p.stateId)).size;
-  const totalInvested = confirmedAssessment?.financialSummary.yearOneInvestment ?? 0;
+  const activeStates = new Set(userPoints.map((p) => p.stateId)).size;
+
+  // Strategy metrics
+  const metrics = useMemo(
+    () =>
+      confirmedAssessment
+        ? computeStrategyMetrics(
+            confirmedAssessment,
+            confirmedAssessment.portfolioMandate,
+          )
+        : null,
+    [confirmedAssessment],
+  );
+
+  // Portfolio health
+  const health: PortfolioHealthResult | null = useMemo(
+    () =>
+      confirmedAssessment
+        ? calculatePortfolioHealthScore(
+            confirmedAssessment,
+            confirmedAssessment.portfolioMandate,
+            confirmedAssessment.disciplineViolations,
+          )
+        : null,
+    [confirmedAssessment],
+  );
+
+  // Discipline violations (alerts)
+  const violations = confirmedAssessment?.disciplineViolations ?? [];
+  const activeAlerts = violations.length;
 
   const now = new Date();
 
-  // Sort upcoming deadlines from states
-  const upcomingDeadlines = STATES
-    .flatMap(s => {
-      const deadlines: { stateId: string; species: string; date: string }[] = [];
-      Object.entries(s.applicationDeadlines).forEach(([species, dates]) => {
-        if (dates?.close) deadlines.push({ stateId: s.id, species, date: dates.close });
-      });
-      return deadlines;
-    })
-    .filter(d => new Date(d.date) > now)
+  // Upcoming deadlines
+  const upcomingDeadlines = STATES.flatMap((s) => {
+    const deadlines: { stateId: string; species: string; date: string }[] = [];
+    Object.entries(s.applicationDeadlines).forEach(([species, dates]) => {
+      if (dates?.close)
+        deadlines.push({ stateId: s.id, species, date: dates.close });
+    });
+    return deadlines;
+  })
+    .filter((d) => new Date(d.date) > now)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 8);
+
+  // Mini timeline (next 5 years from roadmap)
+  const timelinePreview = confirmedAssessment?.roadmap.slice(0, 5) ?? [];
 
   return (
     <div className="p-6 space-y-6 fade-in-up">
@@ -61,7 +150,9 @@ export default function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            {hasPlan ? "Your hunting investment portfolio at a glance" : "Start building your western big game strategy"}
+            {hasPlan
+              ? "Your strategic plan at a glance"
+              : "Start building your western big game strategy"}
           </p>
         </div>
         <Link href="/plan-builder">
@@ -74,8 +165,11 @@ export default function DashboardPage() {
 
       {/* Deadline Warning Banner */}
       {(() => {
-        const criticalDeadlines = upcomingDeadlines.filter(d => {
-          const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        const criticalDeadlines = upcomingDeadlines.filter((d) => {
+          const daysLeft = Math.ceil(
+            (new Date(d.date).getTime() - now.getTime()) /
+              (1000 * 60 * 60 * 24),
+          );
           return daysLeft <= 14 && daysLeft > 0;
         });
         if (criticalDeadlines.length === 0) return null;
@@ -84,22 +178,36 @@ export default function DashboardPage() {
             <div className="flex items-center gap-2 mb-2">
               <AlertTriangle className="w-4 h-4 text-chart-4 shrink-0" />
               <span className="text-sm font-semibold text-chart-4">
-                {criticalDeadlines.length} deadline{criticalDeadlines.length > 1 ? "s" : ""} closing soon
+                {criticalDeadlines.length} deadline
+                {criticalDeadlines.length > 1 ? "s" : ""} closing soon
               </span>
             </div>
             <div className="flex flex-wrap gap-2">
               {criticalDeadlines.map((d, i) => {
                 const state = STATES_MAP[d.stateId];
-                const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.ceil(
+                  (new Date(d.date).getTime() - now.getTime()) /
+                    (1000 * 60 * 60 * 24),
+                );
                 return (
-                  <div key={i} className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-chart-4/10 text-xs">
+                  <div
+                    key={i}
+                    className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-chart-4/10 text-xs"
+                  >
                     {state && (
-                      <span className="w-5 h-5 rounded flex items-center justify-center text-[7px] font-bold text-white" style={{ backgroundColor: state.color }}>
+                      <span
+                        className="w-5 h-5 rounded flex items-center justify-center text-[7px] font-bold text-white"
+                        style={{ backgroundColor: state.color }}
+                      >
                         {state.abbreviation}
                       </span>
                     )}
-                    <span className="font-medium">{formatSpeciesName(d.species)}</span>
-                    <span className={`font-bold ${daysLeft <= 3 ? "text-destructive" : daysLeft <= 7 ? "text-chart-4" : "text-chart-4/70"}`}>
+                    <span className="font-medium">
+                      {formatSpeciesName(d.species)}
+                    </span>
+                    <span
+                      className={`font-bold ${daysLeft <= 3 ? "text-destructive" : daysLeft <= 7 ? "text-chart-4" : "text-chart-4/70"}`}
+                    >
                       {daysLeft}d
                     </span>
                   </div>
@@ -110,68 +218,337 @@ export default function DashboardPage() {
         );
       })()}
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border count-up card-lift hover:glow-primary">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold"><AnimatedCounter value={totalPoints} /></p>
-                <p className="text-xs text-muted-foreground"><HuntingTerm term="preference points">Total Points</HuntingTerm></p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border count-up-delay-1 card-lift hover:glow-amber">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-chart-2" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold"><AnimatedCounter value={totalInvested} prefix="$" /></p>
-                <p className="text-xs text-muted-foreground">Year 1 Cost</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border count-up-delay-2 card-lift hover:glow-orange">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-4/15 flex items-center justify-center">
-                <Target className="w-5 h-5 text-chart-4" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  <AnimatedCounter value={completedMilestones} />/{milestones.length}
-                </p>
-                <p className="text-xs text-muted-foreground">Milestones</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border count-up-delay-3 card-lift hover:glow-blue">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-5/15 flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-chart-5" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  <AnimatedCounter value={hasPlan ? confirmedAssessment.stateRecommendations.length : activeStates} />
-                </p>
-                <p className="text-xs text-muted-foreground">States Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ================================================================ */}
+      {/* STRATEGIC METRICS — Above the Fold                               */}
+      {/* ================================================================ */}
+      {hasPlan && metrics && health ? (
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* LEFT COLUMN */}
+          <div className="space-y-4">
+            {/* Portfolio Health Score */}
+            <Card className="bg-card border-border card-lift">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={`w-16 h-16 rounded-xl ${healthBg(health.score)} flex items-center justify-center`}
+                  >
+                    <span
+                      className={`text-2xl font-bold ${healthColor(health.score)}`}
+                    >
+                      {health.score}
+                    </span>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold flex items-center gap-1.5">
+                      <Shield className="w-4 h-4 text-primary" />
+                      Portfolio Health
+                    </p>
+                    <div className="mt-2 grid grid-cols-5 gap-1">
+                      {(
+                        [
+                          ["Bgt", health.breakdown.budget],
+                          ["Freq", health.breakdown.frequency],
+                          ["Exp", health.breakdown.exposure],
+                          ["Age", health.breakdown.horizon],
+                          ["Disc", health.breakdown.discipline],
+                        ] as [string, number][]
+                      ).map(([label, val]) => (
+                        <div key={label} className="text-center">
+                          <div className="h-1 rounded-full bg-secondary overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${val >= 80 ? "bg-chart-2" : val >= 60 ? "bg-chart-4" : "bg-destructive"}`}
+                              style={{ width: `${val}%` }}
+                            />
+                          </div>
+                          <span className="text-[8px] text-muted-foreground">
+                            {label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
+            {/* Next Projected Draw + Hunt Frequency */}
+            <div className="grid grid-cols-2 gap-4">
+              <Card className="bg-card border-border card-lift">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                      <Crosshair className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {metrics.nextHighProbabilityDrawYear
+                          ? `Yr ${metrics.nextHighProbabilityDrawYear}`
+                          : "\u2014"}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Next Draw Year
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border card-lift">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
+                      <Activity className="w-5 h-5 text-chart-2" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">
+                        {metrics.huntFrequencyRange}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Hunts/Year
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* RIGHT COLUMN */}
+          <div className="space-y-4">
+            {/* Spend metrics */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="bg-card border-border card-lift">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter
+                      value={metrics.annualApplicationSpend}
+                      prefix="$"
+                    />
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Annual Spend
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border card-lift">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter
+                      value={metrics.projected10YearSpend}
+                      prefix="$"
+                    />
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    10-Year Spend
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border card-lift">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter
+                      value={metrics.projected20YearSpend}
+                      prefix="$"
+                    />
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    20-Year Spend
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Active Alerts */}
+            <Card
+              className={`bg-card border-border ${activeAlerts > 0 ? "border-chart-4/20" : ""}`}
+            >
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${activeAlerts > 0 ? "bg-chart-4/15" : "bg-chart-2/15"}`}
+                    >
+                      <AlertTriangle
+                        className={`w-5 h-5 ${activeAlerts > 0 ? "text-chart-4" : "text-chart-2"}`}
+                      />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold">{activeAlerts}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Active Alerts
+                      </p>
+                    </div>
+                  </div>
+                  {activeAlerts > 0 && (
+                    <div className="text-right space-y-0.5">
+                      {violations.slice(0, 2).map((v, i) => (
+                        <p key={i} className="text-[10px] text-muted-foreground truncate max-w-[180px]">
+                          <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full mr-1 ${v.severity === "critical" ? "bg-destructive" : v.severity === "warning" ? "bg-chart-4" : "bg-chart-5"}`}
+                          />
+                          {v.observation.slice(0, 50)}
+                          {v.observation.length > 50 ? "..." : ""}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick stats row */}
+            <div className="grid grid-cols-3 gap-3">
+              <Card className="bg-card border-border">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter value={totalPoints} />
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    <HuntingTerm term="preference points">
+                      Total Points
+                    </HuntingTerm>
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter
+                      value={completedMilestones}
+                    />
+                    /{milestones.length}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    Milestones
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-card border-border">
+                <CardContent className="p-3">
+                  <p className="text-lg font-bold">
+                    <AnimatedCounter
+                      value={
+                        confirmedAssessment?.stateRecommendations.length ??
+                        activeStates
+                      }
+                    />
+                  </p>
+                  <p className="text-[10px] text-muted-foreground">
+                    States Active
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Fallback stats row for users without a plan */
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card className="bg-card border-border count-up card-lift hover:glow-primary">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
+                  <Wallet className="w-5 h-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    <AnimatedCounter value={totalPoints} />
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    <HuntingTerm term="preference points">
+                      Total Points
+                    </HuntingTerm>
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border count-up-delay-1 card-lift hover:glow-amber">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-chart-2" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    <AnimatedCounter value={0} prefix="$" />
+                  </p>
+                  <p className="text-xs text-muted-foreground">Year 1 Cost</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border count-up-delay-2 card-lift hover:glow-orange">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-chart-4/15 flex items-center justify-center">
+                  <Target className="w-5 h-5 text-chart-4" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    <AnimatedCounter value={completedMilestones} />/
+                    {milestones.length}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Milestones</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="bg-card border-border count-up-delay-3 card-lift hover:glow-blue">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-chart-5/15 flex items-center justify-center">
+                  <MapPin className="w-5 h-5 text-chart-5" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    <AnimatedCounter value={activeStates} />
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    States Active
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* MINI TIMELINE STRIP — Next 5 years                               */}
+      {/* ================================================================ */}
+      {hasPlan && timelinePreview.length > 0 && (
+        <Card className="bg-card border-border overflow-hidden">
+          <CardContent className="p-4">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-3">
+              5-Year Preview
+            </p>
+            <div className="flex items-start gap-1 overflow-x-auto pb-1">
+              {timelinePreview.map((yr, i) => {
+                const isHunt = yr.actions.some((a) => a.type === "hunt");
+                const huntAction = yr.actions.find((a) => a.type === "hunt");
+                const label = huntAction
+                  ? `${STATES_MAP[huntAction.stateId]?.abbreviation ?? huntAction.stateId} ${formatSpeciesName(huntAction.speciesId)}`
+                  : yr.actions[0]
+                    ? `${STATES_MAP[yr.actions[0].stateId]?.abbreviation ?? yr.actions[0].stateId}`
+                    : undefined;
+                return (
+                  <div key={yr.year} className="flex items-center">
+                    <YearPill year={yr.year} isHunt={isHunt} label={label} />
+                    {i < timelinePreview.length - 1 && (
+                      <div className="w-4 h-0.5 bg-border mx-0.5 mt-[-12px]" />
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================================================================ */}
+      {/* ACTION PLAN / GETTING STARTED                                    */}
+      {/* ================================================================ */}
       <div className="grid md:grid-cols-3 gap-6">
-        {/* Active Plan Card or Next Actions */}
         <div className="md:col-span-2">
           {hasPlan ? (
             <Card className="bg-card border-border overflow-hidden">
@@ -179,45 +556,71 @@ export default function DashboardPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Your Action Plan</CardTitle>
-                  <Badge variant="secondary" className="bg-chart-2/15 text-chart-2 border-0">
+                  <Badge
+                    variant="secondary"
+                    className="bg-chart-2/15 text-chart-2 border-0"
+                  >
                     {completedMilestones}/{milestones.length} Complete
                   </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
-                {/* Progress */}
                 <div>
                   <div className="h-2 rounded-full bg-secondary overflow-hidden">
-                    <div className="h-full rounded-full bg-gradient-to-r from-primary to-chart-2 transition-all" style={{ width: `${milestones.length > 0 ? (completedMilestones / milestones.length) * 100 : 0}%` }} />
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-primary to-chart-2 transition-all"
+                      style={{
+                        width: `${milestones.length > 0 ? (completedMilestones / milestones.length) * 100 : 0}%`,
+                      }}
+                    />
                   </div>
                 </div>
-
-                {/* Next milestones */}
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Next Up</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">
+                    Next Up
+                  </p>
                   {pendingMilestones.slice(0, 4).map((ms) => {
                     const state = STATES_MAP[ms.stateId];
                     return (
-                      <div key={ms.id} className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30">
+                      <div
+                        key={ms.id}
+                        className="flex items-center gap-3 p-3 rounded-lg bg-secondary/30"
+                      >
                         {state && (
-                          <div className="w-7 h-7 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0" style={{ backgroundColor: state.color }}>
+                          <div
+                            className="w-7 h-7 rounded flex items-center justify-center text-[9px] font-bold text-white shrink-0"
+                            style={{ backgroundColor: state.color }}
+                          >
                             {state.abbreviation}
                           </div>
                         )}
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{ms.title}</p>
+                          <p className="text-sm font-medium truncate">
+                            {ms.title}
+                          </p>
                           <div className="flex items-center gap-3 mt-0.5">
                             {ms.dueDate && (
                               <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {new Date(ms.dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                                {new Date(ms.dueDate).toLocaleDateString(
+                                  "en-US",
+                                  { month: "short", day: "numeric" },
+                                )}
                               </span>
                             )}
-                            <span className="text-[10px] text-primary font-medium">${ms.totalCost}</span>
+                            <span className="text-[10px] text-primary font-medium">
+                              ${ms.totalCost}
+                            </span>
                           </div>
                         </div>
                         {ms.url && (
-                          <a href={ms.url} target="_blank" rel="noopener noreferrer" aria-label={`Open ${ms.title}`} className="text-muted-foreground hover:text-primary transition-colors">
+                          <a
+                            href={ms.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            aria-label={`Open ${ms.title}`}
+                            className="text-muted-foreground hover:text-primary transition-colors"
+                          >
                             <ExternalLink className="w-3.5 h-3.5" />
                           </a>
                         )}
@@ -225,7 +628,6 @@ export default function DashboardPage() {
                     );
                   })}
                 </div>
-
                 <div className="flex gap-3 pt-2">
                   <Link href="/goals" className="flex-1">
                     <Button variant="outline" className="w-full gap-2">
@@ -241,17 +643,25 @@ export default function DashboardPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">Getting Started</CardTitle>
-                  <Badge variant="secondary" className="bg-primary/15 text-primary border-0">New Here?</Badge>
+                  <Badge
+                    variant="secondary"
+                    className="bg-primary/15 text-primary border-0"
+                  >
+                    New Here?
+                  </Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-sm text-muted-foreground">
-                  Welcome to Odyssey Outdoors. Here&apos;s how to get the most out of your hunt planning:
+                  Welcome to Odyssey Outdoors. Here&apos;s how to get the most
+                  out of your hunt planning:
                 </p>
                 <div className="space-y-3">
                   {(() => {
                     const hasGoals = userGoals.length > 0;
-                    const speciesFromGoals = [...new Set(userGoals.map(g => g.speciesId))];
+                    const speciesFromGoals = [
+                      ...new Set(userGoals.map((g) => g.speciesId)),
+                    ];
                     const items = [
                       {
                         step: 1,
@@ -268,7 +678,8 @@ export default function DashboardPage() {
                       {
                         step: 2,
                         title: "Set Your Hunt Goals",
-                        description: "Define what you're chasing — species, state, weapon, season, and your dream trophy.",
+                        description:
+                          "Define what you're chasing — species, state, weapon, season, and your dream trophy.",
                         href: "/goals",
                         done: hasGoals,
                         prefill: false,
@@ -276,7 +687,8 @@ export default function DashboardPage() {
                       {
                         step: 3,
                         title: "Track Your Points",
-                        description: "Enter your current preference and bonus points across states to get accurate draw timelines.",
+                        description:
+                          "Enter your current preference and bonus points across states to get accurate draw timelines.",
                         href: "/points",
                         done: userPoints.length > 0,
                         prefill: false,
@@ -284,7 +696,8 @@ export default function DashboardPage() {
                       {
                         step: 4,
                         title: "Explore Units",
-                        description: "Browse the unit database to research success rates, trophy quality, and points required.",
+                        description:
+                          "Browse the unit database to research success rates, trophy quality, and points required.",
                         href: "/units",
                         done: false,
                         prefill: false,
@@ -295,18 +708,24 @@ export default function DashboardPage() {
                         key={item.step}
                         onClick={() => {
                           if (item.prefill) {
-                            useWizardStore.getState().prefillFromGoals(userGoals);
+                            useWizardStore
+                              .getState()
+                              .prefillFromGoals(userGoals);
                           }
                           router.push(item.href);
                         }}
                         className={`flex items-start gap-3 p-3 rounded-lg transition-all duration-200 hover:bg-secondary/50 cursor-pointer ${item.done ? "opacity-60" : ""}`}
                       >
-                        <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${item.done ? "bg-chart-2/15 text-chart-2" : item.prefill ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"}`}>
-                          {item.done ? "✓" : item.step}
+                        <div
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${item.done ? "bg-chart-2/15 text-chart-2" : item.prefill ? "bg-primary text-primary-foreground" : "bg-primary/15 text-primary"}`}
+                        >
+                          {item.done ? "\u2713" : item.step}
                         </div>
                         <div>
                           <p className="text-sm font-medium">{item.title}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {item.description}
+                          </p>
                         </div>
                         <ArrowRight className="w-4 h-4 text-muted-foreground mt-0.5 ml-auto shrink-0" />
                       </div>
@@ -318,7 +737,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Upcoming Deadlines — Visual Timeline */}
+        {/* Deadline Timeline */}
         <Card className="bg-card border-border">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
@@ -328,51 +747,81 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             {(() => {
-              // Group deadlines by month
               const byMonth: Record<string, typeof upcomingDeadlines> = {};
-              upcomingDeadlines.forEach(d => {
-                const key = new Date(d.date).toLocaleDateString("en-US", { month: "short", year: "numeric" });
+              upcomingDeadlines.forEach((d) => {
+                const key = new Date(d.date).toLocaleDateString("en-US", {
+                  month: "short",
+                  year: "numeric",
+                });
                 if (!byMonth[key]) byMonth[key] = [];
                 byMonth[key].push(d);
               });
               return (
                 <div className="relative space-y-4">
-                  {/* Vertical timeline line */}
                   <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-border" />
                   {Object.entries(byMonth).map(([month, deadlines]) => {
-                    const isCurrentMonth = month === now.toLocaleDateString("en-US", { month: "short", year: "numeric" });
+                    const isCurrentMonth =
+                      month ===
+                      now.toLocaleDateString("en-US", {
+                        month: "short",
+                        year: "numeric",
+                      });
                     return (
                       <div key={month} className="relative">
-                        {/* Month marker */}
                         <div className="flex items-center gap-3 mb-2">
-                          <div className={`w-[23px] h-[23px] rounded-full border-2 border-background z-10 flex items-center justify-center ${isCurrentMonth ? "bg-primary" : "bg-muted"}`}>
-                            <Calendar className={`w-2.5 h-2.5 ${isCurrentMonth ? "text-primary-foreground" : "text-muted-foreground"}`} />
+                          <div
+                            className={`w-[23px] h-[23px] rounded-full border-2 border-background z-10 flex items-center justify-center ${isCurrentMonth ? "bg-primary" : "bg-muted"}`}
+                          >
+                            <Calendar
+                              className={`w-2.5 h-2.5 ${isCurrentMonth ? "text-primary-foreground" : "text-muted-foreground"}`}
+                            />
                           </div>
-                          <span className={`text-xs font-semibold uppercase tracking-wider ${isCurrentMonth ? "text-primary" : "text-muted-foreground"}`}>
+                          <span
+                            className={`text-xs font-semibold uppercase tracking-wider ${isCurrentMonth ? "text-primary" : "text-muted-foreground"}`}
+                          >
                             {month}
                           </span>
                         </div>
-                        {/* Deadline items */}
                         <div className="ml-9 space-y-2">
                           {deadlines.map((d, idx) => {
                             const state = STATES_MAP[d.stateId];
                             if (!state) return null;
-                            const daysLeft = Math.ceil((new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+                            const daysLeft = Math.ceil(
+                              (new Date(d.date).getTime() - now.getTime()) /
+                                (1000 * 60 * 60 * 24),
+                            );
                             return (
-                              <div key={idx} className={`flex items-center justify-between p-2 rounded-lg transition-all ${daysLeft <= 14 ? "bg-chart-4/5 border border-chart-4/15" : "bg-secondary/30"}`}>
+                              <div
+                                key={idx}
+                                className={`flex items-center justify-between p-2 rounded-lg transition-all ${daysLeft <= 14 ? "bg-chart-4/5 border border-chart-4/15" : "bg-secondary/30"}`}
+                              >
                                 <div className="flex items-center gap-2.5">
-                                  <div className="w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white" style={{ backgroundColor: state.color }}>
+                                  <div
+                                    className="w-6 h-6 rounded flex items-center justify-center text-[8px] font-bold text-white"
+                                    style={{ backgroundColor: state.color }}
+                                  >
                                     {state.abbreviation}
                                   </div>
                                   <div>
-                                    <p className="text-xs font-medium">{formatSpeciesName(d.species)}</p>
-                                    <p className="text-[10px] text-muted-foreground">{new Date(d.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</p>
+                                    <p className="text-xs font-medium">
+                                      {formatSpeciesName(d.species)}
+                                    </p>
+                                    <p className="text-[10px] text-muted-foreground">
+                                      {new Date(d.date).toLocaleDateString(
+                                        "en-US",
+                                        { month: "short", day: "numeric" },
+                                      )}
+                                    </p>
                                   </div>
                                 </div>
                                 {daysLeft <= 14 ? (
-                                  <span className="text-[10px] font-bold text-chart-4">{daysLeft}d left</span>
+                                  <span className="text-[10px] font-bold text-chart-4">
+                                    {daysLeft}d left
+                                  </span>
                                 ) : (
-                                  <span className="text-[10px] text-muted-foreground">{daysLeft}d</span>
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {daysLeft}d
+                                  </span>
                                 )}
                               </div>
                             );
@@ -389,127 +838,217 @@ export default function DashboardPage() {
       </div>
 
       {/* ================================================================ */}
-      {/* APPLY THIS YEAR — smart view based on goals + points + deadlines */}
+      {/* APPLY THIS YEAR                                                  */}
       {/* ================================================================ */}
-      {(userGoals.length > 0 || userPoints.length > 0) && (() => {
-        const currentYear = new Date().getFullYear();
-        const relevantStates = new Set([
-          ...userGoals.map(g => g.stateId),
-          ...userPoints.map(p => p.stateId),
-        ]);
-        const applyItems = STATES
-          .filter(s => relevantStates.has(s.id))
-          .flatMap(s => {
-            const items: { stateId: string; species: string; deadline: string; action: string; cost: number; url: string }[] = [];
-            Object.entries(s.applicationDeadlines).forEach(([species, dates]) => {
-              if (!dates?.close) return;
-              const closeDate = new Date(dates.close);
-              if (closeDate < now) return;
-              // Check if user has goals or points for this species+state combo
-              const hasGoal = userGoals.some(g => g.stateId === s.id && g.speciesId === species);
-              const hasPoints = userPoints.some(p => p.stateId === s.id && p.speciesId === species);
-              if (hasGoal || hasPoints) {
-                const pts = userPoints.find(p => p.stateId === s.id && p.speciesId === species)?.points ?? 0;
-                const dlFees = resolveFees(s, homeState);
-                const cost = (dlFees.pointCost[species] ?? 0) + dlFees.appFee;
-                items.push({
-                  stateId: s.id,
-                  species,
-                  deadline: dates.close,
-                  action: hasGoal ? (pts > 0 ? "Apply" : "Buy Point or Apply") : "Buy Point",
-                  cost,
-                  url: s.buyPointsUrl,
-                });
-              }
-            });
-            return items;
-          })
-          .sort((a, b) => a.deadline.localeCompare(b.deadline));
-
-        if (applyItems.length === 0) return null;
-
-        return (
-          <Card className="bg-card border-border overflow-hidden">
-            <div className="h-1 bg-gradient-to-r from-chart-2 to-primary" />
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg flex items-center gap-2">
-                  <Crosshair className="w-5 h-5 text-chart-2" />
-                  Apply This Year ({currentYear})
-                </CardTitle>
-                <Badge variant="secondary" className="bg-chart-2/15 text-chart-2 border-0">
-                  {applyItems.length} action{applyItems.length > 1 ? "s" : ""}
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground">Based on your goals and points, here&apos;s what needs attention</p>
-            </CardHeader>
-            <CardContent>
-              <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {applyItems.map((item, idx) => {
-                  const state = STATES_MAP[item.stateId];
-                  if (!state) return null;
-                  const daysLeft = Math.ceil((new Date(item.deadline).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-                  const urgent = daysLeft <= 30;
-                  return (
-                    <a key={idx} href={item.url} target="_blank" rel="noopener noreferrer" className={`p-3 rounded-lg border transition-all hover:border-primary/30 hover:bg-secondary/30 ${urgent ? "border-chart-4/30 bg-chart-4/5" : "border-border"}`}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-7 h-7 rounded flex items-center justify-center text-[9px] font-bold text-white" style={{ backgroundColor: state.color }}>
-                          {state.abbreviation}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold truncate">{formatSpeciesName(item.species)}</p>
-                        </div>
-                        {urgent && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-4/15 text-chart-4 font-bold shrink-0">URGENT</span>}
-                      </div>
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{new Date(item.deadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</span>
-                        <span className="font-medium text-primary">${item.cost}</span>
-                      </div>
-                      <p className="text-[10px] text-muted-foreground mt-1.5">{item.action}</p>
-                    </a>
+      {(userGoals.length > 0 || userPoints.length > 0) &&
+        (() => {
+          const currentYear = new Date().getFullYear();
+          const relevantStates = new Set([
+            ...userGoals.map((g) => g.stateId),
+            ...userPoints.map((p) => p.stateId),
+          ]);
+          const applyItems = STATES.filter((s) => relevantStates.has(s.id))
+            .flatMap((s) => {
+              const items: {
+                stateId: string;
+                species: string;
+                deadline: string;
+                action: string;
+                cost: number;
+                url: string;
+              }[] = [];
+              Object.entries(s.applicationDeadlines).forEach(
+                ([species, dates]) => {
+                  if (!dates?.close) return;
+                  const closeDate = new Date(dates.close);
+                  if (closeDate < now) return;
+                  const hasGoal = userGoals.some(
+                    (g) => g.stateId === s.id && g.speciesId === species,
                   );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-        );
-      })()}
+                  const hasPoints = userPoints.some(
+                    (p) => p.stateId === s.id && p.speciesId === species,
+                  );
+                  if (hasGoal || hasPoints) {
+                    const pts =
+                      userPoints.find(
+                        (p) => p.stateId === s.id && p.speciesId === species,
+                      )?.points ?? 0;
+                    const dlFees = resolveFees(s, homeState);
+                    const cost =
+                      (dlFees.pointCost[species] ?? 0) + dlFees.appFee;
+                    items.push({
+                      stateId: s.id,
+                      species,
+                      deadline: dates.close,
+                      action: hasGoal
+                        ? pts > 0
+                          ? "Apply"
+                          : "Buy Point or Apply"
+                        : "Buy Point",
+                      cost,
+                      url: s.buyPointsUrl,
+                    });
+                  }
+                },
+              );
+              return items;
+            })
+            .sort((a, b) => a.deadline.localeCompare(b.deadline));
 
-      {/* Beginner Guide — show for new users without a plan */}
-      {!hasPlan && userGoals.length === 0 && (
-        <BeginnerGuide />
-      )}
+          if (applyItems.length === 0) return null;
+
+          return (
+            <Card className="bg-card border-border overflow-hidden">
+              <div className="h-1 bg-gradient-to-r from-chart-2 to-primary" />
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Crosshair className="w-5 h-5 text-chart-2" />
+                    Apply This Year ({currentYear})
+                  </CardTitle>
+                  <Badge
+                    variant="secondary"
+                    className="bg-chart-2/15 text-chart-2 border-0"
+                  >
+                    {applyItems.length} action
+                    {applyItems.length > 1 ? "s" : ""}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Based on your goals and points, here&apos;s what needs
+                  attention
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {applyItems.map((item, idx) => {
+                    const state = STATES_MAP[item.stateId];
+                    if (!state) return null;
+                    const daysLeft = Math.ceil(
+                      (new Date(item.deadline).getTime() - now.getTime()) /
+                        (1000 * 60 * 60 * 24),
+                    );
+                    const urgent = daysLeft <= 30;
+                    return (
+                      <a
+                        key={idx}
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`p-3 rounded-lg border transition-all hover:border-primary/30 hover:bg-secondary/30 ${urgent ? "border-chart-4/30 bg-chart-4/5" : "border-border"}`}
+                      >
+                        <div className="flex items-center gap-2 mb-2">
+                          <div
+                            className="w-7 h-7 rounded flex items-center justify-center text-[9px] font-bold text-white"
+                            style={{ backgroundColor: state.color }}
+                          >
+                            {state.abbreviation}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold truncate">
+                              {formatSpeciesName(item.species)}
+                            </p>
+                          </div>
+                          {urgent && (
+                            <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-4/15 text-chart-4 font-bold shrink-0">
+                              URGENT
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {new Date(item.deadline).toLocaleDateString(
+                              "en-US",
+                              { month: "short", day: "numeric" },
+                            )}
+                          </span>
+                          <span className="font-medium text-primary">
+                            ${item.cost}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-1.5">
+                          {item.action}
+                        </p>
+                      </a>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })()}
+
+      {/* Beginner Guide */}
+      {!hasPlan && userGoals.length === 0 && <BeginnerGuide />}
 
       {/* State Investment Overview */}
       <Card className="bg-card border-border">
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">State Investment Overview</CardTitle>
-          <p className="text-sm text-muted-foreground">Annual point costs and draw system types across all states</p>
+          <p className="text-sm text-muted-foreground">
+            Annual point costs and draw system types across all states
+          </p>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
             {STATES.map((state) => {
-              const isActive = hasPlan && confirmedAssessment.stateRecommendations.some(r => r.stateId === state.id);
+              const isActive =
+                hasPlan &&
+                confirmedAssessment.stateRecommendations.some(
+                  (r) => r.stateId === state.id,
+                );
               const visual = STATE_VISUALS[state.id];
               return (
-                <a key={state.id} href={state.buyPointsUrl} target="_blank" rel="noopener noreferrer" className={`group relative p-4 rounded-xl border overflow-hidden transition-all duration-200 cursor-pointer hover:scale-[1.02] hover:shadow-lg ${isActive ? "border-primary/30 ring-1 ring-primary/10" : "border-border hover:border-primary/30"}`}>
-                  {/* Terrain gradient background */}
-                  <div className={`absolute inset-0 bg-gradient-to-br ${visual?.gradient ?? "from-slate-800 to-slate-900"} opacity-40 group-hover:opacity-60 transition-opacity duration-300`} />
+                <a
+                  key={state.id}
+                  href={state.buyPointsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`group relative p-4 rounded-xl border overflow-hidden transition-all duration-200 cursor-pointer hover:scale-[1.02] hover:shadow-lg ${isActive ? "border-primary/30 ring-1 ring-primary/10" : "border-border hover:border-primary/30"}`}
+                >
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${visual?.gradient ?? "from-slate-800 to-slate-900"} opacity-40 group-hover:opacity-60 transition-opacity duration-300`}
+                  />
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: state.color }}>
+                        <div
+                          className="w-8 h-8 rounded-md flex items-center justify-center text-xs font-bold text-white"
+                          style={{ backgroundColor: state.color }}
+                        >
                           {state.abbreviation}
                         </div>
                         {visual && <span className="text-sm">{visual.emoji}</span>}
                       </div>
-                      <span className="text-lg font-bold">${state.pointCost.elk ?? state.pointCost.mule_deer ?? 0}</span>
+                      <span className="text-lg font-bold">
+                        $
+                        {state.pointCost.elk ??
+                          state.pointCost.mule_deer ??
+                          0}
+                      </span>
                     </div>
-                    <p className="text-xs text-foreground/80 truncate">{state.name}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      {state.pointSystem === "preference" ? "Preference" : state.pointSystem === "hybrid" ? "Hybrid 75/25" : state.pointSystem === "bonus_squared" ? "Bonus²" : state.pointSystem === "bonus" ? "Bonus" : state.pointSystem === "dual" ? "Dual System" : state.pointSystem === "random" ? "Random Draw" : "Pref (NR)"}
+                    <p className="text-xs text-foreground/80 truncate">
+                      {state.name}
                     </p>
-                    <p className="text-[9px] text-muted-foreground/50 mt-1 truncate">{state.availableSpecies.length} species</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {state.pointSystem === "preference"
+                        ? "Preference"
+                        : state.pointSystem === "hybrid"
+                          ? "Hybrid 75/25"
+                          : state.pointSystem === "bonus_squared"
+                            ? "Bonus\u00B2"
+                            : state.pointSystem === "bonus"
+                              ? "Bonus"
+                              : state.pointSystem === "dual"
+                                ? "Dual System"
+                                : state.pointSystem === "random"
+                                  ? "Random Draw"
+                                  : "Pref (NR)"}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground/50 mt-1 truncate">
+                      {state.availableSpecies.length} species
+                    </p>
                   </div>
                   {isActive && (
                     <div className="absolute top-2 right-2 z-10">

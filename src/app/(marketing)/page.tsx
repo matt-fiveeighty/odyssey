@@ -15,69 +15,41 @@ import {
   Target,
   BarChart3,
   ArrowRight,
-  Mountain,
   Compass,
   Shield,
   CheckCircle2,
   X,
   AlertTriangle,
-  DollarSign,
-  Clock,
-  Eye,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
 /*  Data                                                              */
 /* ------------------------------------------------------------------ */
 
-const problems = [
-  {
-    icon: AlertTriangle,
-    title: "15 different draw systems",
-    detail:
-      "Every state runs its own game. Preference, bonus, hybrid, weighted, squared — all with different rules, deadlines, and gotchas.",
-  },
-  {
-    icon: DollarSign,
-    title: "Thousands in wasted fees",
-    detail:
-      "Applying broadly without a plan means paying into states that will never pay off for your profile.",
-  },
-  {
-    icon: Clock,
-    title: "Years of misallocated points",
-    detail:
-      "Building points in the wrong states is invisible until it's too late. By then you've lost years you can't get back.",
-  },
-  {
-    icon: Eye,
-    title: "No way to see the full picture",
-    detail:
-      "Scattered spreadsheets, forum threads, and gut feelings. No single view of where you stand across every state.",
-  },
+const problemBullets = [
+  "15 states. 15 different draw systems.",
+  "Preference vs bonus vs hybrid.",
+  "Rising fees and point creep.",
+  "Deadlines scattered across agency sites.",
+  "No long-term visibility.",
 ];
 
 const isItems = [
-  "A strategic planning engine that scores every western state against your profile",
-  "A multi-year phased roadmap with build, burn, and recovery windows",
-  "Budget-aware — point-year costs, hunt-year costs, guided estimates, all itemized",
-  "A discipline system that flags when your strategy drifts",
+  "Long-term tag strategy",
+  "Multi-state planning",
+  "Budget-aware forecasting",
+  "Draw timeline projection",
+  "Application discipline",
 ];
 
 const isntItems = [
-  "A point tracker that tells you what you already know",
-  "A generic 'best states for elk' article dressed up as software",
-  "A social platform, forum, or hunting community",
-  "A replacement for scouting, fitness, or field skills",
+  "A mapping app",
+  "A unit research database",
+  "A gear review site",
+  "An outfitter marketplace",
 ];
 
 const features = [
-  {
-    icon: Target,
-    title: "Point Strategy",
-    description:
-      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most.",
-  },
   {
     icon: Map,
     title: "State Scoring",
@@ -103,8 +75,14 @@ const features = [
       "Seven built-in rules surface when your portfolio drifts — budget concentration, build fatigue, point abandonment, and more.",
   },
   {
+    icon: Target,
+    title: "Point Strategy",
+    description:
+      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most.",
+  },
+  {
     icon: Compass,
-    title: "Unit Database",
+    title: "Unit Insights Aligned to Your Strategy",
     description:
       "Browse units across every state with success rates, point requirements, and tactical hunt notes.",
   },
@@ -177,26 +155,18 @@ export default function LandingPage() {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/25 via-background/50 to-background pointer-events-none" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
-
-        <div className="relative max-w-4xl mx-auto px-6 py-24 md:py-32 text-center">
-          <div className="hero-stagger-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8 glow-primary">
-            <Mountain className="w-3.5 h-3.5 text-primary" />
-            <span className="text-xs font-medium text-primary">
-              The Strategic Planning Engine for Western Big Game
-            </span>
-          </div>
-
-          <h1 className="hero-stagger-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
+        <div className="relative max-w-5xl mx-auto px-6 py-24 md:py-32 text-left">
+          <h1 className="hero-stagger-1 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight max-w-[680px]">
             Stop Applying Blind.
-            <br />
-            <span className="text-primary">Build a Real Strategy.</span>
           </h1>
 
-          <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-            Most hunters throw money at random states hoping to draw. Odyssey
-            builds a multi-year plan tuned to your species, budget, and timeline
-            — so every dollar and every point is working toward a tag.
+          <h2 className="hero-stagger-2 mt-4 text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground/90 max-w-[680px]">
+            The Strategic Planning Engine for Western Big Game.
+          </h2>
+
+          <p className="hero-stagger-3 mt-5 text-lg md:text-xl text-muted-foreground max-w-[680px] leading-relaxed font-light">
+            Plan across 15 states. See your draw timelines. Map every point and
+            dollar. Execute with discipline.
           </p>
 
           <div className="hero-stagger-4 mt-10">
@@ -205,12 +175,12 @@ export default function LandingPage() {
                 size="lg"
                 className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
               >
-                Build Your Strategy <ArrowRight className="w-4 h-4" />
+                Start Planning <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-          </div>
-          <div className="hero-stagger-5 mt-4">
-            <GuestEntryButton />
+            <p className="mt-3 text-sm text-muted-foreground">
+              Free forever. No credit card.
+            </p>
           </div>
 
           {/* State badges */}
@@ -272,32 +242,26 @@ export default function LandingPage() {
       {/* PROBLEM — "The System Is Designed to Confuse You."               */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30">
-        <div className="max-w-5xl mx-auto px-6 py-16">
-          <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
+        <div className="max-w-3xl mx-auto px-6 py-16">
+          <ScrollReveal animation="blur-in" once={false}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               The System Is Designed to Confuse You.
             </h2>
-            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Western draw hunting rewards discipline and long-term planning. Most hunters have neither — not because they lack drive, but because nobody shows them the full picture.
-            </p>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up" stagger={100} once={false} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {problems.map((p) => (
-              <div key={p.title} className="relative flex flex-col p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30 h-full">
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <p.icon className="w-4.5 h-4.5 text-primary" />
-                  </div>
-                  <p className="text-sm font-bold text-foreground">
-                    {p.title}
-                  </p>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                  {p.detail}
-                </p>
+          <ScrollReveal animation="fade-up" stagger={80} once={false} className="mt-8 space-y-3">
+            {problemBullets.map((bullet) => (
+              <div key={bullet} className="flex items-center gap-3">
+                <AlertTriangle className="w-4 h-4 text-muted-foreground/60 shrink-0" />
+                <p className="text-sm text-muted-foreground">{bullet}</p>
               </div>
             ))}
+          </ScrollReveal>
+
+          <ScrollReveal animation="fade-up" delay={400} once={false}>
+            <p className="mt-8 text-base font-medium text-foreground">
+              Most hunters apply state by state. Odyssey plans across all of them.
+            </p>
           </ScrollReveal>
         </div>
       </section>
@@ -452,8 +416,8 @@ export default function LandingPage() {
               Built for the Long Game
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Built for serious western hunters who treat their hunting like an
-              investment portfolio.
+              Everything a western big game hunter needs to plan across states
+              and execute with discipline.
             </p>
           </ScrollReveal>
 
