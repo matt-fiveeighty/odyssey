@@ -341,19 +341,67 @@ export class NewMexicoScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured / verified fee data (primary source of truth)
+    //    Source: wildlife.state.nm.us — NM big game fee schedule
+    // -----------------------------------------------------------------
+
+    this.log("Emitting structured NM fee data...");
+
+    // License-level fees (no speciesId) — NM has no point system
+    fees.push(
+      { stateId: "NM", feeName: "Nonresident Game Hunting License", amount: 418, residency: "nonresident", frequency: "annual" },
+      { stateId: "NM", feeName: "Application Fee", amount: 12, residency: "both", frequency: "per_species" },
+    );
+
+    // Per-species tag costs — nonresident
+    const nrTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 548],
+      ["mule_deer", "Deer Tag", 283],
+      ["coues_deer", "Coues Deer Tag", 283],
+      ["black_bear", "Black Bear Tag", 260],
+      ["pronghorn", "Pronghorn Tag", 283],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 3173],
+      ["mountain_lion", "Mountain Lion Tag", 290],
+    ];
+    for (const [speciesId, name, amount] of nrTags) {
+      fees.push({ stateId: "NM", feeName: `NR ${name}`, amount, residency: "nonresident", speciesId, frequency: "one_time" });
+    }
+
+    // Per-species tag costs — resident
+    const rTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 90],
+      ["mule_deer", "Deer Tag", 47],
+      ["coues_deer", "Coues Deer Tag", 47],
+      ["black_bear", "Black Bear Tag", 47],
+      ["pronghorn", "Pronghorn Tag", 47],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 163],
+      ["mountain_lion", "Mountain Lion Tag", 47],
+    ];
+    for (const [speciesId, name, amount] of rTags) {
+      fees.push({ stateId: "NM", feeName: `R ${name}`, amount, residency: "resident", speciesId, frequency: "one_time" });
+    }
+
+    this.log(`  Emitted ${fees.length} structured fee entries`);
+
+    // -----------------------------------------------------------------
+    // 2. Fallback: scrape the NMDGF website for any additional / updated fees
+    // -----------------------------------------------------------------
+
     try {
-      this.log("Scraping NMDGF for fee data...");
+      this.log("Scraping NMDGF for supplemental fee data...");
       const urls = [
         "https://www.wildlife.state.nm.us/hunting/licenses-permits/",
         "https://www.wildlife.state.nm.us/hunting/",
       ];
+
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
           const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
-          const seen = new Set<string>();
 
           while ((match = feePattern.exec(html)) !== null) {
             const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -374,39 +422,8 @@ export class NewMexicoScraper extends BaseScraper {
                 speciesId: this.detectSingleSpecies(lower) ?? undefined,
                 frequency: lower.includes("per species") ? "per_species"
                   : lower.includes("annual") ? "annual" : "one_time",
-                notes: label,
+                notes: `Scraped from ${url}`,
               });
-            }
-          }
-
-          // Also parse HTML tables
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              for (const cell of cells) {
-                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-                if (dollarMatch) {
-                  const amt = parseFloat(dollarMatch[1].replace(/,/g, ""));
-                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-                  if (amt > 0 && feeName) {
-                    const key = `${amt}:${feeName.substring(0, 30)}`;
-                    if (!seen.has(key)) {
-                      seen.add(key);
-                      fees.push({
-                        stateId: "NM",
-                        feeName: feeName.substring(0, 100),
-                        amount: amt,
-                        residency: feeName.toLowerCase().includes("nonresident") ? "nonresident" : "both",
-                        frequency: "annual",
-                      });
-                    }
-                  }
-                }
-              }
             }
           }
         } catch (err) {
@@ -414,10 +431,10 @@ export class NewMexicoScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} NM fee entries`);
+    this.log(`Found ${fees.length} NM fee entries total`);
     return fees;
   }
 

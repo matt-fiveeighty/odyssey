@@ -159,7 +159,8 @@ export default function LandingPage() {
           </div>
 
           <h1 className="hero-stagger-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-            Make This Season Count.{" "}
+            Make This Season Count.
+            <br />
             <span className="text-primary">And the Next.</span>
           </h1>
 

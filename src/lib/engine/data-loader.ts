@@ -33,21 +33,31 @@ let _dataSource: "db" | "constants" = "constants";
 let _dbUnitCount = 0;
 let _dbDeadlineCount = 0;
 
-/**
- * Returns metadata about the current data context.
- * Components can use this to show staleness warnings.
- */
-export function getDataStatus(): {
+/** Staleness threshold aligned with weekly crawl cadence + buffer */
+export const STALE_THRESHOLD_DAYS = 10;
+
+export interface DataStatus {
   source: "db" | "constants";
   lastLoadedAt: number | null;
   staleMinutes: number | null;
   dbUnitCount: number;
   dbDeadlineCount: number;
   isUsingConstants: boolean;
-} {
+  /** Whether the overall data context is stale (>10 days since last scrape) */
+  isStale: boolean;
+  /** Days since last data load, or null if never loaded */
+  staleDays: number | null;
+}
+
+/**
+ * Returns metadata about the current data context.
+ * Components can use this to show staleness warnings.
+ */
+export function getDataStatus(): DataStatus {
   const staleMinutes = _lastLoadedAt
     ? Math.round((Date.now() - _lastLoadedAt) / 60_000)
     : null;
+  const staleDays = staleMinutes !== null ? Math.floor(staleMinutes / (60 * 24)) : null;
   return {
     source: _dataSource,
     lastLoadedAt: _lastLoadedAt,
@@ -55,6 +65,8 @@ export function getDataStatus(): {
     dbUnitCount: _dbUnitCount,
     dbDeadlineCount: _dbDeadlineCount,
     isUsingConstants: _dataSource === "constants",
+    isStale: staleDays === null || staleDays > STALE_THRESHOLD_DAYS,
+    staleDays,
   };
 }
 

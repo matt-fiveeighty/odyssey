@@ -6,6 +6,7 @@ import type { EditableAction } from "../ResultsShell";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 import { formatSpeciesName } from "@/lib/utils";
 import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus } from "lucide-react";
 
@@ -268,6 +269,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                               )}
                               <span className="font-mono">${action.cost.toLocaleString()}</span>
                               {action.dueDate && <span>Due: {action.dueDate}</span>}
+                              {action.stateId && <DataSourceInline stateId={action.stateId} />}
                             </div>
                             {/* Itemized costs */}
                             {action.costs.length > 0 && (

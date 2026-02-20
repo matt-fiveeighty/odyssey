@@ -200,12 +200,56 @@ export class NorthDakotaScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -------------------------------------------------------------------
+    // 1. Structured, verified fee data (primary source of truth)
+    //    Source: https://gf.nd.gov/licenses
+    //    Note: elk, moose, pronghorn are RESIDENT-ONLY in ND.
+    //    NR tag cost is set to $0 for those species.
+    // -------------------------------------------------------------------
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "ND", feeName: "NR Hunting License", amount: 220, residency: "nonresident", frequency: "annual" },
+      { stateId: "ND", feeName: "Application Fee", amount: 5, residency: "nonresident", frequency: "per_species" },
+      { stateId: "ND", feeName: "Preference Point Fee", amount: 0, residency: "nonresident", frequency: "per_species", notes: "No separate point fee in ND" },
+    );
+
+    // NR per-species tag costs (elk/moose/pronghorn = $0 because resident-only)
+    const nrTags: Record<string, number> = {
+      mule_deer: 355, whitetail: 355, bighorn_sheep: 600,
+      elk: 0, moose: 0, pronghorn: 0,
+    };
+    for (const [speciesId, amount] of Object.entries(nrTags)) {
+      fees.push({
+        stateId: "ND", feeName: `NR ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "nonresident", speciesId, frequency: "per_species",
+        notes: amount === 0 ? "Resident-only draw; NR not eligible" : undefined,
+      });
+    }
+
+    // R per-species tag costs
+    const rTags: Record<string, number> = {
+      mule_deer: 30, whitetail: 30, bighorn_sheep: 200,
+      elk: 30, moose: 30, pronghorn: 30,
+    };
+    for (const [speciesId, amount] of Object.entries(rTags)) {
+      fees.push({
+        stateId: "ND", feeName: `R ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "resident", speciesId, frequency: "per_species",
+      });
+    }
+
+    this.log(`Emitted ${fees.length} structured ND fee entries`);
+
+    // -------------------------------------------------------------------
+    // 2. Fallback: scrape the NDGF licenses page for any additional fees
+    // -------------------------------------------------------------------
     try {
-      this.log("Scraping NDGF fees...");
+      this.log("Scraping NDGF licenses page for additional data...");
       const html = await this.fetchPage(NDGF_LICENSES);
       const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
       let match: RegExpExecArray | null;
-      const seen = new Set<string>();
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       while ((match = feePattern.exec(html)) !== null) {
         const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -237,10 +281,10 @@ export class NorthDakotaScraper extends BaseScraper {
         if (!seen.has(key)) { seen.add(key); fees.push(f); }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Fee page scrape failed (fallback): ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} ND fee entries`);
+    this.log(`Found ${fees.length} total ND fee entries`);
     return fees;
   }
 

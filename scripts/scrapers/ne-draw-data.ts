@@ -171,12 +171,51 @@ export class NebraskaScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -------------------------------------------------------------------
+    // 1. Structured, verified fee data (primary source of truth)
+    //    Source: https://outdoornebraska.gov/permits-and-licenses/fees/
+    // -------------------------------------------------------------------
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "NE", feeName: "NR Hunting License", amount: 120, residency: "nonresident", frequency: "annual" },
+      { stateId: "NE", feeName: "Application Fee", amount: 8, residency: "nonresident", frequency: "per_species" },
+      { stateId: "NE", feeName: "Preference Point Fee", amount: 0, residency: "nonresident", frequency: "per_species", notes: "No separate point fee in NE" },
+    );
+
+    // NR per-species tag costs
+    const nrTags: Record<string, number> = {
+      elk: 542, mule_deer: 335, whitetail: 335, pronghorn: 241, bighorn_sheep: 1500,
+    };
+    for (const [speciesId, amount] of Object.entries(nrTags)) {
+      fees.push({
+        stateId: "NE", feeName: `NR ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "nonresident", speciesId, frequency: "per_species",
+      });
+    }
+
+    // R per-species tag costs
+    const rTags: Record<string, number> = {
+      elk: 30, mule_deer: 25, whitetail: 25, pronghorn: 25, bighorn_sheep: 200,
+    };
+    for (const [speciesId, amount] of Object.entries(rTags)) {
+      fees.push({
+        stateId: "NE", feeName: `R ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "resident", speciesId, frequency: "per_species",
+      });
+    }
+
+    this.log(`Emitted ${fees.length} structured NE fee entries`);
+
+    // -------------------------------------------------------------------
+    // 2. Fallback: scrape the NGPC fees page for any additional fees
+    // -------------------------------------------------------------------
     try {
-      this.log("Scraping NGPC fees...");
+      this.log("Scraping NGPC fees page for additional data...");
       const html = await this.fetchPage(NGPC_FEES);
       const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
       let match: RegExpExecArray | null;
-      const seen = new Set<string>();
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       while ((match = feePattern.exec(html)) !== null) {
         const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -209,10 +248,10 @@ export class NebraskaScraper extends BaseScraper {
         if (!seen.has(key)) { seen.add(key); fees.push(f); }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Fee page scrape failed (fallback): ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} NE fee entries`);
+    this.log(`Found ${fees.length} total NE fee entries`);
     return fees;
   }
 

@@ -6,6 +6,7 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { Plane, Calendar, Wallet, Heart, ExternalLink, Car, Package, Clock, DollarSign, AlertCircle } from "lucide-react";
+import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 import { formatSpeciesName, formatDate } from "@/lib/utils";
 
 interface LogisticsTabProps {
@@ -32,6 +33,7 @@ function PointOnlyRow({ entry, dimmed }: { entry: PointOnlyGuideEntry; dimmed?: 
       <div className="text-right">
         <span className="text-xs font-mono font-semibold">${entry.annualCost}</span>
         <span className="md:hidden text-[10px] text-muted-foreground ml-1">/yr</span>
+        <div className="mt-0.5"><DataSourceInline stateId={entry.stateId} /></div>
       </div>
       <div className="text-right">
         {entry.url && (

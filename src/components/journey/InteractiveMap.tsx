@@ -4,6 +4,12 @@
  * Interactive SVG Map — composite rendering of all 15 system states.
  * States are colored dynamically based on the selected year's journey actions.
  * Clicking a state opens the detail modal; hovering shows a tooltip.
+ *
+ * 4-color system:
+ *   Green  — Planned Hunt (executing, booked)
+ *   Orange — Apply w/ Points (drawing with invested points)
+ *   Amber  — OTC / Try Your Luck (general season or random draw, no points)
+ *   Blue   — Build Points (accumulating for later)
  */
 
 import { useState, useCallback, useRef } from "react";
@@ -12,9 +18,10 @@ import { STATES_MAP } from "@/lib/constants/states";
 import type { JourneyYearData } from "@/lib/engine/journey-data";
 
 // Action-type color palette (matches MapLegend)
-const COLOR_HUNT = "#22c55e";     // green — planned hunt / OTC
-const COLOR_DRAW = "#f97316";     // orange — enter draw / apply
-const COLOR_POINTS = "#3b82f6";   // blue — build points
+const COLOR_HUNT = "#22c55e";       // green — planned hunt
+const COLOR_DRAW_PTS = "#f97316";   // orange — apply with points
+const COLOR_OTC = "#f59e0b";        // amber — OTC / try your luck
+const COLOR_POINTS = "#3b82f6";     // blue — build points
 const COLOR_INACTIVE = "oklch(0.20 0.01 260)";
 const STROKE_ACTIVE = "oklch(0.85 0 0)";
 const STROKE_INACTIVE = "oklch(0.30 0.01 260)";
@@ -37,11 +44,11 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
         return STATES_MAP[stateId]?.color ?? COLOR_INACTIVE;
       }
       const hasHunt = yearData.hunts.some((h) => h.stateId === stateId);
-      const hasApp = yearData.applications.some((a) => a.stateId === stateId);
+      const app = yearData.applications.find((a) => a.stateId === stateId);
       const hasPoints = yearData.pointPurchases.some((p) => p.stateId === stateId);
 
       if (hasHunt) return COLOR_HUNT;
-      if (hasApp) return COLOR_DRAW;
+      if (app) return app.hasPoints ? COLOR_DRAW_PTS : COLOR_OTC;
       if (hasPoints) return COLOR_POINTS;
       return COLOR_INACTIVE;
     },
@@ -62,7 +69,7 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
       const hunt = yearData.hunts.find((h) => h.stateId === stateId);
       if (hunt) return "Planned Hunt";
       const app = yearData.applications.find((a) => a.stateId === stateId);
-      if (app) return "Enter Draw";
+      if (app) return app.hasPoints ? "Apply w/ Points" : "OTC / Try Your Luck";
       const pts = yearData.pointPurchases.find((p) => p.stateId === stateId);
       if (pts) return "Build Points";
       return "";

@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Route, ArrowRight, Pencil } from "lucide-react";
+import { Route, ArrowRight, Pencil, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { useRoadmapStore, useAppStore } from "@/lib/store";
 import { BoardStateHeader } from "@/components/roadmap/BoardStateHeader";
 import { DisciplineAlerts } from "@/components/roadmap/DisciplineAlerts";
@@ -79,16 +80,23 @@ export default function RoadmapPage() {
 
   return (
     <div className="p-6 space-y-6 fade-in-up">
-      {/* Plan switcher + edit action */}
-      <div className="flex items-center justify-between">
+      {/* Top bar: plan switcher + plan actions */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <PlanManager />
-        <Link
-          href="/plan-builder"
-          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-          Edit Plan
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/plan-builder">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <Pencil className="w-3.5 h-3.5" />
+              Edit Plan
+            </Button>
+          </Link>
+          <Link href="/plan-builder">
+            <Button variant="outline" size="sm" className="gap-1.5 text-xs">
+              <RefreshCw className="w-3.5 h-3.5" />
+              Rebuild
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Board State Header */}

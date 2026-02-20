@@ -80,7 +80,7 @@ function StatCell({
   value: string;
 }) {
   return (
-    <div className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30">
+    <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-muted/30">
       {icon}
       <div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>

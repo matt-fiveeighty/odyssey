@@ -16,7 +16,8 @@ interface StateStatus {
   rowsImported: number;
   errors: string[];
   daysSinceLastRun: number | null;
-  isStale: boolean; // > 20 days since last run
+  isStale: boolean; // > 10 days since last run (weekly cadence + buffer)
+  tagCostsLastSynced: string | null;
 }
 
 export async function GET(request: NextRequest) {
@@ -59,15 +60,27 @@ export async function GET(request: NextRequest) {
     }
 
     const now = Date.now();
-    const STALE_THRESHOLD_DAYS = 20; // Cron runs every 15 days, 20 = buffer
+    const STALE_THRESHOLD_DAYS = 10; // Weekly cron + buffer
 
     const allStates = [
       "CO", "WY", "MT", "NV", "AZ", "UT", "NM", "OR", "ID", "KS", "AK",
       "WA", "NE", "SD", "ND",
     ];
 
+    // Also query ref_states for source_pulled_at (tag cost sync timestamp)
+    const { data: refStates } = await supabase
+      .from("ref_states")
+      .select("id, source_pulled_at")
+      .in("id", allStates);
+
+    const refStatesMap = new Map(
+      (refStates ?? []).map((r: { id: string; source_pulled_at: string | null }) => [r.id, r.source_pulled_at])
+    );
+
     const stateStatuses: StateStatus[] = allStates.map((stateId) => {
       const log = byState.get(stateId);
+      const tagCostsLastSynced = refStatesMap.get(stateId) ?? null;
+
       if (!log) {
         return {
           stateId,
@@ -76,6 +89,7 @@ export async function GET(request: NextRequest) {
           errors: [],
           daysSinceLastRun: null,
           isStale: true,
+          tagCostsLastSynced,
         };
       }
 
@@ -91,6 +105,7 @@ export async function GET(request: NextRequest) {
         errors: Array.isArray(log.errors) ? log.errors as string[] : [],
         daysSinceLastRun,
         isStale: daysSinceLastRun === null || daysSinceLastRun > STALE_THRESHOLD_DAYS,
+        tagCostsLastSynced,
       };
     });
 
@@ -103,6 +118,18 @@ export async function GET(request: NextRequest) {
       .filter((s) => s.lastRunAt)
       .sort((a, b) => new Date(b.lastRunAt!).getTime() - new Date(a.lastRunAt!).getTime())[0]?.lastRunAt ?? null;
 
+    // Data freshness score: 0-100 based on average staleness across all states
+    const freshnessScores: number[] = stateStatuses.map((s) => {
+      if (s.daysSinceLastRun === null) return 0;
+      if (s.daysSinceLastRun <= 7) return 100;
+      if (s.daysSinceLastRun <= 10) return 70;
+      if (s.daysSinceLastRun <= 14) return 40;
+      return 10;
+    });
+    const dataFreshnessScore = Math.round(
+      freshnessScores.reduce((s, v) => s + v, 0) / freshnessScores.length
+    );
+
     return NextResponse.json({
       summary: {
         totalStates: allStates.length,
@@ -111,6 +138,7 @@ export async function GET(request: NextRequest) {
         staleStates,
         totalRowsImported,
         lastFullRun,
+        dataFreshnessScore,
         checkedAt: new Date().toISOString(),
       },
       states: stateStatuses,

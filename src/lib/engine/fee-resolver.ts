@@ -15,6 +15,7 @@ export interface ResolvedFees {
   pointFee: number;
   feeSchedule: FeeLineItem[];
   pointCost: Record<string, number>;
+  tagCosts: Record<string, number>;
   label: string; // "Resident" or "Non-Resident"
 }
 
@@ -42,6 +43,7 @@ export function resolveFees(state: State, homeState: string): ResolvedFees {
       pointFee: state.residentLicenseFees.pointFee ?? 0,
       feeSchedule: state.residentFeeSchedule ?? state.feeSchedule,
       pointCost: state.residentPointCost ?? state.pointCost,
+      tagCosts: state.residentTagCosts ?? state.tagCosts,
       label: "Resident",
     };
   }
@@ -53,6 +55,7 @@ export function resolveFees(state: State, homeState: string): ResolvedFees {
     pointFee: state.licenseFees.pointFee ?? 0,
     feeSchedule: state.feeSchedule,
     pointCost: state.pointCost,
+    tagCosts: state.tagCosts,
     label: "Non-Resident",
   };
 }

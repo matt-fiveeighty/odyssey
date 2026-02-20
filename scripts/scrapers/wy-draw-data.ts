@@ -351,87 +351,196 @@ export class WyomingScraper extends BaseScraper {
 
   /**
    * scrapeFees — pull license/application fees from WGF.
-   * WGF publishes a comprehensive fee schedule.
+   *
+   * Strategy:
+   *   1. Emit structured per-species tag costs (with speciesId) from verified data
+   *   2. Emit license-level fees (app fee, qualifying license, point fees) without speciesId
+   *   3. Fall back to generic regex scraping if live page fetch succeeds
+   *
+   * WGF fee pages:
+   *   - wgfd.wyo.gov/hunting-trapping/fees
+   *   - eRegulations: wyoming.huntinfoweb.com
    */
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured per-species tag costs (verified from WGF fee tables)
+    // -----------------------------------------------------------------
+    const nrTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "NR Elk Tag", amount: 692 },
+      { speciesId: "mule_deer", label: "NR Deer Tag", amount: 374 },
+      { speciesId: "black_bear", label: "NR Bear Tag", amount: 373 },
+      { speciesId: "moose", label: "NR Moose Tag", amount: 2752 },
+      { speciesId: "pronghorn", label: "NR Pronghorn Tag", amount: 326 },
+      { speciesId: "bighorn_sheep", label: "NR Bighorn Sheep Tag", amount: 3002 },
+      { speciesId: "mountain_goat", label: "NR Mountain Goat Tag", amount: 2752 },
+      { speciesId: "bison", label: "NR Bison Tag", amount: 6002 },
+      { speciesId: "mountain_lion", label: "NR Mountain Lion Tag", amount: 373 },
+      { speciesId: "wolf", label: "NR Wolf Tag", amount: 187 },
+    ];
+
+    const rTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "Resident Elk Tag", amount: 56 },
+      { speciesId: "mule_deer", label: "Resident Deer Tag", amount: 42 },
+      { speciesId: "black_bear", label: "Resident Bear Tag", amount: 42 },
+      { speciesId: "moose", label: "Resident Moose Tag", amount: 375 },
+      { speciesId: "pronghorn", label: "Resident Pronghorn Tag", amount: 32 },
+      { speciesId: "bighorn_sheep", label: "Resident Bighorn Sheep Tag", amount: 402 },
+      { speciesId: "mountain_goat", label: "Resident Mountain Goat Tag", amount: 375 },
+      { speciesId: "bison", label: "Resident Bison Tag", amount: 402 },
+      { speciesId: "mountain_lion", label: "Resident Mountain Lion Tag", amount: 32 },
+      { speciesId: "wolf", label: "Resident Wolf Tag", amount: 19 },
+    ];
+
+    for (const tag of nrTagCosts) {
+      fees.push({
+        stateId: "WY",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "nonresident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "WGF nonresident tag cost",
+      });
+    }
+
+    for (const tag of rTagCosts) {
+      fees.push({
+        stateId: "WY",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "resident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "WGF resident tag cost",
+      });
+    }
+
+    // -----------------------------------------------------------------
+    // 2. License-level fees (no speciesId)
+    // -----------------------------------------------------------------
+    fees.push({
+      stateId: "WY",
+      feeName: "NR Qualifying License",
+      amount: 315,
+      residency: "nonresident",
+      frequency: "annual",
+      notes: "Required NR conservation stamp / game & fish license",
+    });
+
+    fees.push({
+      stateId: "WY",
+      feeName: "Application Fee",
+      amount: 15,
+      residency: "both",
+      frequency: "per_species",
+      notes: "Per-species application processing fee",
+    });
+
+    // WY has per-species preference point fees (no speciesId here — these are
+    // informational and the point fee in syncFeesToRefStates uses the general one)
+    fees.push({
+      stateId: "WY",
+      feeName: "Preference Point Fee",
+      amount: 52,
+      residency: "nonresident",
+      frequency: "per_species",
+      notes: "NR elk PP $52, deer $41, pronghorn $31, moose/sheep/goat $150",
+    });
+
+    // -----------------------------------------------------------------
+    // 3. Live-scrape fallback: try to extract updated fees from WGF pages
+    // -----------------------------------------------------------------
     try {
-      this.log("Scraping WGF fee schedule...");
-      const html = await this.fetchPage("https://wgfd.wyo.gov/hunting-trapping/fees");
-
-      // Look for dollar amounts with fee labels
-      const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
-      let match: RegExpExecArray | null;
+      this.log("Attempting live fee scrape from WGF pages...");
       const seen = new Set<string>();
-
-      while ((match = feePattern.exec(html)) !== null) {
-        const amount = parseFloat(match[1].replace(/,/g, ""));
-        const label = match[2].replace(/<[^>]*>/g, "").trim();
-
-        if (amount > 0 && amount < 10000 && label.length > 3) {
-          const key = `${amount}:${label.substring(0, 30)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const lower = label.toLowerCase();
-          const residency = lower.includes("nonresident") || lower.includes("non-resident")
-            ? "nonresident" as const
-            : lower.includes("resident") ? "resident" as const
-            : "both" as const;
-
-          const speciesId = this.detectSingleSpecies(lower);
-
-          fees.push({
-            stateId: "WY",
-            feeName: label.substring(0, 100),
-            amount,
-            residency,
-            speciesId: speciesId ?? undefined,
-            frequency: lower.includes("per species") ? "per_species"
-              : lower.includes("annual") ? "annual" : "one_time",
-            notes: label,
-          });
-        }
+      for (const f of fees) {
+        seen.add(`${f.amount}:${f.feeName.substring(0, 30)}`);
       }
 
-      // Also parse HTML tables on the fee page
-      const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-      for (const table of tables) {
+      const urls = [
+        "https://wgfd.wyo.gov/hunting-trapping/fees",
+        "https://wgfd.wyo.gov/licenses-applications",
+      ];
 
-        const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-        for (const tr of trs) {
-          const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-          if (tds.length < 2) continue;
-          const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
+          let match: RegExpExecArray | null;
 
-          // Look for a cell containing a dollar amount
-          for (const cell of cells) {
-            const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-            if (dollarMatch) {
-              const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
-              const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-              if (amount > 0 && feeName) {
-                const key = `${amount}:${feeName.substring(0, 30)}`;
-                if (!seen.has(key)) {
-                  seen.add(key);
-                  const lower = feeName.toLowerCase();
-                  fees.push({
-                    stateId: "WY",
-                    feeName: feeName.substring(0, 100),
-                    amount,
-                    residency: lower.includes("nonresident") ? "nonresident"
-                      : lower.includes("resident") ? "resident" : "both",
-                    frequency: "annual",
-                  });
+          while ((match = feePattern.exec(html)) !== null) {
+            const amount = parseFloat(match[1].replace(/,/g, ""));
+            const label = match[2].replace(/<[^>]*>/g, "").trim();
+
+            if (amount > 0 && amount < 10000 && label.length > 3) {
+              const key = `${amount}:${label.substring(0, 30)}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+
+              const lower = label.toLowerCase();
+              const residency = lower.includes("nonresident") || lower.includes("non-resident")
+                ? "nonresident" as const
+                : lower.includes("resident") ? "resident" as const
+                : "both" as const;
+
+              const speciesId = this.detectSingleSpecies(lower);
+
+              fees.push({
+                stateId: "WY",
+                feeName: label.substring(0, 100),
+                amount,
+                residency,
+                speciesId: speciesId ?? undefined,
+                frequency: lower.includes("per species") ? "per_species"
+                  : lower.includes("annual") ? "annual" : "one_time",
+                notes: `Live-scraped from ${url}`,
+              });
+            }
+          }
+
+          // Also parse HTML tables on the fee page
+          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+          for (const table of tables) {
+            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+            for (const tr of trs) {
+              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+              if (tds.length < 2) continue;
+              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+
+              for (const cell of cells) {
+                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
+                if (dollarMatch) {
+                  const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
+                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
+                  if (amount > 0 && feeName) {
+                    const key = `${amount}:${feeName.substring(0, 30)}`;
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      const lower = feeName.toLowerCase();
+                      fees.push({
+                        stateId: "WY",
+                        feeName: feeName.substring(0, 100),
+                        amount,
+                        residency: lower.includes("nonresident") ? "nonresident"
+                          : lower.includes("resident") ? "resident" : "both",
+                        speciesId: this.detectSingleSpecies(lower) ?? undefined,
+                        frequency: "annual",
+                        notes: `Live-scraped from ${url}`,
+                      });
+                    }
+                  }
                 }
               }
             }
           }
+        } catch (err) {
+          this.log(`  Live scrape failed for ${url}: ${(err as Error).message}`);
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
     this.log(`Found ${fees.length} WY fee entries`);

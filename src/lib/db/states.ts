@@ -63,6 +63,7 @@ function mapRowToState(row: RefStateRow): State {
     availableSpecies: row.available_species ?? [],
     drawResultDates: row.draw_result_dates ?? undefined,
     pointCost: row.point_cost ?? {},
+    tagCosts: (row as unknown as Record<string, unknown>).tag_costs as Record<string, number> ?? {},
     color: row.color ?? "#6B7280",
     lastScrapedAt: row.source_pulled_at ?? undefined,
     logistics: row.logistics ?? undefined,

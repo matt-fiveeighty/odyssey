@@ -388,6 +388,10 @@ export interface State {
   // Draw result dates per species
   drawResultDates?: Record<string, string>;
   pointCost: Record<string, number>;
+  // Actual tag/permit costs per species when drawn (NR)
+  tagCosts: Record<string, number>;
+  // Resident tag/permit costs per species when drawn
+  residentTagCosts?: Record<string, number>;
   color: string;
   lastScrapedAt?: string;
   sourceUrl?: string;           // Authoritative F&G URL for this state's data
@@ -614,6 +618,9 @@ export interface OpportunityResult {
     pressureLevel: string;
   };
   unitCount: number;
+
+  // Draw access classification
+  drawAccessType: "otc" | "high_odds_draw" | "competitive_draw" | "limited_draw" | "unknown_draw";
 
   // Explanation
   whyBullets: string[];

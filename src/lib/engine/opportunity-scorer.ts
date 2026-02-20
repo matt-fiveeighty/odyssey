@@ -3,6 +3,13 @@
  *
  * Ranks all state+species combinations by how actionable they are for the user,
  * with the user's own point position as the dominant factor.
+ *
+ * Draw access classification:
+ *   "otc"              — True OTC: buy a tag, no draw needed (high quota, unlimited, or leftover)
+ *   "high_odds_draw"   — Draw required but odds are favorable (>50% or high quota relative to applicants)
+ *   "competitive_draw" — Draw required, moderate competition
+ *   "limited_draw"     — Very few tags, extremely competitive (e.g., NV bighorn)
+ *   "unknown_draw"     — No unit data to determine; draw system exists but we can't quantify
  */
 
 import type {
@@ -52,6 +59,11 @@ const DEFAULT_POINTS_BY_SYSTEM: Record<PointSystemType, number> = {
   preference_nr: 3,
 };
 
+// Tag quota thresholds for OTC classification
+const OTC_QUOTA_THRESHOLD = 500;          // 500+ NR tags = likely OTC / very high availability
+const HIGH_ODDS_QUOTA_THRESHOLD = 100;    // 100+ NR tags = favorable odds
+const LIMITED_QUOTA_THRESHOLD = 20;       // Under 20 NR tags = limited/competitive
+
 // ============================================================================
 // Filters
 // ============================================================================
@@ -78,16 +90,92 @@ export interface OpportunityFilters {
 }
 
 // ============================================================================
+// Draw Access Classification
+// ============================================================================
+
+type DrawAccessType = OpportunityResult["drawAccessType"];
+
+/**
+ * Classify how accessible a tag actually is.
+ *
+ * "otc"              — Walk in, buy a tag. No draw, no uncertainty.
+ * "high_odds_draw"   — Draw required but your odds are very good (>50% or high NR quota)
+ * "competitive_draw" — Draw required, moderate competition, points help
+ * "limited_draw"     — Very few tags, extremely competitive (sheep, goat, moose in most states)
+ * "unknown_draw"     — We don't have enough unit data to classify accurately
+ */
+function classifyDrawAccess(
+  units: Unit[],
+  pointsRequired: number,
+  isRandom: boolean,
+  isOIAL: boolean,
+  pointSystem: PointSystemType,
+): DrawAccessType {
+  // OIAL species are almost never OTC — they're the most competitive tags
+  if (isOIAL) return "limited_draw";
+
+  // If we have unit data, use tag quota as the primary signal
+  if (units.length > 0) {
+    const maxQuota = Math.max(...units.map((u) => u.tagQuotaNonresident));
+
+    // Very high quota with zero points = true OTC territory
+    // (e.g., CO general elk OTC, ID general deer)
+    if (maxQuota >= OTC_QUOTA_THRESHOLD && pointsRequired === 0) {
+      return "otc";
+    }
+
+    // Good quota with zero points = high odds draw
+    if (maxQuota >= HIGH_ODDS_QUOTA_THRESHOLD && pointsRequired === 0) {
+      return "high_odds_draw";
+    }
+
+    // Low quota = limited/competitive regardless of points
+    if (maxQuota < LIMITED_QUOTA_THRESHOLD) {
+      return "limited_draw";
+    }
+
+    // Moderate quota with points required
+    if (pointsRequired > 0) {
+      return "competitive_draw";
+    }
+
+    // Moderate quota, no points required
+    return "high_odds_draw";
+  }
+
+  // No unit data — we can't make confident claims
+  // If it's a random system with zero points, it's at least accessible
+  if (isRandom) return "unknown_draw";
+
+  // No units, no evidence — don't guess
+  return "unknown_draw";
+}
+
+// ============================================================================
 // Scoring Functions
 // ============================================================================
 
 function getPointPositionScore(
   userPts: number,
   pointsRequired: number,
-  isRandom: boolean
+  isRandom: boolean,
+  drawAccessType: DrawAccessType,
 ): number {
   if (isRandom) return 35;
-  if (pointsRequired === 0) return 45;
+
+  // True OTC = highest score (guaranteed tag)
+  if (drawAccessType === "otc") return 45;
+
+  // High odds draw = very good but not guaranteed
+  if (drawAccessType === "high_odds_draw" && pointsRequired === 0) return 40;
+
+  // Unknown draw with no unit data — moderate score, don't over-promise
+  if (drawAccessType === "unknown_draw") return 20;
+
+  // Limited draw with no points required still requires winning a draw
+  if (drawAccessType === "limited_draw" && pointsRequired === 0) return 12;
+
+  if (pointsRequired === 0) return 35;
 
   const yearsAway = yearsToDrawWithCreep(
     userPts,
@@ -166,6 +254,18 @@ function getBestUnit(units: Unit[]): OpportunityResult["bestUnit"] | undefined {
   };
 }
 
+// ============================================================================
+// Messaging — top reason and why bullets
+// ============================================================================
+
+const DRAW_ACCESS_LABELS: Record<DrawAccessType, string> = {
+  otc: "OTC — buy a tag, no draw needed",
+  high_odds_draw: "No points needed — favorable draw odds",
+  competitive_draw: "Competitive draw — points improve your odds",
+  limited_draw: "Limited tags — highly competitive draw",
+  unknown_draw: "Draw required — unit data coming soon",
+};
+
 function buildWhyBullets(
   userPts: number,
   pointsRequired: number,
@@ -176,34 +276,49 @@ function buildWhyBullets(
   isOIAL: boolean,
   annualCost: number,
   bestUnit: OpportunityResult["bestUnit"] | undefined,
+  drawAccessType: DrawAccessType,
 ): string[] {
   const bullets: string[] = [];
 
-  // Point position bullets (most important)
-  if (isRandom) {
+  // Draw access classification (most important — sets expectations correctly)
+  if (drawAccessType === "otc") {
+    bullets.push("No points required — OTC tag, buy and go");
+  } else if (drawAccessType === "high_odds_draw") {
+    bullets.push("No points needed — draw required but odds are favorable");
+  } else if (drawAccessType === "limited_draw") {
+    if (isOIAL) {
+      bullets.push("Once-in-a-lifetime species — extremely limited tags");
+    } else {
+      bullets.push("Very limited NR tags — highly competitive draw");
+    }
+  } else if (drawAccessType === "unknown_draw") {
+    if (isRandom) {
+      bullets.push(`${pointSystemLabel} — every applicant has an equal shot each year`);
+    } else {
+      bullets.push(`${pointSystemLabel} system — detailed draw data coming soon`);
+    }
+  } else if (isRandom) {
     bullets.push(`${pointSystemLabel} — every applicant has an equal shot each year`);
-  } else if (pointsRequired === 0) {
-    bullets.push("No points required — OTC or guaranteed draw");
-  } else if (userPts >= pointsRequired) {
+  } else if (userPts >= pointsRequired && pointsRequired > 0) {
     bullets.push(
       `You have ${userPts} points — enough to draw (${pointsRequired} needed)`
     );
-  } else if (yearsToUnlock <= 2) {
+  } else if (yearsToUnlock <= 2 && pointsRequired > 0) {
     bullets.push(
       `You have ${userPts} of ${pointsRequired} points needed — ${yearsToUnlock === 1 ? "1 year" : `${yearsToUnlock} years`} away`
     );
-  } else if (userPts > 0) {
+  } else if (userPts > 0 && pointsRequired > 0) {
     bullets.push(
       `You have ${userPts} points, need ${pointsRequired} — ~${yearsToUnlock} year build`
     );
-  } else {
+  } else if (pointsRequired > 0) {
     bullets.push(
       `${pointsRequired} points needed — ~${yearsToUnlock} year investment from zero`
     );
   }
 
-  // Draw system
-  if (!isRandom && pointsRequired > 0) {
+  // Draw system context
+  if (!isRandom && pointsRequired > 0 && drawAccessType !== "unknown_draw") {
     bullets.push(`${pointSystemLabel} draw system`);
   }
 
@@ -246,10 +361,25 @@ function buildTopReason(
   isRandom: boolean,
   pointSystemLabel: string,
   bestUnit: OpportunityResult["bestUnit"] | undefined,
+  drawAccessType: DrawAccessType,
 ): string {
-  if (!isRandom && pointsRequired === 0) {
-    return "No points required — buy a tag and go";
+  // Use draw access classification for the headline
+  if (drawAccessType === "otc") {
+    return "OTC tag — buy over the counter, no draw needed";
   }
+  if (drawAccessType === "high_odds_draw") {
+    return "No points needed — apply for favorable draw odds";
+  }
+  if (drawAccessType === "limited_draw") {
+    return "Extremely limited tags — plan for a long-term draw investment";
+  }
+  if (drawAccessType === "unknown_draw") {
+    if (isRandom) {
+      return `${pointSystemLabel} — apply every year for an equal shot`;
+    }
+    return `${pointSystemLabel} draw — detailed unit data coming soon`;
+  }
+
   if (isRandom) {
     return `${pointSystemLabel} — apply every year for an equal shot`;
   }
@@ -327,6 +457,7 @@ export function generateAllOpportunities(
       }
 
       const isRandom = state.pointSystem === "random";
+      const isOIAL = state.onceInALifetime?.includes(speciesId) ?? false;
       const creepRate = units.length > 0
         ? estimateCreepRate(units.reduce((max, u) => Math.max(max, u.trophyRating), 0))
         : estimateCreepRate(5);
@@ -335,8 +466,13 @@ export function generateAllOpportunities(
         ? 0
         : yearsToDrawWithCreep(userPts, pointsRequired, creepRate);
 
+      // Classify draw access — the core fix
+      const drawAccessType = classifyDrawAccess(
+        units, pointsRequired, isRandom, isOIAL, state.pointSystem
+      );
+
       // Scoring
-      const pointPositionScore = getPointPositionScore(userPts, pointsRequired, isRandom);
+      const pointPositionScore = getPointPositionScore(userPts, pointsRequired, isRandom, drawAccessType);
       const drawAccessScore = getDrawAccessScore(state.pointSystem, pointsRequired);
       const huntQualityScore = getHuntQualityScore(units);
       const annualPointCost = state.pointCost[speciesId] ?? 0;
@@ -357,19 +493,19 @@ export function generateAllOpportunities(
         if (filters.timeline === "3_7" && yearsToUnlock > 7) continue;
       }
 
-      const isOIAL = state.onceInALifetime?.includes(speciesId) ?? false;
       const pointSystemLabel = POINT_SYSTEM_LABELS[state.pointSystem];
       const bestUnit = getBestUnit(units);
       const deadline = state.applicationDeadlines[speciesId];
 
       const whyBullets = buildWhyBullets(
         userPts, pointsRequired, yearsToUnlock, isRandom,
-        state.pointSystem, pointSystemLabel, isOIAL, annualPointCost, bestUnit
+        state.pointSystem, pointSystemLabel, isOIAL, annualPointCost, bestUnit,
+        drawAccessType
       );
 
       const topReason = buildTopReason(
         userPts, pointsRequired, yearsToUnlock, isRandom,
-        pointSystemLabel, bestUnit
+        pointSystemLabel, bestUnit, drawAccessType
       );
 
       const tier = getTier(opportunityScore);
@@ -393,6 +529,7 @@ export function generateAllOpportunities(
         hasUnitData: units.length > 0,
         bestUnit,
         unitCount: units.length,
+        drawAccessType,
         whyBullets,
         topReason,
         tier,

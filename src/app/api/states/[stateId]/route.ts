@@ -45,6 +45,7 @@ export async function GET(
       availableSpecies: row.available_species ?? [],
       drawResultDates: row.draw_result_dates ?? undefined,
       pointCost: row.point_cost ?? {},
+      tagCosts: row.tag_costs ?? {},
       color: row.color ?? "#6B7280",
       logistics: row.logistics ?? undefined,
       pointOnlyApplication: row.point_only_application ?? undefined,

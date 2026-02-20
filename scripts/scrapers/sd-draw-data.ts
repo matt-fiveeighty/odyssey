@@ -188,12 +188,56 @@ export class SouthDakotaScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -------------------------------------------------------------------
+    // 1. Structured, verified fee data (primary source of truth)
+    //    Source: https://gfp.sd.gov/licenses-permits/fees/
+    //    Note: elk, bighorn_sheep, mountain_goat, mountain_lion are
+    //    RESIDENT-ONLY draws in SD. NR tag cost is set to $0.
+    // -------------------------------------------------------------------
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "SD", feeName: "NR Hunting License", amount: 125, residency: "nonresident", frequency: "annual" },
+      { stateId: "SD", feeName: "Application Fee", amount: 5, residency: "nonresident", frequency: "per_species" },
+      { stateId: "SD", feeName: "Preference Point Fee", amount: 10, residency: "nonresident", frequency: "per_species" },
+    );
+
+    // NR per-species tag costs (elk/sheep/goat/lion = $0 because resident-only)
+    const nrTags: Record<string, number> = {
+      mule_deer: 375, whitetail: 375, pronghorn: 375,
+      elk: 0, bighorn_sheep: 0, mountain_goat: 0, mountain_lion: 0,
+    };
+    for (const [speciesId, amount] of Object.entries(nrTags)) {
+      fees.push({
+        stateId: "SD", feeName: `NR ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "nonresident", speciesId, frequency: "per_species",
+        notes: amount === 0 ? "Resident-only draw; NR not eligible" : undefined,
+      });
+    }
+
+    // R per-species tag costs
+    const rTags: Record<string, number> = {
+      mule_deer: 40, whitetail: 40, pronghorn: 40,
+      elk: 30, bighorn_sheep: 286, mountain_goat: 286, mountain_lion: 286,
+    };
+    for (const [speciesId, amount] of Object.entries(rTags)) {
+      fees.push({
+        stateId: "SD", feeName: `R ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "resident", speciesId, frequency: "per_species",
+      });
+    }
+
+    this.log(`Emitted ${fees.length} structured SD fee entries`);
+
+    // -------------------------------------------------------------------
+    // 2. Fallback: scrape the GFP fees page for any additional fees
+    // -------------------------------------------------------------------
     try {
-      this.log("Scraping SD GFP fees...");
+      this.log("Scraping SD GFP fees page for additional data...");
       const html = await this.fetchPage(GFP_FEES);
       const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
       let match: RegExpExecArray | null;
-      const seen = new Set<string>();
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       while ((match = feePattern.exec(html)) !== null) {
         const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -225,10 +269,10 @@ export class SouthDakotaScraper extends BaseScraper {
         if (!seen.has(key)) { seen.add(key); fees.push(f); }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Fee page scrape failed (fallback): ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} SD fee entries`);
+    this.log(`Found ${fees.length} total SD fee entries`);
     return fees;
   }
 

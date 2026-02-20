@@ -405,19 +405,72 @@ export class UtahScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured / verified fee data (primary source of truth)
+    //    Source: wildlife.utah.gov — UT big game fee schedule
+    // -----------------------------------------------------------------
+
+    this.log("Emitting structured UT fee data...");
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "UT", feeName: "Nonresident Hunting License", amount: 65, residency: "nonresident", frequency: "annual" },
+      { stateId: "UT", feeName: "Application Fee", amount: 10, residency: "both", frequency: "per_species" },
+      { stateId: "UT", feeName: "Preference/Bonus Point Fee", amount: 10, residency: "both", frequency: "per_species", notes: "Fee to purchase a preference or bonus point" },
+    );
+
+    // Per-species tag costs — nonresident
+    const nrTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 849],
+      ["mule_deer", "Deer Tag", 599],
+      ["black_bear", "Black Bear Tag", 600],
+      ["moose", "Moose Tag", 3488],
+      ["pronghorn", "Pronghorn Tag", 571],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 3988],
+      ["mountain_goat", "Mountain Goat Tag", 3488],
+      ["bison", "Bison Tag", 4840],
+      ["mountain_lion", "Mountain Lion Tag", 253],
+    ];
+    for (const [speciesId, name, amount] of nrTags) {
+      fees.push({ stateId: "UT", feeName: `NR ${name}`, amount, residency: "nonresident", speciesId, frequency: "one_time" });
+    }
+
+    // Per-species tag costs — resident
+    const rTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 50],
+      ["mule_deer", "Deer Tag", 40],
+      ["black_bear", "Black Bear Tag", 83],
+      ["moose", "Moose Tag", 408],
+      ["pronghorn", "Pronghorn Tag", 50],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 508],
+      ["mountain_goat", "Mountain Goat Tag", 408],
+      ["bison", "Bison Tag", 608],
+      ["mountain_lion", "Mountain Lion Tag", 30],
+    ];
+    for (const [speciesId, name, amount] of rTags) {
+      fees.push({ stateId: "UT", feeName: `R ${name}`, amount, residency: "resident", speciesId, frequency: "one_time" });
+    }
+
+    this.log(`  Emitted ${fees.length} structured fee entries`);
+
+    // -----------------------------------------------------------------
+    // 2. Fallback: scrape the DWR website for any additional / updated fees
+    // -----------------------------------------------------------------
+
     try {
-      this.log("Scraping Utah DWR for fee data...");
+      this.log("Scraping Utah DWR for supplemental fee data...");
       const urls = [
         "https://wildlife.utah.gov/licenses-permits.html",
         "https://wildlife.utah.gov/hunting.html",
       ];
+
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
           const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
-          const seen = new Set<string>();
 
           while ((match = feePattern.exec(html)) !== null) {
             const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -441,39 +494,8 @@ export class UtahScraper extends BaseScraper {
                 speciesId: this.detectSingleSpecies(lower) ?? undefined,
                 frequency: lower.includes("per species") ? "per_species"
                   : lower.includes("annual") ? "annual" : "one_time",
-                notes: label,
+                notes: `Scraped from ${url}`,
               });
-            }
-          }
-
-          // Also parse HTML tables
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              for (const cell of cells) {
-                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-                if (dollarMatch) {
-                  const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
-                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-                  if (amount > 0 && feeName) {
-                    const key = `${amount}:${feeName.substring(0, 30)}`;
-                    if (!seen.has(key)) {
-                      seen.add(key);
-                      fees.push({
-                        stateId: "UT",
-                        feeName: feeName.substring(0, 100),
-                        amount,
-                        residency: feeName.toLowerCase().includes("nonresident") ? "nonresident" : "both",
-                        frequency: "annual",
-                      });
-                    }
-                  }
-                }
-              }
             }
           }
         } catch (err) {
@@ -481,10 +503,10 @@ export class UtahScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} UT fee entries`);
+    this.log(`Found ${fees.length} UT fee entries total`);
     return fees;
   }
 

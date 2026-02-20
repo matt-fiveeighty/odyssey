@@ -354,70 +354,171 @@ export class ColoradoScraper extends BaseScraper {
 
   /**
    * scrapeFees — pull license/application fees from CPW.
-   * CPW fee page: cpw.state.co.us/hunting/big-game (or linked from there)
+   *
+   * Strategy:
+   *   1. Emit structured per-species tag costs (with speciesId) from verified data
+   *   2. Emit license-level fees (app fee, qualifying license, point fee) without speciesId
+   *   3. Fall back to generic regex scraping if live page fetch succeeds
+   *
+   * CPW fee pages:
+   *   - cpw.state.co.us/hunting/big-game/primary-draw
+   *   - cpw.state.co.us/hunting/licenses-and-fees
+   *   - eRegulations: colorado.huntinfoweb.com
    */
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured per-species tag costs (verified from CPW fee tables)
+    // -----------------------------------------------------------------
+    const nrTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "NR Elk License", amount: 825.03 },
+      { speciesId: "mule_deer", label: "NR Deer License", amount: 494.47 },
+      { speciesId: "black_bear", label: "NR Bear License", amount: 294.75 },
+      { speciesId: "moose", label: "NR Moose License", amount: 2758.49 },
+      { speciesId: "pronghorn", label: "NR Pronghorn License", amount: 494.47 },
+      { speciesId: "bighorn_sheep", label: "NR Bighorn Sheep License", amount: 2758.49 },
+      { speciesId: "mountain_goat", label: "NR Mountain Goat License", amount: 2758.49 },
+      { speciesId: "mountain_lion", label: "NR Mountain Lion License", amount: 825.03 },
+    ];
+
+    const rTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "Resident Elk License", amount: 54.08 },
+      { speciesId: "mule_deer", label: "Resident Deer License", amount: 35.08 },
+      { speciesId: "black_bear", label: "Resident Bear License", amount: 35.08 },
+      { speciesId: "moose", label: "Resident Moose License", amount: 303.08 },
+      { speciesId: "pronghorn", label: "Resident Pronghorn License", amount: 35.08 },
+      { speciesId: "bighorn_sheep", label: "Resident Bighorn Sheep License", amount: 303.08 },
+      { speciesId: "mountain_goat", label: "Resident Mountain Goat License", amount: 303.08 },
+      { speciesId: "mountain_lion", label: "Resident Mountain Lion License", amount: 35.08 },
+    ];
+
+    for (const tag of nrTagCosts) {
+      fees.push({
+        stateId: "CO",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "nonresident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "CPW nonresident tag/license cost",
+      });
+    }
+
+    for (const tag of rTagCosts) {
+      fees.push({
+        stateId: "CO",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "resident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "CPW resident tag/license cost",
+      });
+    }
+
+    // -----------------------------------------------------------------
+    // 2. License-level fees (no speciesId)
+    // -----------------------------------------------------------------
+    fees.push({
+      stateId: "CO",
+      feeName: "NR Qualifying License",
+      amount: 101.49,
+      residency: "nonresident",
+      frequency: "annual",
+      notes: "Required NR hunting license to apply in the draw",
+    });
+
+    fees.push({
+      stateId: "CO",
+      feeName: "Application Fee",
+      amount: 11,
+      residency: "both",
+      frequency: "per_species",
+      notes: "Per-species application fee for the primary draw",
+    });
+
+    fees.push({
+      stateId: "CO",
+      feeName: "Preference Point Fee",
+      amount: 0,
+      residency: "both",
+      frequency: "per_species",
+      notes: "$0 for common species; $100 for OIAL (moose, sheep, goat)",
+    });
+
+    // -----------------------------------------------------------------
+    // 3. Live-scrape fallback: try to extract updated fees from CPW pages
+    // -----------------------------------------------------------------
     try {
-      this.log("Scraping CPW for fee data...");
-      const html = await this.fetchPage("https://cpw.state.co.us/hunting/big-game/primary-draw");
-
-      // Look for dollar amounts with fee labels
-      const feePattern = /\$(\d+(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,60})/gi;
-      let match: RegExpExecArray | null;
+      this.log("Attempting live fee scrape from CPW pages...");
       const seen = new Set<string>();
-
-      while ((match = feePattern.exec(html)) !== null) {
-        const amount = parseFloat(match[1]);
-        const label = match[2].replace(/<[^>]*>/g, "").trim();
-
-        if (amount > 0 && amount < 5000 && label.length > 3) {
-          const key = `${amount}:${label.substring(0, 30)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const residency = label.toLowerCase().includes("nonresident") ? "nonresident" as const
-            : label.toLowerCase().includes("resident") ? "resident" as const
-            : "both" as const;
-
-          fees.push({
-            stateId: "CO",
-            feeName: label.substring(0, 100),
-            amount,
-            residency,
-            frequency: label.toLowerCase().includes("per species") ? "per_species"
-              : label.toLowerCase().includes("annual") ? "annual" : "one_time",
-            notes: label,
-          });
-        }
+      // Mark structured fees as seen so we don't duplicate
+      for (const f of fees) {
+        seen.add(`${f.amount}:${f.feeName.substring(0, 30)}`);
       }
 
-      // Also try the main fee/license page
-      const feePage = await this.fetchPage("https://cpw.state.co.us/hunting/licenses-and-fees");
-      while ((match = feePattern.exec(feePage)) !== null) {
-        const amount = parseFloat(match[1]);
-        const label = match[2].replace(/<[^>]*>/g, "").trim();
-        if (amount > 0 && amount < 5000 && label.length > 3) {
-          const key = `${amount}:${label.substring(0, 30)}`;
-          if (!seen.has(key)) {
-            seen.add(key);
-            fees.push({
-              stateId: "CO",
-              feeName: label.substring(0, 100),
-              amount,
-              residency: label.toLowerCase().includes("nonresident") ? "nonresident" : "both",
-              frequency: "annual",
-            });
+      const urls = [
+        "https://cpw.state.co.us/hunting/big-game/primary-draw",
+        "https://cpw.state.co.us/hunting/licenses-and-fees",
+      ];
+
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,60})/gi;
+          let match: RegExpExecArray | null;
+
+          while ((match = feePattern.exec(html)) !== null) {
+            const amount = parseFloat(match[1].replace(/,/g, ""));
+            const label = match[2].replace(/<[^>]*>/g, "").trim();
+
+            if (amount > 0 && amount < 5000 && label.length > 3) {
+              const key = `${amount}:${label.substring(0, 30)}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+
+              const lower = label.toLowerCase();
+              const residency = lower.includes("nonresident") ? "nonresident" as const
+                : lower.includes("resident") ? "resident" as const
+                : "both" as const;
+
+              const speciesId = this.detectSingleSpecies(lower);
+
+              fees.push({
+                stateId: "CO",
+                feeName: label.substring(0, 100),
+                amount,
+                residency,
+                speciesId: speciesId ?? undefined,
+                frequency: lower.includes("per species") ? "per_species"
+                  : lower.includes("annual") ? "annual" : "one_time",
+                notes: `Live-scraped from ${url}`,
+              });
+            }
           }
+        } catch (err) {
+          this.log(`  Live scrape failed for ${url}: ${(err as Error).message}`);
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
     this.log(`Found ${fees.length} CO fee entries`);
     return fees;
+  }
+
+  private detectSingleSpecies(text: string): string | null {
+    if (text.includes("elk")) return "elk";
+    if (text.includes("deer") || text.includes("mule")) return "mule_deer";
+    if (text.includes("bear")) return "black_bear";
+    if (text.includes("moose")) return "moose";
+    if (text.includes("pronghorn") || text.includes("antelope")) return "pronghorn";
+    if (text.includes("sheep")) return "bighorn_sheep";
+    if (text.includes("goat")) return "mountain_goat";
+    if (text.includes("lion") || text.includes("cougar")) return "mountain_lion";
+    return null;
   }
 
   /**

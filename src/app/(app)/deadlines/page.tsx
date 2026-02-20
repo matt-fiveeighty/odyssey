@@ -153,6 +153,22 @@ export default function DeadlinesPage() {
             const relevant = deadlines.filter(isRelevant);
             const other = deadlines.filter((d) => !isRelevant(d));
 
+            // Group other deadlines by state for visual separation
+            const otherByState: Record<string, Deadline[]> = {};
+            for (const d of other) {
+              if (!otherByState[d.stateId]) otherByState[d.stateId] = [];
+              otherByState[d.stateId].push(d);
+            }
+            const otherStateKeys = Object.keys(otherByState);
+
+            // Group relevant deadlines by state too
+            const relevantByState: Record<string, Deadline[]> = {};
+            for (const d of relevant) {
+              if (!relevantByState[d.stateId]) relevantByState[d.stateId] = [];
+              relevantByState[d.stateId].push(d);
+            }
+            const relevantStateKeys = Object.keys(relevantByState);
+
             return (
               <div
                 key={monthKey}
@@ -168,155 +184,172 @@ export default function DeadlinesPage() {
                   </span>
                 </div>
 
-                {/* Relevant deadlines — large cards */}
-                {relevant.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                    {relevant.map((d, i) => {
-                      const days = daysUntil(d.closeDate);
-                      const state = STATES_MAP[d.stateId];
-
-                      return (
-                        <Card
-                          key={`${d.stateId}-${d.species}-${i}`}
-                          className={`border-primary/25 bg-primary/5 ${urgencyBorder(days)}`}
+                {/* Relevant deadlines — large cards, grouped by state */}
+                {relevantStateKeys.map((stateId) => {
+                  const stateDeadlines = relevantByState[stateId];
+                  const s = STATES_MAP[stateId];
+                  return (
+                    <div key={`rel-${stateId}`} className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          className="text-[10px] font-bold px-1.5 py-0"
+                          style={{ backgroundColor: stateDeadlines[0].color, color: "white" }}
                         >
-                          <CardContent className="p-4 space-y-3">
-                            {/* Header: state badge + species avatar + name + countdown */}
-                            <div className="flex items-center gap-3">
-                              <Badge
-                                className="shrink-0 text-xs font-bold px-2 py-0.5"
-                                style={{ backgroundColor: d.color, color: "white" }}
-                              >
-                                {d.stateId}
-                              </Badge>
-                              <SpeciesAvatar speciesId={d.species} size={28} />
-                              <div className="flex-1 min-w-0">
+                          {stateId}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{s?.name}</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {stateDeadlines.map((d, i) => {
+                          const days = daysUntil(d.closeDate);
+                          const state = STATES_MAP[d.stateId];
+
+                          return (
+                            <Card
+                              key={`${d.stateId}-${d.species}-${i}`}
+                              className={`border-primary/25 bg-primary/5 ${urgencyBorder(days)}`}
+                            >
+                              <CardContent className="p-4 space-y-3">
+                                {/* Header: species avatar + name + countdown */}
+                                <div className="flex items-center gap-3">
+                                  <SpeciesAvatar speciesId={d.species} size={28} />
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-1.5">
+                                      <Star className="w-3 h-3 text-primary shrink-0" />
+                                      <span className="text-sm font-semibold truncate">
+                                        {formatSpeciesName(d.species)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className={`text-right shrink-0 ${urgencyClass(days)}`}>
+                                    <div className="text-lg font-bold leading-tight">{days}d</div>
+                                    <div className="text-[9px] opacity-70">remaining</div>
+                                  </div>
+                                </div>
+
+                                {/* Date range */}
+                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                  <Clock className="w-3.5 h-3.5 shrink-0" />
+                                  <span>{formatNAM(d.openDate)} &ndash; {formatNAM(d.closeDate)}</span>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 pt-1">
+                                  <button
+                                    onClick={() =>
+                                      exportDeadline({
+                                        stateName: d.stateName,
+                                        species: formatSpeciesName(d.species),
+                                        openDate: d.openDate,
+                                        closeDate: d.closeDate,
+                                        url: state?.buyPointsUrl,
+                                      })
+                                    }
+                                    className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                                    title="Export to calendar (.ics)"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                    .ics
+                                  </button>
+                                  {state && (
+                                    <a
+                                      href={state.buyPointsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                                      aria-label={`Apply at ${d.stateName} Fish & Game`}
+                                    >
+                                      <ExternalLink className="w-3.5 h-3.5" />
+                                      Apply
+                                    </a>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Other deadlines — compact cards, grouped by state */}
+                {otherStateKeys.map((stateId) => {
+                  const stateDeadlines = otherByState[stateId];
+                  const s = STATES_MAP[stateId];
+                  const isInvested = investedStates.has(stateId);
+                  return (
+                    <div key={`other-${stateId}`} className="mb-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          className="text-[10px] font-bold px-1.5 py-0"
+                          style={{ backgroundColor: stateDeadlines[0].color, color: "white" }}
+                        >
+                          {stateId}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{s?.name}</span>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
+                        {stateDeadlines.map((d, i) => {
+                          const days = daysUntil(d.closeDate);
+                          const state = STATES_MAP[d.stateId];
+
+                          return (
+                            <Card
+                              key={`${d.stateId}-${d.species}-other-${i}`}
+                              className={`transition-colors ${
+                                isInvested ? "border-primary/10 bg-primary/[0.02]" : ""
+                              } ${urgencyBorder(days)}`}
+                            >
+                              <CardContent className="p-2.5 space-y-1">
                                 <div className="flex items-center gap-1.5">
-                                  <Star className="w-3 h-3 text-primary shrink-0" />
-                                  <span className="text-sm font-semibold truncate">
+                                  <span className="text-xs font-medium truncate flex-1">
                                     {formatSpeciesName(d.species)}
                                   </span>
+                                  <span className={`text-[10px] font-medium shrink-0 ${urgencyClass(days)}`}>
+                                    {days}d
+                                  </span>
                                 </div>
-                                <span className="text-[10px] text-muted-foreground">{d.stateName}</span>
-                              </div>
-                              <div className={`text-right shrink-0 ${urgencyClass(days)}`}>
-                                <div className="text-lg font-bold leading-tight">{days}d</div>
-                                <div className="text-[9px] opacity-70">remaining</div>
-                              </div>
-                            </div>
-
-                            {/* Date range */}
-                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                              <Clock className="w-3.5 h-3.5 shrink-0" />
-                              <span>{formatNAM(d.openDate)} &ndash; {formatNAM(d.closeDate)}</span>
-                            </div>
-
-                            {/* Actions */}
-                            <div className="flex items-center gap-2 pt-1">
-                              <button
-                                onClick={() =>
-                                  exportDeadline({
-                                    stateName: d.stateName,
-                                    species: formatSpeciesName(d.species),
-                                    openDate: d.openDate,
-                                    closeDate: d.closeDate,
-                                    url: state?.buyPointsUrl,
-                                  })
-                                }
-                                className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                                title="Export to calendar (.ics)"
-                              >
-                                <Download className="w-3.5 h-3.5" />
-                                .ics
-                              </button>
-                              {state && (
-                                <a
-                                  href={state.buyPointsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
-                                  aria-label={`Apply at ${d.stateName} Fish & Game`}
-                                >
-                                  <ExternalLink className="w-3.5 h-3.5" />
-                                  Apply
-                                </a>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* Other deadlines — compact half-height cards */}
-                {other.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                    {other.map((d, i) => {
-                      const days = daysUntil(d.closeDate);
-                      const isInvested = investedStates.has(d.stateId);
-                      const state = STATES_MAP[d.stateId];
-
-                      return (
-                        <Card
-                          key={`${d.stateId}-${d.species}-other-${i}`}
-                          className={`transition-colors ${
-                            isInvested ? "border-primary/10 bg-primary/[0.02]" : ""
-                          } ${urgencyBorder(days)}`}
-                        >
-                          <CardContent className="p-2.5 space-y-1">
-                            <div className="flex items-center gap-1.5">
-                              <Badge
-                                className="shrink-0 text-[8px] font-bold px-1 py-0"
-                                style={{ backgroundColor: d.color, color: "white" }}
-                              >
-                                {d.stateId}
-                              </Badge>
-                              <span className="text-xs font-medium truncate flex-1">
-                                {formatSpeciesName(d.species)}
-                              </span>
-                              <span className={`text-[10px] font-medium shrink-0 ${urgencyClass(days)}`}>
-                                {days}d
-                              </span>
-                            </div>
-                            <div className="text-[10px] text-muted-foreground/70">
-                              Closes {formatShort(d.closeDate)}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <button
-                                onClick={() =>
-                                  exportDeadline({
-                                    stateName: d.stateName,
-                                    species: formatSpeciesName(d.species),
-                                    openDate: d.openDate,
-                                    closeDate: d.closeDate,
-                                    url: state?.buyPointsUrl,
-                                  })
-                                }
-                                className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                                title="Export to calendar (.ics)"
-                              >
-                                <Download className="w-2.5 h-2.5" />
-                                .ics
-                              </button>
-                              {state && (
-                                <a
-                                  href={state.buyPointsUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
-                                >
-                                  <ExternalLink className="w-2.5 h-2.5" />
-                                  Apply
-                                </a>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      );
-                    })}
-                  </div>
-                )}
+                                <div className="text-[10px] text-muted-foreground/70">
+                                  Opens {formatShort(d.openDate)} &middot; Closes {formatShort(d.closeDate)}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    onClick={() =>
+                                      exportDeadline({
+                                        stateName: d.stateName,
+                                        species: formatSpeciesName(d.species),
+                                        openDate: d.openDate,
+                                        closeDate: d.closeDate,
+                                        url: state?.buyPointsUrl,
+                                      })
+                                    }
+                                    className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                                    title="Export to calendar (.ics)"
+                                  >
+                                    <Download className="w-2.5 h-2.5" />
+                                    .ics
+                                  </button>
+                                  {state && (
+                                    <a
+                                      href={state.buyPointsUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                    >
+                                      <ExternalLink className="w-2.5 h-2.5" />
+                                      Apply
+                                    </a>
+                                  )}
+                                </div>
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

@@ -413,19 +413,69 @@ export class OregonScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured / verified fee data (primary source of truth)
+    //    Source: dfw.state.or.us — OR controlled hunt fee schedule
+    // -----------------------------------------------------------------
+
+    this.log("Emitting structured OR fee data...");
+
+    // License-level fees (no speciesId) — OR has no point purchase fee
+    fees.push(
+      { stateId: "OR", feeName: "Nonresident Hunting License", amount: 181.50, residency: "nonresident", frequency: "annual" },
+      { stateId: "OR", feeName: "Application Fee", amount: 8, residency: "both", frequency: "per_species" },
+    );
+
+    // Per-species tag costs — nonresident
+    const nrTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 588],
+      ["mule_deer", "Deer Tag", 443.50],
+      ["blacktail", "Blacktail Deer Tag", 443.50],
+      ["black_bear", "Black Bear Tag", 16.50],
+      ["pronghorn", "Pronghorn Tag", 395.50],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 1513.50],
+      ["mountain_goat", "Mountain Goat Tag", 1513.50],
+      ["mountain_lion", "Mountain Lion Tag", 16.50],
+    ];
+    for (const [speciesId, name, amount] of nrTags) {
+      fees.push({ stateId: "OR", feeName: `NR ${name}`, amount, residency: "nonresident", speciesId, frequency: "one_time" });
+    }
+
+    // Per-species tag costs — resident
+    const rTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 38],
+      ["mule_deer", "Deer Tag", 29.50],
+      ["blacktail", "Blacktail Deer Tag", 29.50],
+      ["black_bear", "Black Bear Tag", 16.50],
+      ["pronghorn", "Pronghorn Tag", 29.50],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 166.50],
+      ["mountain_goat", "Mountain Goat Tag", 166.50],
+      ["mountain_lion", "Mountain Lion Tag", 16.50],
+    ];
+    for (const [speciesId, name, amount] of rTags) {
+      fees.push({ stateId: "OR", feeName: `R ${name}`, amount, residency: "resident", speciesId, frequency: "one_time" });
+    }
+
+    this.log(`  Emitted ${fees.length} structured fee entries`);
+
+    // -----------------------------------------------------------------
+    // 2. Fallback: scrape the ODFW website for any additional / updated fees
+    // -----------------------------------------------------------------
+
     try {
-      this.log("Scraping ODFW for fee data...");
+      this.log("Scraping ODFW for supplemental fee data...");
       const urls = [
         "https://myodfw.com/articles/buying-your-hunting-license",
         "https://myodfw.com/hunting",
       ];
+
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
           const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
-          const seen = new Set<string>();
 
           while ((match = feePattern.exec(html)) !== null) {
             const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -446,37 +496,8 @@ export class OregonScraper extends BaseScraper {
                 speciesId: this.detectSingleSpecies(lower) ?? undefined,
                 frequency: lower.includes("per species") ? "per_species"
                   : lower.includes("annual") ? "annual" : "one_time",
-                notes: label,
+                notes: `Scraped from ${url}`,
               });
-            }
-          }
-
-          // Parse HTML tables too
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              for (const cell of cells) {
-                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-                if (dollarMatch) {
-                  const amt = parseFloat(dollarMatch[1].replace(/,/g, ""));
-                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-                  if (amt > 0 && feeName) {
-                    const key = `${amt}:${feeName.substring(0, 30)}`;
-                    if (!seen.has(key)) {
-                      seen.add(key);
-                      fees.push({
-                        stateId: "OR", feeName: feeName.substring(0, 100), amount: amt,
-                        residency: feeName.toLowerCase().includes("nonresident") ? "nonresident" : "both",
-                        frequency: "annual",
-                      });
-                    }
-                  }
-                }
-              }
             }
           }
         } catch (err) {
@@ -484,10 +505,10 @@ export class OregonScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} OR fee entries`);
+    this.log(`Found ${fees.length} OR fee entries total`);
     return fees;
   }
 

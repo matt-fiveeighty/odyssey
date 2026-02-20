@@ -334,19 +334,74 @@ export class IdahoScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured / verified fee data (primary source of truth)
+    //    Source: idfg.idaho.gov — ID hunting license & tag fee schedule
+    // -----------------------------------------------------------------
+
+    this.log("Emitting structured ID fee data...");
+
+    // License-level fees (no speciesId) — ID has no point system
+    fees.push(
+      { stateId: "ID", feeName: "Nonresident Hunting License", amount: 154.75, residency: "nonresident", frequency: "annual" },
+      { stateId: "ID", feeName: "Application Fee", amount: 6, residency: "both", frequency: "per_species" },
+    );
+
+    // Per-species tag costs — nonresident
+    const nrTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 651.75],
+      ["mule_deer", "Deer Tag", 351.75],
+      ["black_bear", "Black Bear Tag", 231.75],
+      ["grizzly", "Grizzly Bear Tag", 1000],
+      ["moose", "Moose Tag", 2626.75],
+      ["whitetail", "Whitetail Deer Tag", 351.75],
+      ["pronghorn", "Pronghorn Tag", 342.75],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 2626.75],
+      ["mountain_goat", "Mountain Goat Tag", 2626.75],
+      ["mountain_lion", "Mountain Lion Tag", 204.50],
+      ["wolf", "Wolf Tag", 31.75],
+    ];
+    for (const [speciesId, name, amount] of nrTags) {
+      fees.push({ stateId: "ID", feeName: `NR ${name}`, amount, residency: "nonresident", speciesId, frequency: "one_time" });
+    }
+
+    // Per-species tag costs — resident
+    const rTags: [string, string, number][] = [
+      ["elk", "Elk Tag", 26.75],
+      ["mule_deer", "Deer Tag", 18.75],
+      ["black_bear", "Black Bear Tag", 11.75],
+      ["moose", "Moose Tag", 166.75],
+      ["whitetail", "Whitetail Deer Tag", 18.75],
+      ["pronghorn", "Pronghorn Tag", 18.75],
+      ["bighorn_sheep", "Bighorn Sheep Tag", 166.75],
+      ["mountain_goat", "Mountain Goat Tag", 166.75],
+      ["mountain_lion", "Mountain Lion Tag", 11.75],
+      ["wolf", "Wolf Tag", 11.75],
+    ];
+    for (const [speciesId, name, amount] of rTags) {
+      fees.push({ stateId: "ID", feeName: `R ${name}`, amount, residency: "resident", speciesId, frequency: "one_time" });
+    }
+
+    this.log(`  Emitted ${fees.length} structured fee entries`);
+
+    // -----------------------------------------------------------------
+    // 2. Fallback: scrape the IDFG website for any additional / updated fees
+    // -----------------------------------------------------------------
+
     try {
-      this.log("Scraping IDFG for fee data...");
+      this.log("Scraping IDFG for supplemental fee data...");
       const urls = [
         "https://idfg.idaho.gov/licenses",
         "https://idfg.idaho.gov/hunt",
       ];
+
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
           const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
-          const seen = new Set<string>();
 
           while ((match = feePattern.exec(html)) !== null) {
             const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -367,37 +422,8 @@ export class IdahoScraper extends BaseScraper {
                 speciesId: this.detectSingleSpecies(lower) ?? undefined,
                 frequency: lower.includes("per species") ? "per_species"
                   : lower.includes("annual") ? "annual" : "one_time",
-                notes: label,
+                notes: `Scraped from ${url}`,
               });
-            }
-          }
-
-          // Parse HTML tables
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              for (const cell of cells) {
-                const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-                if (dollarMatch) {
-                  const amt = parseFloat(dollarMatch[1].replace(/,/g, ""));
-                  const feeName = cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-                  if (amt > 0 && feeName) {
-                    const key = `${amt}:${feeName.substring(0, 30)}`;
-                    if (!seen.has(key)) {
-                      seen.add(key);
-                      fees.push({
-                        stateId: "ID", feeName: feeName.substring(0, 100), amount: amt,
-                        residency: feeName.toLowerCase().includes("nonresident") ? "nonresident" : "both",
-                        frequency: "annual",
-                      });
-                    }
-                  }
-                }
-              }
             }
           }
         } catch (err) {
@@ -405,10 +431,10 @@ export class IdahoScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} ID fee entries`);
+    this.log(`Found ${fees.length} ID fee entries total`);
     return fees;
   }
 

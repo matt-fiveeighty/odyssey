@@ -400,19 +400,65 @@ export class AlaskaScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -------------------------------------------------------------------
+    // 1. Structured, verified fee data (primary source of truth)
+    //    Source: https://www.adfg.alaska.gov
+    //    AK has NO point system — pure random lottery.
+    //    NR "locking tags" must be purchased before the hunt.
+    // -------------------------------------------------------------------
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "AK", feeName: "NR Hunting License", amount: 265, residency: "nonresident", frequency: "annual" },
+      { stateId: "AK", feeName: "Application Fee", amount: 0, residency: "nonresident", frequency: "per_species", notes: "No separate application fee in AK" },
+      { stateId: "AK", feeName: "Preference Point Fee", amount: 0, residency: "nonresident", frequency: "per_species", notes: "AK has no point system" },
+    );
+
+    // NR per-species tag costs (locking tags)
+    const nrTags: Record<string, number> = {
+      elk: 800, mule_deer: 450, sitka_blacktail: 450, black_bear: 550,
+      grizzly: 1000, moose: 1000, caribou: 850, dall_sheep: 850,
+      mountain_goat: 600, bison: 1100, muskox: 2200, wolf: 60,
+    };
+    for (const [speciesId, amount] of Object.entries(nrTags)) {
+      fees.push({
+        stateId: "AK", feeName: `NR ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "nonresident", speciesId, frequency: "per_species",
+      });
+    }
+
+    // R per-species tag costs
+    const rTags: Record<string, number> = {
+      elk: 30, mule_deer: 30, sitka_blacktail: 30, black_bear: 25,
+      grizzly: 25, moose: 30, caribou: 30, dall_sheep: 30,
+      mountain_goat: 25, bison: 250, muskox: 500, wolf: 10,
+    };
+    for (const [speciesId, amount] of Object.entries(rTags)) {
+      fees.push({
+        stateId: "AK", feeName: `R ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "resident", speciesId, frequency: "per_species",
+      });
+    }
+
+    this.log(`Emitted ${fees.length} structured AK fee entries`);
+
+    // -------------------------------------------------------------------
+    // 2. Fallback: scrape ADF&G pages for any additional fees
+    // -------------------------------------------------------------------
     try {
-      this.log("Scraping ADF&G for fee data...");
+      this.log("Scraping ADF&G fee pages for additional data...");
       const urls = [
         "https://www.adfg.alaska.gov/index.cfm?adfg=license.main",
         ADFG_DRAW_PAGE,
       ];
+
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
           const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
-          const seen = new Set<string>();
 
           while ((match = feePattern.exec(html)) !== null) {
             const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -472,10 +518,10 @@ export class AlaskaScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Fee page scrape failed (fallback): ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} AK fee entries`);
+    this.log(`Found ${fees.length} total AK fee entries`);
     return fees;
   }
 

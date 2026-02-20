@@ -357,99 +357,206 @@ export class ArizonaScraper extends BaseScraper {
 
   /**
    * scrapeFees — pull license/application fees from AZGFD.
-   * AZGFD publishes fee schedules on the licenses & permits page.
+   *
+   * Strategy:
+   *   1. Emit structured per-species tag costs (with speciesId) from verified data
+   *   2. Emit license-level fees (app fee, qualifying license, point fee) without speciesId
+   *   3. Fall back to generic regex scraping if live page fetch succeeds
+   *
+   * AZGFD fee pages:
+   *   - azgfd.com/hunting/licenses-permits-stamps/
+   *   - eRegulations: arizona.huntinfoweb.com
    */
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -----------------------------------------------------------------
+    // 1. Structured per-species tag costs (verified from AZGFD fee tables)
+    // -----------------------------------------------------------------
+    const nrTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "NR Elk Tag", amount: 665 },
+      { speciesId: "mule_deer", label: "NR Deer Tag", amount: 315 },
+      { speciesId: "coues_deer", label: "NR Coues Deer Tag", amount: 315 },
+      { speciesId: "black_bear", label: "NR Bear Tag", amount: 165 },
+      { speciesId: "pronghorn", label: "NR Pronghorn Tag", amount: 565 },
+      { speciesId: "bighorn_sheep", label: "NR Bighorn Sheep Tag", amount: 1815 },
+      { speciesId: "bison", label: "NR Bison Tag", amount: 5415 },
+      { speciesId: "mountain_lion", label: "NR Mountain Lion Tag", amount: 75 },
+    ];
+
+    const rTagCosts: { speciesId: string; label: string; amount: number }[] = [
+      { speciesId: "elk", label: "Resident Elk Tag", amount: 48 },
+      { speciesId: "mule_deer", label: "Resident Deer Tag", amount: 32 },
+      { speciesId: "coues_deer", label: "Resident Coues Deer Tag", amount: 32 },
+      { speciesId: "black_bear", label: "Resident Bear Tag", amount: 22 },
+      { speciesId: "pronghorn", label: "Resident Pronghorn Tag", amount: 48 },
+      { speciesId: "bighorn_sheep", label: "Resident Bighorn Sheep Tag", amount: 225 },
+      { speciesId: "bison", label: "Resident Bison Tag", amount: 225 },
+      { speciesId: "mountain_lion", label: "Resident Mountain Lion Tag", amount: 10 },
+    ];
+
+    for (const tag of nrTagCosts) {
+      fees.push({
+        stateId: "AZ",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "nonresident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "AZGFD nonresident tag cost",
+      });
+    }
+
+    for (const tag of rTagCosts) {
+      fees.push({
+        stateId: "AZ",
+        feeName: tag.label,
+        amount: tag.amount,
+        residency: "resident",
+        speciesId: tag.speciesId,
+        frequency: "per_species",
+        notes: "AZGFD resident tag cost",
+      });
+    }
+
+    // -----------------------------------------------------------------
+    // 2. License-level fees (no speciesId)
+    // -----------------------------------------------------------------
+    fees.push({
+      stateId: "AZ",
+      feeName: "NR Qualifying License",
+      amount: 160,
+      residency: "nonresident",
+      frequency: "annual",
+      notes: "NR hunting license (also serves as bonus point entry)",
+    });
+
+    fees.push({
+      stateId: "AZ",
+      feeName: "Application Fee",
+      amount: 15,
+      residency: "both",
+      frequency: "per_species",
+      notes: "Per-species application processing fee",
+    });
+
+    fees.push({
+      stateId: "AZ",
+      feeName: "Preference Point Fee",
+      amount: 0,
+      residency: "both",
+      frequency: "per_species",
+      notes: "No separate point fee — license purchase IS your point entry",
+    });
+
+    // -----------------------------------------------------------------
+    // 3. Live-scrape fallback: try to extract updated fees from AZGFD pages
+    // -----------------------------------------------------------------
     try {
-      this.log("Scraping AZGFD fee schedule...");
-      const html = await this.fetchPage(
-        "https://www.azgfd.com/hunting/licenses-permits-stamps/"
-      );
-
-      // Look for dollar amounts with fee labels
-      const feePattern =
-        /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
-      let match: RegExpExecArray | null;
+      this.log("Attempting live fee scrape from AZGFD pages...");
       const seen = new Set<string>();
-
-      while ((match = feePattern.exec(html)) !== null) {
-        const amount = parseFloat(match[1].replace(/,/g, ""));
-        const label = match[2].replace(/<[^>]*>/g, "").trim();
-
-        if (amount > 0 && amount < 10000 && label.length > 3) {
-          const key = `${amount}:${label.substring(0, 30)}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-
-          const lower = label.toLowerCase();
-          const residency =
-            lower.includes("nonresident") || lower.includes("non-resident")
-              ? ("nonresident" as const)
-              : lower.includes("resident")
-                ? ("resident" as const)
-                : ("both" as const);
-
-          const speciesId = this.detectSingleSpecies(lower);
-
-          fees.push({
-            stateId: "AZ",
-            feeName: label.substring(0, 100),
-            amount,
-            residency,
-            speciesId: speciesId ?? undefined,
-            frequency: lower.includes("per species")
-              ? "per_species"
-              : lower.includes("annual")
-                ? "annual"
-                : "one_time",
-            notes: label,
-          });
-        }
+      for (const f of fees) {
+        seen.add(`${f.amount}:${f.feeName.substring(0, 30)}`);
       }
 
-      // Also parse HTML tables on the fee page
-      const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-      for (const table of tables) {
+      const urls = [
+        "https://www.azgfd.com/hunting/licenses-permits-stamps/",
+        "https://www.azgfd.com/hunting/draw-information/",
+      ];
 
-        const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-        for (const tr of trs) {
-          const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-          if (tds.length < 2) continue;
-          const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
+      for (const url of urls) {
+        try {
+          const html = await this.fetchPage(url);
+          const feePattern =
+            /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
+          let match: RegExpExecArray | null;
 
-          // Look for a cell containing a dollar amount
-          for (const cell of cells) {
-            const dollarMatch = cell.match(/\$(\d+(?:,\d{3})*(?:\.\d{2})?)/);
-            if (dollarMatch) {
-              const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
-              const feeName =
-                cells.filter((c) => c !== cell && c.length > 3)[0] || "";
-              if (amount > 0 && feeName) {
-                const key = `${amount}:${feeName.substring(0, 30)}`;
-                if (!seen.has(key)) {
-                  seen.add(key);
-                  const lower = feeName.toLowerCase();
-                  fees.push({
-                    stateId: "AZ",
-                    feeName: feeName.substring(0, 100),
-                    amount,
-                    residency: lower.includes("nonresident")
-                      ? "nonresident"
-                      : lower.includes("resident")
-                        ? "resident"
-                        : "both",
-                    frequency: "annual",
-                  });
+          while ((match = feePattern.exec(html)) !== null) {
+            const amount = parseFloat(match[1].replace(/,/g, ""));
+            const label = match[2].replace(/<[^>]*>/g, "").trim();
+
+            if (amount > 0 && amount < 10000 && label.length > 3) {
+              const key = `${amount}:${label.substring(0, 30)}`;
+              if (seen.has(key)) continue;
+              seen.add(key);
+
+              const lower = label.toLowerCase();
+              const residency =
+                lower.includes("nonresident") || lower.includes("non-resident")
+                  ? ("nonresident" as const)
+                  : lower.includes("resident")
+                    ? ("resident" as const)
+                    : ("both" as const);
+
+              const speciesId = this.detectSingleSpecies(lower);
+
+              fees.push({
+                stateId: "AZ",
+                feeName: label.substring(0, 100),
+                amount,
+                residency,
+                speciesId: speciesId ?? undefined,
+                frequency: lower.includes("per species")
+                  ? "per_species"
+                  : lower.includes("annual")
+                    ? "annual"
+                    : "one_time",
+                notes: `Live-scraped from ${url}`,
+              });
+            }
+          }
+
+          // Also parse HTML tables on the fee page
+          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+          for (const table of tables) {
+            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+            for (const tr of trs) {
+              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
+              if (tds.length < 2) continue;
+              const cells = tds.map((td) =>
+                td.replace(/<[^>]*>/g, "").trim()
+              );
+
+              for (const cell of cells) {
+                const dollarMatch = cell.match(
+                  /\$(\d+(?:,\d{3})*(?:\.\d{2})?)/
+                );
+                if (dollarMatch) {
+                  const amount = parseFloat(dollarMatch[1].replace(/,/g, ""));
+                  const feeName =
+                    cells.filter((c) => c !== cell && c.length > 3)[0] || "";
+                  if (amount > 0 && feeName) {
+                    const key = `${amount}:${feeName.substring(0, 30)}`;
+                    if (!seen.has(key)) {
+                      seen.add(key);
+                      const lower = feeName.toLowerCase();
+                      fees.push({
+                        stateId: "AZ",
+                        feeName: feeName.substring(0, 100),
+                        amount,
+                        residency: lower.includes("nonresident")
+                          ? "nonresident"
+                          : lower.includes("resident")
+                            ? "resident"
+                            : "both",
+                        speciesId: this.detectSingleSpecies(lower) ?? undefined,
+                        frequency: "annual",
+                        notes: `Live-scraped from ${url}`,
+                      });
+                    }
+                  }
                 }
               }
             }
           }
+        } catch (err) {
+          this.log(
+            `  Live scrape failed for ${url}: ${(err as Error).message}`
+          );
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
     this.log(`Found ${fees.length} AZ fee entries`);

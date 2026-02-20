@@ -18,9 +18,15 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SPECIES_IMAGES } from "@/lib/constants/species-images";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { StateOutline } from "@/components/shared/StateOutline";
+import { DataSourceBadge } from "@/components/shared/DataSourceBadge";
 import { useAppStore, useWizardStore } from "@/lib/store";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
+
+/** Format a number as $X.XX */
+function fmt(n: number): string {
+  return `$${n.toFixed(2)}`;
+}
 
 export default function CalculatorPage() {
   const confirmedAssessment = useAppStore((s) => s.confirmedAssessment);
@@ -59,21 +65,28 @@ export default function CalculatorPage() {
     );
   }
 
+  // --- Cost calculations ---
   const pointCost = fees ? (fees.pointCost[selectedSpecies] ?? 0) : 0;
   const pointsNeeded = Math.max(0, targetPoints - currentPoints);
-  const totalPointCost = pointsNeeded * pointCost;
   const licenseFee = fees?.qualifyingLicense ?? 0;
   const appFee = fees?.appFee ?? 0;
-  const annualCost = pointCost + appFee + (licenseFee > 0 ? licenseFee : 0);
-  const TAG_COST_ESTIMATES: Record<string, number> = {
-    elk: 600, mule_deer: 400, whitetail: 350, coues_deer: 250, blacktail: 300, sitka_blacktail: 600,
-    black_bear: 350, grizzly: 500, moose: 800, pronghorn: 300, bighorn_sheep: 2000,
-    dall_sheep: 1500, mountain_goat: 1500, bison: 1500, caribou: 800, mountain_lion: 400,
-    muskox: 2200, wolf: 250,
-  };
-  const estimatedTagCost = TAG_COST_ESTIMATES[selectedSpecies] ?? 400;
-  const totalCost =
-    totalPointCost + pointsNeeded * appFee + licenseFee + estimatedTagCost;
+  const tagCost = fees ? (fees.tagCosts[selectedSpecies] ?? 0) : 0;
+
+  // Does this state require qualifying license each year to hold points?
+  // States where license = your point entry: NV, AZ, UT, NM, ID, WA, AK, CO
+  // CO is special: requires NR qualifying license annually even for point-only
+  const licenseRequiredAnnually = licenseFee > 0;
+
+  // Build year cost: point + app + license (if annual)
+  const buildYearCost = pointCost + appFee + (licenseRequiredAnnually ? licenseFee : 0);
+
+  // Hunt year cost: point + app + license + tag
+  const huntYearCost = pointCost + appFee + licenseFee + tagCost;
+
+  // Total cost across all years
+  const totalCost = pointsNeeded > 0
+    ? buildYearCost * (pointsNeeded - 1) + huntYearCost
+    : huntYearCost; // 0 points needed = hunt this year
 
   return (
     <div className="p-6 space-y-6 fade-in-up">
@@ -124,6 +137,8 @@ export default function CalculatorPage() {
                 {STATES.map((s) => {
                   const sFees = resolveFees(s, homeState);
                   const cost = sFees.pointCost[selectedSpecies] ?? 0;
+                  const sTagCost = sFees.tagCosts[selectedSpecies] ?? 0;
+                  const hasSpecies = s.availableSpecies.includes(selectedSpecies);
                   const isSelected = selectedState === s.id;
                   const visual = STATE_VISUALS[s.id];
                   return (
@@ -133,7 +148,9 @@ export default function CalculatorPage() {
                       className={`group relative p-4 rounded-xl border text-left overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                         isSelected
                           ? "border-primary ring-1 ring-primary"
-                          : "border-border hover:border-primary/30"
+                          : hasSpecies
+                            ? "border-border hover:border-primary/30"
+                            : "border-border/30 opacity-40"
                       }`}
                     >
                       {/* Terrain gradient background */}
@@ -154,17 +171,21 @@ export default function CalculatorPage() {
                           />
                           <span className="text-xs font-bold text-primary">{s.abbreviation}</span>
                         </div>
-                        <p className="text-lg font-bold">
-                          ${cost ?? 0}
-                          <span className="text-xs text-muted-foreground font-normal">
-                            /pt
-                          </span>
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-1">
-                          {s.pointSystem === "random"
-                            ? "No points"
-                            : s.pointSystemDetails.description.split(".")[0]}
-                        </p>
+                        {hasSpecies ? (
+                          <>
+                            <p className="text-lg font-bold">
+                              {fmt(sTagCost)}
+                              <span className="text-[9px] text-muted-foreground font-normal ml-0.5">tag</span>
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {cost > 0 ? `${fmt(cost)}/pt` : "No points"}
+                            </p>
+                          </>
+                        ) : (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                            Not available
+                          </p>
+                        )}
                       </div>
                     </button>
                   );
@@ -243,30 +264,45 @@ export default function CalculatorPage() {
             <CardContent className="p-6 space-y-5">
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  <HuntingTerm term="preference points">Cost to Build Points</HuntingTerm>
+                  Total Investment
                 </p>
                 <p className="text-3xl font-bold text-primary">
-                  ${totalPointCost.toLocaleString()}
+                  {selectedState ? fmt(totalCost) : "--"}
                 </p>
+                {selectedState && pointsNeeded > 0 && (
+                  <p className="text-[10px] text-muted-foreground mt-1">
+                    {pointsNeeded} year{pointsNeeded !== 1 ? "s" : ""} building + hunt year
+                  </p>
+                )}
               </div>
               <Separator className="bg-border/50" />
-              <div>
-                <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-                  <HuntingTerm term="tag">Total with Tag</HuntingTerm>
-                </p>
-                <p className="text-3xl font-bold">
-                  ${totalCost.toLocaleString()}
-                </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                    <HuntingTerm term="tag">Tag Cost</HuntingTerm>
+                  </p>
+                  <p className="text-lg font-bold">
+                    {selectedState ? fmt(tagCost) : "--"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider mb-0.5">
+                    Annual Build
+                  </p>
+                  <p className="text-lg font-bold text-chart-2">
+                    {selectedState ? `${fmt(buildYearCost)}/yr` : "--"}
+                  </p>
+                </div>
               </div>
               <Separator className="bg-border/50" />
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-chart-2" />
                 <div>
                   <p className="text-xs text-muted-foreground">
-                    <HuntingTerm term="draw">Est. Years to Draw</HuntingTerm>
+                    <HuntingTerm term="draw">Years to Draw</HuntingTerm>
                   </p>
                   <p className="text-lg font-bold text-chart-2">
-                    {pointsNeeded} years
+                    {pointsNeeded} year{pointsNeeded !== 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
@@ -298,7 +334,7 @@ export default function CalculatorPage() {
                         )}
                       </div>
                       <div className="text-right">
-                        <span className="text-sm font-bold">${fee.amount}</span>
+                        <span className="text-sm font-bold">{fmt(fee.amount)}</span>
                         <span className="text-[9px] text-muted-foreground ml-1">
                           {fee.frequency === "annual" ? "/yr" : fee.frequency === "per_species" ? "/species" : "once"}
                         </span>
@@ -309,13 +345,28 @@ export default function CalculatorPage() {
                     )}
                   </div>
                 ))}
+                {/* Show tag cost in fee schedule */}
+                {tagCost > 0 && (
+                  <div className="p-2 rounded-lg bg-primary/5 border border-primary/10">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-primary">
+                        {SPECIES.find((sp) => sp.id === selectedSpecies)?.name ?? selectedSpecies} Tag
+                      </span>
+                      <div className="text-right">
+                        <span className="text-sm font-bold text-primary">{fmt(tagCost)}</span>
+                        <span className="text-[9px] text-muted-foreground ml-1">if drawn</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <Separator className="my-2" />
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    <HuntingTerm term="annual subscription">Annual cost (1 species)</HuntingTerm>
+                    <HuntingTerm term="annual subscription">Annual build cost</HuntingTerm>
                   </span>
-                  <span className="font-bold text-chart-2">${annualCost}/yr</span>
+                  <span className="font-bold text-chart-2">{fmt(buildYearCost)}/yr</span>
                 </div>
+                <DataSourceBadge stateId={state.id} dataType="Fee Schedule" className="mt-2" />
               </CardContent>
             </Card>
           )}
@@ -325,39 +376,46 @@ export default function CalculatorPage() {
             <Card className="bg-card border-border">
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm text-muted-foreground">
-                  Cost to Draw
+                  Cost Breakdown
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {licenseFee > 0 && (
+                {licenseRequiredAnnually && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">{fees?.isResident ? "Hunting License" : "Qualifying License"}</span>
-                    <span className="font-medium">${licenseFee.toFixed(2)}</span>
+                    <span className="text-muted-foreground">
+                      {fees?.isResident ? "Hunting License" : "Qualifying License"} ({pointsNeeded > 0 ? pointsNeeded : 1} yr{(pointsNeeded > 1 || pointsNeeded === 0) ? "s" : ""} x {fmt(licenseFee)})
+                    </span>
+                    <span className="font-medium">{fmt(licenseFee * (pointsNeeded > 0 ? pointsNeeded : 1))}</span>
+                  </div>
+                )}
+                {pointCost > 0 && pointsNeeded > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      Point fees ({pointsNeeded} yr{pointsNeeded !== 1 ? "s" : ""} x {fmt(pointCost)})
+                    </span>
+                    <span className="font-medium">{fmt(pointsNeeded * pointCost)}</span>
+                  </div>
+                )}
+                {appFee > 0 && pointsNeeded > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      App fees ({pointsNeeded} yr{pointsNeeded !== 1 ? "s" : ""} x {fmt(appFee)})
+                    </span>
+                    <span className="font-medium">{fmt(pointsNeeded * appFee)}</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">
-                    Point fees ({pointsNeeded} yrs × ${pointCost})
+                    {SPECIES.find((sp) => sp.id === selectedSpecies)?.name ?? selectedSpecies} tag
                   </span>
-                  <span className="font-medium">${totalPointCost}</span>
-                </div>
-                {appFee > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">
-                      App fees ({pointsNeeded} yrs × ${appFee})
-                    </span>
-                    <span className="font-medium">${pointsNeeded * appFee}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Est. tag cost</span>
-                  <span className="font-medium">${estimatedTagCost}</span>
+                  <span className="font-medium">{fmt(tagCost)}</span>
                 </div>
                 <Separator />
                 <div className="flex justify-between text-sm font-bold">
                   <span>Total Investment</span>
-                  <span className="text-primary">${totalCost.toLocaleString()}</span>
+                  <span className="text-primary">{fmt(totalCost)}</span>
                 </div>
+                {state && <DataSourceBadge stateId={state.id} dataType="Tag & Point Costs" className="mt-2" />}
               </CardContent>
             </Card>
           )}
@@ -375,7 +433,7 @@ export default function CalculatorPage() {
                 {Array.from({ length: pointsNeeded }, (_, i) => {
                   const year = new Date().getFullYear() + i;
                   const isHuntYear = i === pointsNeeded - 1;
-                  const yearCost = pointCost + appFee + (isHuntYear ? licenseFee + estimatedTagCost : 0);
+                  const yearCost = isHuntYear ? huntYearCost : buildYearCost;
                   return (
                     <div
                       key={year}
@@ -401,30 +459,40 @@ export default function CalculatorPage() {
                           </span>
                         </div>
                         <span className={`text-sm font-bold ${isHuntYear ? "text-primary" : ""}`}>
-                          ${yearCost.toLocaleString()}
+                          {fmt(yearCost)}
                         </span>
                       </div>
                       <div className="flex flex-wrap gap-x-3 mt-1">
-                        <span className="text-[10px] text-muted-foreground">
-                          Point: ${pointCost}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground">
-                          App: ${appFee}
-                        </span>
-                        {isHuntYear && licenseFee > 0 && (
+                        {licenseRequiredAnnually && (
                           <span className="text-[10px] text-muted-foreground">
-                            License: ${licenseFee}
+                            License: {fmt(licenseFee)}
+                          </span>
+                        )}
+                        {pointCost > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            Point: {fmt(pointCost)}
+                          </span>
+                        )}
+                        {appFee > 0 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            App: {fmt(appFee)}
                           </span>
                         )}
                         {isHuntYear && (
                           <span className="text-[10px] text-primary font-medium">
-                            Tag: ${estimatedTagCost}
+                            Tag: {fmt(tagCost)}
                           </span>
                         )}
                       </div>
                     </div>
                   );
                 })}
+                {/* Running total */}
+                <Separator className="my-1" />
+                <div className="flex justify-between text-sm font-bold">
+                  <span className="text-muted-foreground">Total</span>
+                  <span className="text-primary">{fmt(totalCost)}</span>
+                </div>
               </CardContent>
             </Card>
           )}

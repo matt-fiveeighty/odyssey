@@ -186,12 +186,53 @@ export class WashingtonScraper extends BaseScraper {
   async scrapeFees(): Promise<ScrapedFee[]> {
     const fees: ScrapedFee[] = [];
 
+    // -------------------------------------------------------------------
+    // 1. Structured, verified fee data (primary source of truth)
+    //    Source: https://wdfw.wa.gov/licenses/fees
+    // -------------------------------------------------------------------
+
+    // License-level fees (no speciesId)
+    fees.push(
+      { stateId: "WA", feeName: "NR Big Game Combo License", amount: 1188.04, residency: "nonresident", frequency: "annual" },
+      { stateId: "WA", feeName: "Application Fee", amount: 152.30, residency: "nonresident", frequency: "per_species" },
+      { stateId: "WA", feeName: "Preference Point Fee", amount: 0, residency: "nonresident", frequency: "per_species", notes: "No separate point fee in WA" },
+    );
+
+    // NR per-species tag costs
+    const nrTags: Record<string, number> = {
+      elk: 685.60, mule_deer: 599.07, whitetail: 599.07, black_bear: 461.10,
+      moose: 2279, pronghorn: 599.07, bighorn_sheep: 2279, mountain_goat: 2279,
+    };
+    for (const [speciesId, amount] of Object.entries(nrTags)) {
+      fees.push({
+        stateId: "WA", feeName: `NR ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "nonresident", speciesId, frequency: "per_species",
+      });
+    }
+
+    // R per-species tag costs
+    const rTags: Record<string, number> = {
+      elk: 79.40, mule_deer: 44.90, whitetail: 44.90, black_bear: 24.50,
+      moose: 326, pronghorn: 44.90, bighorn_sheep: 326, mountain_goat: 326,
+    };
+    for (const [speciesId, amount] of Object.entries(rTags)) {
+      fees.push({
+        stateId: "WA", feeName: `R ${speciesId.replace(/_/g, " ")} tag`, amount,
+        residency: "resident", speciesId, frequency: "per_species",
+      });
+    }
+
+    this.log(`Emitted ${fees.length} structured WA fee entries`);
+
+    // -------------------------------------------------------------------
+    // 2. Fallback: scrape the WDFW fees page for any additional fees
+    // -------------------------------------------------------------------
     try {
-      this.log("Scraping WDFW fees...");
+      this.log("Scraping WDFW fees page for additional data...");
       const html = await this.fetchPage(WDFW_FEES);
       const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
       let match: RegExpExecArray | null;
-      const seen = new Set<string>();
+      const seen = new Set<string>(fees.map((f) => `${f.amount}:${f.feeName.substring(0, 30)}`));
 
       while ((match = feePattern.exec(html)) !== null) {
         const amount = parseFloat(match[1].replace(/,/g, ""));
@@ -227,10 +268,10 @@ export class WashingtonScraper extends BaseScraper {
         }
       }
     } catch (err) {
-      this.log(`Fee scrape failed: ${(err as Error).message}`);
+      this.log(`Fee page scrape failed (fallback): ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} WA fee entries`);
+    this.log(`Found ${fees.length} total WA fee entries`);
     return fees;
   }
 

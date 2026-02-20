@@ -65,9 +65,13 @@ export function formatCurrencyCompact(amount: number): string {
  * Returns the original string if parsing fails.
  */
 export function formatDate(iso: string): string {
-  const [y, m, d] = iso.split("-");
+  const [y, m, d] = iso.split("-").map(Number);
   if (!y || !m || !d) return iso;
-  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
 }
 
 /**

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useAppStore } from "@/lib/store";
 import type { SavedPlan } from "@/lib/store";
-import { ChevronDown, Plus, Copy, Trash2, Pencil, Check, X, Users } from "lucide-react";
+import { ChevronDown, Plus, Copy, Trash2, Pencil, Check, X, Users, UserPlus } from "lucide-react";
 import Link from "next/link";
 
 export function PlanManager() {
@@ -36,49 +36,57 @@ export function PlanManager() {
     setShowNewPlan(false);
     setNewPlanName("");
     setNewPlanSource(null);
-  }
-
-  if (savedPlans.length <= 1 && !open) {
-    // Single plan — show compact switcher with option to create new
-    return (
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-        >
-          <Users className="w-4 h-4" />
-          <span className="font-medium">{activePlan?.name ?? "My Strategy"}</span>
-          {activePlan?.label && (
-            <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
-              {activePlan.label}
-            </span>
-          )}
-          <ChevronDown className="w-3.5 h-3.5" />
-        </button>
-      </div>
-    );
+    setOpen(false);
   }
 
   return (
     <div className="relative">
-      <button
-        onClick={() => setOpen(!open)}
-        className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-      >
-        <Users className="w-4 h-4" />
-        <span className="font-medium">{activePlan?.name ?? "My Strategy"}</span>
-        {activePlan?.label && (
-          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded font-medium">
-            {activePlan.label}
-          </span>
+      {/* Plan toggle — always visible, shows current plan with option to switch */}
+      <div className="flex items-center gap-2">
+        {/* Plan tabs for quick switching when multiple plans exist */}
+        {savedPlans.length > 1 ? (
+          <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/30 border border-border/50">
+            {savedPlans.map((plan) => (
+              <button
+                key={plan.id}
+                onClick={() => switchPlan(plan.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  plan.id === activePlanId
+                    ? "bg-primary/15 text-primary border border-primary/25"
+                    : "text-muted-foreground hover:text-foreground hover:bg-secondary/50"
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                {plan.name}
+                {plan.label && (
+                  <span className="text-[9px] bg-primary/10 text-primary/70 px-1 py-0.5 rounded">
+                    {plan.label}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Users className="w-4 h-4" />
+            <span className="font-medium">{activePlan?.name ?? "My Strategy"}</span>
+          </div>
         )}
-        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
 
+        {/* Manage button */}
+        <button
+          onClick={() => setOpen(!open)}
+          className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer border border-transparent hover:border-border/50"
+        >
+          <ChevronDown className={`w-3 h-3 transition-transform ${open ? "rotate-180" : ""}`} />
+        </button>
+      </div>
+
+      {/* Dropdown panel */}
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowNewPlan(false); }} />
-          <div className="absolute top-full left-0 mt-2 z-50 w-72 rounded-xl border border-border bg-card shadow-xl">
+          <div className="absolute top-full left-0 mt-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl">
             <div className="p-2 space-y-0.5">
               <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium px-2 py-1">
                 Your Plans
@@ -151,7 +159,14 @@ export function PlanManager() {
                     className="w-full flex items-center gap-2 p-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer"
                   >
                     <Copy className="w-4 h-4" />
-                    Duplicate as new plan
+                    Duplicate current plan
+                  </button>
+                  <button
+                    onClick={() => { setShowNewPlan(true); setNewPlanSource(activePlanId); setNewPlanName("Youth Plan"); }}
+                    className="w-full flex items-center gap-2 p-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer"
+                  >
+                    <UserPlus className="w-4 h-4" />
+                    Add plan for another person
                   </button>
                   <Link
                     href="/plan-builder"

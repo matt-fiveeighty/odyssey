@@ -267,6 +267,85 @@ export abstract class BaseScraper {
   }
 
   // -------------------------------------------------------------------------
+  // Fee → ref_states sync: push scraped fee data into the ref_states table
+  // so the app's State objects stay current with real F&G fee data.
+  // -------------------------------------------------------------------------
+
+  protected async syncFeesToRefStates(
+    fees: ScrapedFee[],
+    now: string
+  ): Promise<void> {
+    if (fees.length === 0) return;
+
+    // Separate NR tag costs, R tag costs, and license-level fees
+    const tagCosts: Record<string, number> = {};
+    const residentTagCosts: Record<string, number> = {};
+    let appFee = 0;
+    let qualifyingLicense = 0;
+    let pointFee = 0;
+
+    for (const fee of fees) {
+      const nameLower = fee.feeName.toLowerCase();
+
+      // Per-species tag costs
+      if (fee.speciesId) {
+        if (fee.residency === "nonresident" || fee.residency === "both") {
+          tagCosts[fee.speciesId] = fee.amount;
+        }
+        if (fee.residency === "resident") {
+          residentTagCosts[fee.speciesId] = fee.amount;
+        }
+        continue;
+      }
+
+      // License-level fees (no speciesId)
+      if (nameLower.match(/app(lication)?\s*(fee|cost)/)) {
+        appFee = fee.amount;
+      } else if (nameLower.match(/point\s*(fee|cost)|preference\s*(fee|cost)/)) {
+        pointFee = fee.amount;
+      } else if (
+        nameLower.match(
+          /license|qualifying|sportsman|conservation|habitat|combo/
+        )
+      ) {
+        qualifyingLicense = fee.amount;
+      }
+    }
+
+    // Only sync if we got meaningful per-species data
+    if (Object.keys(tagCosts).length === 0) {
+      this.log("  No NR tag costs found in scraped fees — skipping ref_states sync");
+      return;
+    }
+
+    const updatePayload: Record<string, unknown> = {
+      tag_costs: tagCosts,
+      license_fees: { qualifyingLicense, appFee, pointFee },
+      source_url: this.sourceUrl,
+      source_pulled_at: now,
+      updated_at: now,
+    };
+
+    // Only include resident tag costs if we actually scraped them
+    if (Object.keys(residentTagCosts).length > 0) {
+      updatePayload.resident_tag_costs = residentTagCosts;
+    }
+
+    const { error } = await this.supabase
+      .from("ref_states")
+      .update(updatePayload)
+      .eq("id", this.stateId);
+
+    if (error) {
+      this.log(`  ref_states sync error: ${error.message}`);
+    } else {
+      this.log(
+        `  Synced ${Object.keys(tagCosts).length} NR tag costs + license fees to ref_states`
+      );
+    }
+  }
+
+  // -------------------------------------------------------------------------
   // run() — full orchestrator (units + draw history + deadlines + fees + etc.)
   // -------------------------------------------------------------------------
 
@@ -422,12 +501,13 @@ export abstract class BaseScraper {
     }
 
     // --- 4. Scrape & upsert fees ---
+    let scrapedFees: ScrapedFee[] = [];
     try {
       this.log("Scraping fees...");
-      const fees = await this.scrapeFees();
-      if (fees.length > 0) {
-        this.log(`  Found ${fees.length} fee entries`);
-        const rows = fees.map((f) => ({
+      scrapedFees = await this.scrapeFees();
+      if (scrapedFees.length > 0) {
+        this.log(`  Found ${scrapedFees.length} fee entries`);
+        const rows = scrapedFees.map((f) => ({
           state_id: f.stateId,
           fee_name: f.feeName,
           amount: f.amount,
@@ -446,12 +526,21 @@ export abstract class BaseScraper {
         if (error) {
           errors.push(`fees upsert: ${error.message}`);
         } else {
-          feeCount = fees.length;
+          feeCount = scrapedFees.length;
         }
         this.log(`  Upserted ${feeCount} fees`);
       }
     } catch (err) {
       const msg = `scrapeFees failed: ${(err as Error).message}`;
+      errors.push(msg);
+      this.log(`  ${msg}`);
+    }
+
+    // --- 4b. Sync fee data → ref_states (keeps app State objects current) ---
+    try {
+      await this.syncFeesToRefStates(scrapedFees, now);
+    } catch (err) {
+      const msg = `syncFeesToRefStates failed: ${(err as Error).message}`;
       errors.push(msg);
       this.log(`  ${msg}`);
     }

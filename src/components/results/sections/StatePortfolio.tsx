@@ -7,6 +7,7 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
+import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 import { ChevronDown, Target, Mountain, Eye } from "lucide-react";
 import { formatSpeciesName } from "@/lib/utils";
 import type { AlsoConsideredState } from "@/lib/types";
@@ -56,6 +57,7 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground line-clamp-2">{rec.reason}</p>
+          <DataSourceInline stateId={rec.stateId} />
         </div>
         <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 mt-1 ${expanded ? "rotate-180" : ""}`} />
       </button>

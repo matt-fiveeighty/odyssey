@@ -1,6 +1,6 @@
 name: Scrape State Fish & Game Data
 
-# Runs twice a month — scrapes ALL data from all 15 state F&G agencies:
+# Runs weekly — scrapes ALL data from all 15 state F&G agencies:
 #   - Draw odds & history         - Application deadlines
 #   - License & tag fees          - Season dates
 #   - Regulation changes          - Leftover tag availability
@@ -11,15 +11,13 @@ name: Scrape State Fish & Game Data
 #   Jun: CO, WY, MT, ID, UT      Jul: NM draw results
 #   Aug-Sep: Leftover/2nd draw    Year-round: fee/reg changes
 #
-# Twice monthly catches everything within ~2 weeks of publication
+# Weekly cadence catches fee changes and deadline updates within 7 days
 # while being respectful to state servers (2s delay between states).
 
 on:
   schedule:
-    # 1st of every month at 6:00 AM UTC (midnight MST)
-    - cron: "0 6 1 * *"
-    # 15th of every month at 6:00 AM UTC
-    - cron: "0 6 15 * *"
+    # Every Sunday at 6:00 AM UTC (midnight MST)
+    - cron: "0 6 * * 0"
 
   # Manual trigger from GitHub Actions UI
   workflow_dispatch:

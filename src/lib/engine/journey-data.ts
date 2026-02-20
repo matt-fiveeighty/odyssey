@@ -28,7 +28,7 @@ export interface JourneyYearData {
   activeStates: string[];
   hunts: { stateId: string; speciesId: string; unitCode?: string }[];
   pointPurchases: { stateId: string; speciesId: string }[];
-  applications: { stateId: string; speciesId: string; drawOdds?: number }[];
+  applications: { stateId: string; speciesId: string; drawOdds?: number; hasPoints?: boolean }[];
   estimatedCost: number;
   isHuntYear: boolean;
   milestoneLabel?: string;
@@ -95,6 +95,20 @@ export function buildJourneyData(
     }
   }
 
+  // Build a lookup of state+species combos that have point investment
+  // (either existing user points or buy_points actions in the roadmap)
+  const pointInvestedKeys = new Set<string>();
+  for (const [key, pts] of basePoints) {
+    if (pts > 0) pointInvestedKeys.add(key);
+  }
+  for (const ry of roadmap) {
+    for (const action of ry.actions) {
+      if (action.type === "buy_points") {
+        pointInvestedKeys.add(`${action.stateId}-${action.speciesId}`);
+      }
+    }
+  }
+
   // -----------------------------------------------------------------------
   // 1. Build JourneyYearData for each year in the horizon
   // -----------------------------------------------------------------------
@@ -124,10 +138,12 @@ export function buildJourneyData(
             unitCode: action.unitCode,
           });
         } else if (action.type === "apply") {
+          const key = `${action.stateId}-${action.speciesId}`;
           applications.push({
             stateId: action.stateId,
             speciesId: action.speciesId,
             drawOdds: action.estimatedDrawOdds,
+            hasPoints: pointInvestedKeys.has(key),
           });
         } else if (action.type === "buy_points") {
           pointPurchases.push({
