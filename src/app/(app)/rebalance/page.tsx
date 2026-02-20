@@ -9,9 +9,10 @@ export default function RebalancePage() {
       <div className="text-center max-w-md">
         <h1 className="text-xl font-semibold mb-2">Rebalance</h1>
         <p className="text-sm text-muted-foreground">
-          When draw results, regulatory changes, or budget shifts happen, this view
-          shows exactly what changed and how your roadmap adjusted. Coming in P1.
+          When draw results come in, regulations change, or your budget shifts, this view
+          will show exactly what changed and how the roadmap should adjust.
         </p>
+        <p className="text-xs text-muted-foreground/60 mt-2">Coming soon.</p>
       </div>
     </div>
   );

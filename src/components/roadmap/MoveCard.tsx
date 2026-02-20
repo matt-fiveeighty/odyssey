@@ -2,10 +2,21 @@
 
 import { Badge } from "@/components/ui/badge";
 import { MoveTagBadge } from "./MoveTagBadge";
-import { ExternalLink, Calendar } from "lucide-react";
+import { ExternalLink, Calendar, Download } from "lucide-react";
 import type { RoadmapAction } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { formatSpeciesName } from "@/lib/utils";
+import { exportDeadline } from "@/lib/calendar-export";
+
+/** Format YYYY-MM-DD → "April 7, 2026" (NAM) */
+function formatNAM(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 interface MoveCardProps {
   action: RoadmapAction;
@@ -44,8 +55,27 @@ export function MoveCard({ action }: MoveCardProps) {
           {action.dueDate && (
             <span className="flex items-center gap-1">
               <Calendar className="w-2.5 h-2.5" />
-              {action.dueDate}
+              {formatNAM(action.dueDate)}
             </span>
+          )}
+          {action.dueDate && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                exportDeadline({
+                  stateName: state?.name ?? action.stateId,
+                  species: formatSpeciesName(action.speciesId),
+                  openDate: action.dueDate!,
+                  closeDate: action.dueDate!,
+                  url: action.url,
+                });
+              }}
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+              title="Export to calendar (.ics)"
+            >
+              <Download className="w-2.5 h-2.5" />
+              .ics
+            </button>
           )}
         </div>
       </div>

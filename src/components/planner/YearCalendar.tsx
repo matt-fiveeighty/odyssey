@@ -1,21 +1,27 @@
 "use client";
 
 /**
- * YearCalendar — 12-month grid with prominent month names, hunt window
- * indicators, and expandable MonthDetail with day-level drill-down.
+ * YearCalendar — 12-month grid where each card is a real mini calendar
+ * showing day numbers in a 7-column (S M T W T F S) grid. Days with
+ * events are highlighted; clicking a day opens a detail panel below.
  */
 
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ChevronDown, ChevronUp, Target, AlertTriangle } from "lucide-react";
-import { PlanItemCard } from "./PlanItemCard";
-import { MonthDetail } from "./MonthDetail";
+import { useState, useMemo } from "react";
+import { Card } from "@/components/ui/card";
+import { Download } from "lucide-react";
+import { PlanItemCard, ITEM_TYPE_CONFIG } from "./PlanItemCard";
+import { exportPlanItem } from "@/lib/calendar-export";
 import type { PlanItem } from "./PlanItemCard";
 
 const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
+const MONTH_ABBR = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const DAY_LABELS = ["S", "M", "T", "W", "T", "F", "S"];
 
 interface YearCalendarProps {
   itemsByMonth: Record<number, PlanItem[]>;
@@ -24,174 +30,254 @@ interface YearCalendarProps {
   onRemove: (id: string) => void;
 }
 
+/** Build a lookup: day → PlanItem[] for a given month */
+function buildDayMap(items: PlanItem[], month: number, daysInMonth: number) {
+  const map: Record<number, PlanItem[]> = {};
+  for (const item of items) {
+    // Deadline / point_purchase / application / scout / prep — use item.day
+    if (item.type !== "hunt") {
+      const day = item.day ?? 1;
+      if (!map[day]) map[day] = [];
+      if (!map[day].some((e) => e.id === item.id)) map[day].push(item);
+      continue;
+    }
+
+    // Hunt windows — spread across their day range in this month
+    const startDay = item.month === month ? (item.day ?? 1) : 1;
+    const endDay =
+      item.endMonth === month || (!item.endMonth && item.month === month)
+        ? (item.endDay ?? (item.day ?? daysInMonth))
+        : item.endMonth && item.endMonth > month
+        ? daysInMonth
+        : (item.endDay ?? daysInMonth);
+
+    for (let d = startDay; d <= endDay; d++) {
+      if (!map[d]) map[d] = [];
+      if (!map[d].some((e) => e.id === item.id)) map[d].push(item);
+    }
+  }
+  return map;
+}
+
 export function YearCalendar({
   itemsByMonth,
   selectedYear,
   onToggleComplete,
   onRemove,
 }: YearCalendarProps) {
-  const [expandedMonth, setExpandedMonth] = useState<number | null>(null);
+  const [selectedCell, setSelectedCell] = useState<{
+    month: number;
+    day: number;
+  } | null>(null);
+
+  const now = new Date();
+  const todayYear = now.getFullYear();
+  const todayMonth = now.getMonth() + 1;
+  const todayDay = now.getDate();
+
+  // Precompute per-month data
+  const monthData = useMemo(() => {
+    return MONTH_NAMES.map((_, idx) => {
+      const month = idx + 1;
+      const daysInMonth = new Date(selectedYear, month, 0).getDate();
+      const firstDow = new Date(selectedYear, month - 1, 1).getDay();
+      const items = itemsByMonth[month] ?? [];
+      const dayMap = buildDayMap(items, month, daysInMonth);
+      return { month, daysInMonth, firstDow, items, dayMap };
+    });
+  }, [itemsByMonth, selectedYear]);
+
+  // Items for the selected day
+  const selectedDayItems = selectedCell
+    ? monthData[selectedCell.month - 1].dayMap[selectedCell.day] ?? []
+    : [];
 
   return (
     <div className="space-y-3">
       {/* 12-month grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {MONTH_NAMES.map((monthName, idx) => {
-          const month = idx + 1;
-          const monthItems = itemsByMonth[month] ?? [];
-          const isExpanded = expandedMonth === month;
-          const hasDeadline = monthItems.some((i) => i.type === "deadline");
-          const hasHunt = monthItems.some((i) => i.type === "hunt");
-          const huntItems = monthItems.filter((i) => i.type === "hunt");
-
-          // Current month highlight
+        {monthData.map(({ month, daysInMonth, firstDow, items, dayMap }) => {
           const isCurrentMonth =
-            selectedYear === new Date().getFullYear() &&
-            month === new Date().getMonth() + 1;
+            selectedYear === todayYear && month === todayMonth;
+
+          const hasDeadline = items.some((i) => i.type === "deadline");
+          const hasHunt = items.some((i) => i.type === "hunt");
 
           return (
             <Card
               key={month}
-              className={`bg-card cursor-pointer transition-all hover:border-primary/30 ${
-                isExpanded ? "ring-1 ring-primary/40 border-primary/40" : "border-border"
-              } ${isCurrentMonth ? "border-primary/30" : ""} ${
-                hasHunt
-                  ? "border-l-2 border-l-destructive"
+              className={`bg-card p-3 transition-all ${
+                isCurrentMonth
+                  ? "border-primary/30"
+                  : hasHunt
+                  ? "border-l-2 border-l-destructive border-border"
                   : hasDeadline
-                  ? "border-l-2 border-l-amber-400"
-                  : ""
+                  ? "border-l-2 border-l-amber-400 border-border"
+                  : "border-border"
               }`}
-              onClick={() =>
-                setExpandedMonth(isExpanded ? null : month)
-              }
             >
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-bold">
-                    {monthName}
-                  </CardTitle>
-                  <div className="flex items-center gap-1.5">
-                    {hasHunt && (
-                      <Target className="w-3 h-3 text-destructive" />
-                    )}
-                    {hasDeadline && (
-                      <AlertTriangle className="w-3 h-3 text-warning" />
-                    )}
-                    {monthItems.length > 0 && (
-                      <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-medium">
-                        {monthItems.length}
-                      </span>
-                    )}
-                    {isExpanded ? (
-                      <ChevronUp className="w-3.5 h-3.5 text-muted-foreground" />
-                    ) : (
-                      <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                {/* Hunt window bars */}
-                {huntItems.length > 0 && (
-                  <div className="mb-2 space-y-1">
-                    {huntItems.map((hw) => {
-                      const daysInMonth = new Date(
-                        selectedYear,
-                        month,
-                        0
-                      ).getDate();
-                      const startDay = hw.month === month ? (hw.day ?? 1) : 1;
-                      const endDay =
-                        hw.endMonth === month || (!hw.endMonth && hw.month === month)
-                          ? (hw.endDay ?? daysInMonth)
-                          : hw.endMonth && hw.endMonth > month
-                          ? daysInMonth
-                          : (hw.endDay ?? daysInMonth);
-
-                      const leftPct = ((startDay - 1) / daysInMonth) * 100;
-                      const widthPct =
-                        ((endDay - startDay + 1) / daysInMonth) * 100;
-
-                      return (
-                        <div
-                          key={hw.id}
-                          className="flex items-center gap-2 text-[10px]"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <div className="h-2.5 rounded-full bg-destructive/10 flex-1 relative overflow-hidden">
-                            <div
-                              className="absolute h-full rounded-full bg-destructive/30"
-                              style={{
-                                left: `${leftPct}%`,
-                                width: `${Math.min(widthPct, 100 - leftPct)}%`,
-                              }}
-                            />
-                          </div>
-                          <span className="text-destructive shrink-0 truncate max-w-[80px]">
-                            {hw.title.replace("Hunt: ", "")}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* Month name + item count */}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold">{MONTH_ABBR[month - 1]}</span>
+                {items.length > 0 && (
+                  <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-medium">
+                    {items.length}
+                  </span>
                 )}
+              </div>
 
-                {/* Item list */}
-                {monthItems.length === 0 ? (
-                  <p className="text-[10px] text-muted-foreground/40 py-1">
-                    No items
-                  </p>
-                ) : (
-                  <div className="space-y-1" onClick={(e) => e.stopPropagation()}>
-                    {(isExpanded
-                      ? []
-                      : monthItems.filter((i) => i.type !== "hunt").slice(0, 3)
-                    ).map((item) => (
-                      <PlanItemCard
-                        key={item.id}
-                        item={item}
-                        expanded={false}
-                        onToggleComplete={onToggleComplete}
-                        onRemove={onRemove}
-                      />
-                    ))}
-                    {!isExpanded &&
-                      monthItems.filter((i) => i.type !== "hunt").length > 3 && (
-                        <p className="text-[10px] text-muted-foreground/60">
-                          +{monthItems.filter((i) => i.type !== "hunt").length - 3} more
-                        </p>
+              {/* Day-of-week header */}
+              <div className="grid grid-cols-7 gap-px text-center mb-0.5">
+                {DAY_LABELS.map((d, i) => (
+                  <span
+                    key={i}
+                    className="text-[9px] text-muted-foreground/50 font-medium leading-tight"
+                  >
+                    {d}
+                  </span>
+                ))}
+              </div>
+
+              {/* Day grid */}
+              <div className="grid grid-cols-7 gap-px">
+                {/* Leading blanks */}
+                {Array.from({ length: firstDow }).map((_, i) => (
+                  <div key={`pad-${i}`} className="aspect-square" />
+                ))}
+
+                {/* Day cells */}
+                {Array.from({ length: daysInMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const dayItems = dayMap[day] ?? [];
+                  const isToday =
+                    selectedYear === todayYear &&
+                    month === todayMonth &&
+                    day === todayDay;
+                  const isSelected =
+                    selectedCell?.month === month && selectedCell?.day === day;
+
+                  const hasHuntDay = dayItems.some((it) => it.type === "hunt");
+                  const hasDeadlineDay = dayItems.some(
+                    (it) => it.type === "deadline" || it.type === "application" || it.type === "point_purchase"
+                  );
+                  const hasOther = dayItems.length > 0 && !hasHuntDay && !hasDeadlineDay;
+
+                  return (
+                    <button
+                      key={day}
+                      onClick={() =>
+                        setSelectedCell(
+                          isSelected ? null : { month, day }
+                        )
+                      }
+                      className={`
+                        aspect-square flex items-center justify-center rounded-sm text-[10px] font-mono transition-colors relative cursor-pointer
+                        ${
+                          isSelected
+                            ? "bg-primary/25 text-primary font-bold ring-1 ring-primary/50"
+                            : isToday
+                            ? "bg-primary/15 text-primary font-bold"
+                            : hasHuntDay
+                            ? "bg-destructive/15 text-destructive/90 hover:bg-destructive/25"
+                            : hasDeadlineDay
+                            ? "bg-amber-400/15 text-amber-300 hover:bg-amber-400/25"
+                            : hasOther
+                            ? "bg-primary/8 text-foreground/80 hover:bg-primary/15"
+                            : "text-muted-foreground/40 hover:bg-secondary/30 hover:text-muted-foreground/60"
+                        }
+                      `}
+                    >
+                      {day}
+                      {/* Dot indicator for multiple items */}
+                      {dayItems.length > 1 && !isSelected && (
+                        <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-current opacity-60" />
                       )}
-                  </div>
-                )}
-              </CardContent>
+                    </button>
+                  );
+                })}
+              </div>
             </Card>
           );
         })}
       </div>
 
-      {/* Expanded month detail — full-width below grid */}
-      {expandedMonth && (
-        <Card className="bg-card border-border overflow-hidden">
-          <CardHeader className="p-4 pb-0">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold">
-                {MONTH_NAMES[expandedMonth - 1]} {selectedYear}
-              </CardTitle>
-              <button
-                onClick={() => setExpandedMonth(null)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                Close
-              </button>
+      {/* Selected day detail panel — appears below calendar grid */}
+      {selectedCell && (
+        <Card className="bg-card border-border p-4 fade-in-up">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold">
+              {new Date(
+                selectedYear,
+                selectedCell.month - 1,
+                selectedCell.day
+              ).toLocaleDateString("en-US", {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}
+            </p>
+            <button
+              onClick={() => setSelectedCell(null)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+
+          {selectedDayItems.length === 0 ? (
+            <p className="text-xs text-muted-foreground/50">
+              No items scheduled
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {selectedDayItems.map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-start gap-2 p-2 rounded-md bg-secondary/10 border border-border/50"
+                >
+                  <div className="flex-1">
+                    <PlanItemCard
+                      item={item}
+                      expanded={true}
+                      onToggleComplete={onToggleComplete}
+                      onRemove={onRemove}
+                    />
+                    {item.description && (
+                      <p className="text-[10px] text-muted-foreground/60 mt-1 ml-6">
+                        {item.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    {item.estimatedCost != null && item.estimatedCost > 0 && (
+                      <span className="text-[10px] text-chart-2 font-medium">
+                        ${item.estimatedCost}
+                      </span>
+                    )}
+                    <button
+                      onClick={() =>
+                        exportPlanItem({
+                          title: item.title,
+                          description: item.description,
+                          year: selectedYear,
+                          month: item.month,
+                          day: item.day,
+                          endMonth: item.endMonth,
+                          endDay: item.endDay,
+                        })
+                      }
+                      className="inline-flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                      title="Export to calendar (.ics)"
+                    >
+                      <Download className="w-2.5 h-2.5" />
+                      .ics
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
-          </CardHeader>
-          <MonthDetail
-            year={selectedYear}
-            month={expandedMonth}
-            items={itemsByMonth[expandedMonth] ?? []}
-            onToggleComplete={onToggleComplete}
-            onRemove={onRemove}
-          />
+          )}
         </Card>
       )}
     </div>

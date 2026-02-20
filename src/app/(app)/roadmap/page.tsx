@@ -7,6 +7,7 @@ import { useRoadmapStore, useAppStore } from "@/lib/store";
 import { BoardStateHeader } from "@/components/roadmap/BoardStateHeader";
 import { DisciplineAlerts } from "@/components/roadmap/DisciplineAlerts";
 import { RoadmapTimeline } from "@/components/roadmap/RoadmapTimeline";
+import { StateYearGrid } from "@/components/roadmap/StateYearGrid";
 import { computeBoardState } from "@/lib/engine/board-state";
 import { evaluateDisciplineRules } from "@/lib/engine/discipline-rules";
 
@@ -63,6 +64,9 @@ export default function RoadmapPage() {
 
       {/* Discipline Alerts */}
       <DisciplineAlerts violations={violations} />
+
+      {/* State × Year Grid — scrollable state view with hover */}
+      <StateYearGrid roadmap={activeAssessment.roadmap} />
 
       {/* Roadmap Timeline */}
       <RoadmapTimeline roadmap={activeAssessment.roadmap} />
