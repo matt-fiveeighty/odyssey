@@ -27,7 +27,7 @@ export function StepLetsTalkMoney() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 4 of 9</p>
-          <h2 className="text-xl font-bold">Think of this like a financial portfolio.</h2>
+          <h2 className="text-xl font-bold">Set your capital allocation.</h2>
           <p className="text-sm text-muted-foreground mt-1">You have two modes: <HuntingTerm term="point year">point-building years</HuntingTerm> (low cost, maintaining positions) and <HuntingTerm term="hunt year">hunt years</HuntingTerm> (deploying capital when you <HuntingTerm term="draw">draw</HuntingTerm> a tag).</p>
         </div>
 
@@ -46,7 +46,7 @@ export function StepLetsTalkMoney() {
 
           <div>
             <label htmlFor="hunt-year-budget" className="text-sm font-medium text-muted-foreground mb-1 block"><HuntingTerm term="hunt year">Hunt-Year Deployment</HuntingTerm></label>
-            <p className="text-xs text-muted-foreground mb-3">When you <HuntingTerm term="draw">draw</HuntingTerm> the <HuntingTerm term="tag">tag</HuntingTerm> and it&apos;s go-time, what can you deploy? Tags, flights, gear, processing &mdash; the full mission.</p>
+            <p className="text-xs text-muted-foreground mb-3">When you <HuntingTerm term="draw">draw</HuntingTerm> the <HuntingTerm term="tag">tag</HuntingTerm>, what can you deploy? Tags, flights, gear, processing — the full cost of a hunt year.</p>
             <div className="flex items-center gap-4 mb-2">
               <input id="hunt-year-budget" type="range" min={2000} max={30000} step={500} value={wizard.huntYearBudget} onChange={(e) => wizard.setField("huntYearBudget", Number(e.target.value))} className="flex-1 accent-primary" />
               <span className="text-2xl font-bold text-chart-2 w-28 text-right">${wizard.huntYearBudget.toLocaleString()}</span>

@@ -17,11 +17,11 @@ const TROPHY_OPTIONS: { id: TrophyVsMeat; label: string; desc: string; icon: Rea
 ];
 
 const TROPHY_INSIGHTS: Record<string, string> = {
-  trophy_focused: "A trophy-focused strategy means fewer hunts but legendary experiences. We\u2019ll target states with bonus/preference systems where patience pays off \u2014 think NV, AZ, and WY premium units.",
-  lean_trophy: "Leaning trophy means we\u2019ll build a portfolio with 1\u20132 long-term trophy investments and 2\u20133 states where you can hunt every 2\u20133 years with solid quality.",
-  balanced: "The balanced approach is the most popular. You\u2019ll hunt something every year while building toward a premium draw every 3\u20135 years.",
-  lean_meat: "Meat-leaning means we prioritize states with high draw odds, OTC options, and second-choice tactics. You\u2019ll be in the field regularly.",
-  meat_focused: "Meat-focused means maximum time hunting. We\u2019ll stack OTC states, leftover tags, and high-odds draws. Expect to hunt 1\u20132 times per year.",
+  trophy_focused: "Trophy-focused means fewer hunts, higher quality. The portfolio targets states with bonus/preference systems where patience pays off — NV, AZ, and WY premium units.",
+  lean_trophy: "Leaning trophy means the portfolio carries 1\u20132 long-term trophy investments and 2\u20133 states where you can hunt every 2\u20133 years with solid quality.",
+  balanced: "Balanced is the most common approach. You hunt something every year while building toward a premium draw every 3\u20135 years.",
+  lean_meat: "Meat-leaning means the portfolio prioritizes states with high draw odds, OTC options, and second-choice tactics. You are in the field regularly.",
+  meat_focused: "Meat-focused means maximum time hunting. OTC states, leftover tags, and high-odds draws stacked together. Expect to hunt 1\u20132 times per year.",
 };
 
 const UNCERTAINTY_OPTIONS: { id: UncertaintyComfort; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -38,13 +38,13 @@ function evaluateDream(text: string): string[] {
   // Trophy intent
   const trophyKw = ["big", "giant", "trophy", "monster", "mature", "record", "book", "boone", "pope", "6x6", "7x7", "400", "380", "360", "crusty", "stud", "hog", "toad", "slammer", "brute", "tank", "beast"];
   if (trophyKw.some((kw) => dream.includes(kw))) {
-    signals.push("Trophy intent detected — we'll prioritize premium units and states with strong preference point systems");
+    signals.push("Trophy intent detected — premium units and states with strong preference point systems prioritized");
   }
 
   // Opportunity intent
   const oppKw = ["first", "easy", "beginner", "meat", "opportunity", "freezer", "cow", "doe", "raghorn", "any bull", "any buck"];
   if (oppKw.some((kw) => dream.includes(kw))) {
-    signals.push("Opportunity focus detected — we'll weight high-draw-odds states and OTC tags");
+    signals.push("Opportunity focus detected — high-draw-odds states and OTC tags weighted higher");
   }
 
   // Terrain matching
@@ -110,8 +110,8 @@ export function StepPaintThePicture() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 3 of 9</p>
-          <h2 className="text-xl font-bold">Paint the picture of your ideal hunt.</h2>
-          <p className="text-sm text-muted-foreground mt-1">There are no wrong answers. This helps us weight trophy potential vs. frequency vs. adventure.</p>
+          <h2 className="text-xl font-bold">Define your priorities.</h2>
+          <p className="text-sm text-muted-foreground mt-1">This shapes how the portfolio balances trophy potential, hunt frequency, and draw strategy.</p>
         </div>
 
         <div>
@@ -153,13 +153,13 @@ export function StepPaintThePicture() {
         </div>
 
         <div>
-          <label htmlFor="bucket-list-textarea" className="text-sm font-medium text-muted-foreground mb-2 block">Describe your dream hunt (optional)</label>
-          <p className="text-xs text-muted-foreground mb-3">Close your eyes. Where are you? What are you hunting? What does it feel like?</p>
+          <label htmlFor="bucket-list-textarea" className="text-sm font-medium text-muted-foreground mb-2 block">Describe your ideal hunt (optional)</label>
+          <p className="text-xs text-muted-foreground mb-3">Species, terrain, state, style — anything that shapes what you are after.</p>
           <textarea
             id="bucket-list-textarea"
             value={wizard.bucketListDescription}
             onChange={(e) => wizard.setField("bucketListDescription", e.target.value.slice(0, 500))}
-            placeholder="e.g., Archery elk in a remote Colorado wilderness area, bugling at dawn, just me and the mountains..."
+            placeholder="e.g., Archery elk in a remote Colorado wilderness area, above treeline, low pressure units"
             rows={3}
             maxLength={500}
             className="w-full px-3 py-2.5 rounded-lg bg-secondary border border-border text-sm focus:outline-none focus:ring-1 focus:ring-primary resize-none"
@@ -171,7 +171,7 @@ export function StepPaintThePicture() {
             <div className="mt-3 p-3 rounded-lg bg-primary/5 border border-primary/10 space-y-1.5 fade-in-up">
               <div className="flex items-center gap-1.5 mb-1">
                 <Sparkles className="w-3.5 h-3.5 text-primary" />
-                <span className="text-[10px] font-semibold text-primary">How this shapes your plan:</span>
+                <span className="text-[10px] font-semibold text-primary">How this shapes your portfolio:</span>
               </div>
               {dreamEvaluation.map((signal, i) => (
                 <p key={i} className="text-[11px] text-primary/80 flex items-start gap-1.5">

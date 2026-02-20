@@ -18,10 +18,10 @@ const STYLE_OPTIONS: { id: HuntStyle; label: string; desc: string; icon: React.C
 ];
 
 const STYLE_INSIGHTS: Record<string, string> = {
-  diy_backpack: "DIY backpack hunting opens up the most remote, lowest-pressure units. We\u2019ll prioritize wilderness areas and roadless zones where other hunters won\u2019t go.",
+  diy_backpack: "DIY backpack hunting opens up the most remote, lowest-pressure units. Wilderness areas and roadless zones where other hunters won't go are prioritized.",
   diy_truck: "Truck camping is the most flexible approach. You can cover more ground, run back to camp for lunch, and change plans mid-hunt without moving your whole setup.",
-  guided: "Guided hunts maximize your odds on premium tags. When you\u2019ve waited 5+ years for a draw, having a local expert is the smart play.",
-  drop_camp: "Drop camp gives you the best of both worlds \u2014 someone gets you into elk country with a camp setup, then you hunt on your own terms.",
+  guided: "Guided hunts maximize your odds on premium tags. When you have waited 5+ years for a draw, having a local expert is the smart play.",
+  drop_camp: "Drop camp gives you both sides — someone gets you into elk country with a camp setup, then you hunt on your own terms.",
 };
 
 const TERRAIN_OPTIONS = [
@@ -51,7 +51,7 @@ export function StepHuntingDNA() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 5 of 9</p>
-          <h2 className="text-xl font-bold">Your hunting DNA.</h2>
+          <h2 className="text-xl font-bold">How you hunt.</h2>
           <p className="text-sm text-muted-foreground mt-1">How you hunt is just as important as what you hunt. This shapes unit selection, logistics, and budget.</p>
         </div>
 

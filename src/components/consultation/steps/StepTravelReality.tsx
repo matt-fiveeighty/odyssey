@@ -43,8 +43,8 @@ export function StepTravelReality() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 6 of 9</p>
-          <h2 className="text-xl font-bold">Let&apos;s talk travel reality.</h2>
-          <p className="text-sm text-muted-foreground mt-1">How often, how long, and how far you\u2019ll go shapes which states make the cut.</p>
+          <h2 className="text-xl font-bold">Travel constraints.</h2>
+          <p className="text-sm text-muted-foreground mt-1">How often, how long, and how far you go shapes which states make the cut.</p>
         </div>
 
         <div>
@@ -131,14 +131,14 @@ export function StepTravelReality() {
           {wizard.huntDaysPerYear > 0 && wizard.huntDaysPerYear < 7 && (
             <div className="mt-3 p-2 rounded-lg bg-chart-4/5 border border-chart-4/10">
               <p className="text-[10px] text-chart-4 font-medium">
-                With fewer than 7 days, most western elk hunts will feel rushed. We&apos;ll prioritize states with shorter travel and truck-camp accessible units.
+                With fewer than 7 days, most western elk hunts will feel rushed. States with shorter travel and truck-camp accessible units are prioritized.
               </p>
             </div>
           )}
         </div>
 
         {wizard.huntFrequency === "every_year" && wizard.travelWillingness === "will_fly_anywhere" && (
-          <AdvisorInsight text="Hunting every year with no travel restrictions means maximum portfolio flexibility. We can spread across 6+ states and target the best draw timing regardless of geography." icon={Globe} />
+          <AdvisorInsight text="Hunting every year with no travel restrictions means maximum portfolio flexibility. Spread across 6+ states and target the best draw timing regardless of geography." icon={Globe} />
         )}
       </CardContent>
     </Card>

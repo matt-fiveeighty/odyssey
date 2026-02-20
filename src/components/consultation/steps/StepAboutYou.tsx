@@ -10,12 +10,12 @@ import { Star, Mountain, TreePine, Shield, Sun, TrendingUp, Plane } from "lucide
 import { getPrimaryAirport } from "@/lib/constants/flight-hubs";
 
 const HOME_INSIGHTS: Record<string, string> = {
-  FL: "Based in Florida \u2014 every hunt is a fly-in expedition. We\u2019ll factor in direct flight routes from MCO/TPA, meat shipping logistics, and acclimation time for elevation.",
-  TX: "Based in Texas \u2014 you\u2019re closer to the west than most. Driving to NM and CO is realistic, and DFW is a major hub for flights to any western state.",
-  NY: "Based in New York \u2014 you\u2019re looking at flights for every trip. JFK and EWR have great options to DEN, SLC, and BOI. We\u2019ll build travel into the budget.",
-  GA: "Based in Georgia \u2014 ATL is one of the best hubs in the country. Direct flights to DEN, SLC, BOI, and ABQ make your logistics cleaner than most eastern hunters.",
-  CA: "Based in California \u2014 you\u2019re already out west. Driving to NV, OR, and AZ is realistic. Flying to MT, WY, and CO is a short hop.",
-  OH: "Based in Ohio \u2014 you\u2019re in the middle ground. Some states are driveable, others need flights. We\u2019ll mix both to keep costs efficient.",
+  FL: "Based in Florida — every hunt is a fly-in expedition. Direct flight routes from MCO/TPA, meat shipping logistics, and acclimation time are all factored in.",
+  TX: "Based in Texas — closer to the west than most. Driving to NM and CO is realistic, and DFW is a major hub for flights to any western state.",
+  NY: "Based in New York — flights for every trip. JFK and EWR cover DEN, SLC, and BOI. Travel is built into the budget.",
+  GA: "Based in Georgia — ATL is one of the best hubs in the country. Direct flights to DEN, SLC, BOI, and ABQ keep logistics cleaner than most eastern hunters.",
+  CA: "Based in California — already out west. Driving to NV, OR, and AZ is realistic. Flying to MT, WY, and CO is a short hop.",
+  OH: "Based in Ohio — middle ground. Some states are driveable, others need flights. The portfolio mixes both to keep costs efficient.",
 };
 
 function getHomeInsight(state: string): string | null {
@@ -23,16 +23,16 @@ function getHomeInsight(state: string): string | null {
   const airport = getPrimaryAirport(state);
   const western = ["CO", "WY", "MT", "ID", "UT", "NV", "OR", "NM", "AZ", "WA", "AK"];
   if (western.includes(state)) {
-    return `Based in ${state} \u2014 you\u2019re already in western hunting country. Your proximity is a major advantage for scouting, extending hunts, and saving on travel.`;
+    return `Based in ${state} — already in western hunting country. Proximity is a real advantage for scouting, extending hunts, and saving on travel.`;
   }
-  return `Based in ${state}, your primary departure airport is ${airport}. We\u2019ll route all flights from there and factor travel costs into your portfolio.`;
+  return `Based in ${state}, primary departure airport is ${airport}. All flights route from there, with travel costs factored into your portfolio.`;
 }
 
 const ELEVATION_INSIGHTS: Record<string, string> = {
-  sea_level: "Coming from low elevation, we\u2019ll prioritize units under 9,500 ft and build in 2\u20133 extra acclimation days. The right preparation makes all the difference.",
-  moderate_elevation: "Comfortable to 9,000 ft opens up the majority of western hunting. We\u2019ll include some higher-altitude options but weight toward your comfort zone.",
-  high_alpine: "No elevation restrictions means every unit is on the table \u2014 including the above-treeline alpine basins where pressure drops to near zero.",
-  any: "Living in the mountains already means zero acclimation concerns. That\u2019s a real competitive advantage over flatland hunters.",
+  sea_level: "Coming from low elevation, units under 9,500 ft are prioritized with 2\u20133 extra acclimation days built in.",
+  moderate_elevation: "Comfortable to 9,000 ft opens up the majority of western hunting. Some higher-altitude options included, weighted toward your comfort zone.",
+  high_alpine: "No elevation restrictions means every unit is on the table — including above-treeline alpine basins where pressure drops to near zero.",
+  any: "Living in the mountains already means zero acclimation concerns. Real competitive advantage over flatland hunters.",
 };
 
 export function StepAboutYou() {
@@ -43,8 +43,8 @@ export function StepAboutYou() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 1 of 9</p>
-          <h2 className="text-xl font-bold">Before we plan a single hunt, we need to know the hunter.</h2>
-          <p className="text-sm text-muted-foreground mt-1">Where you live changes everything &mdash; flight logistics, elevation acclimation, what&apos;s realistic.</p>
+          <h2 className="text-xl font-bold">Start with you.</h2>
+          <p className="text-sm text-muted-foreground mt-1">Where you live shapes flight logistics, elevation acclimation, and which states are realistic.</p>
         </div>
 
         <div className="grid md:grid-cols-2 gap-4">
@@ -105,7 +105,7 @@ export function StepAboutYou() {
 
         <div>
           <label className="text-sm font-medium text-muted-foreground mb-1 block">How do you handle elevation?</label>
-          <p className="text-xs text-muted-foreground mb-3">Be honest &mdash; this directly affects which units we recommend.</p>
+          <p className="text-xs text-muted-foreground mb-3">Be honest — this directly affects which units get recommended.</p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {([
               { id: "sea_level" as PhysicalComfort, label: "Sea Level", desc: "I live at low elevation", icon: Sun },

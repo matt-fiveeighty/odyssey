@@ -8,12 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/shared/Logo";
 
 const pageTitles: Record<string, string> = {
-  "/dashboard": "Dashboard",
-  "/calculator": "Calculator",
-  "/units": "Units",
-  "/goals": "Goals",
-  "/plan-builder": "Plan Builder",
+  "/roadmap": "Roadmap",
+  "/portfolio": "Portfolio",
+  "/rebalance": "Rebalance",
+  "/this-year": "This Year",
+  "/deadlines": "Deadlines",
   "/points": "Points",
+  "/budget": "Budget",
+  "/units": "Units",
+  "/odds": "Odds",
+  "/calculator": "Calculator",
+  "/plan-builder": "Onboarding",
+  "/settings": "Settings",
+  // Legacy routes
+  "/dashboard": "Roadmap",
+  "/goals": "Goals",
 };
 
 export function Header() {

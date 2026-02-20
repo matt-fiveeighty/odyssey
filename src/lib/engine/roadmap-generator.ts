@@ -24,7 +24,10 @@ import type {
   SeasonCalendarEntry,
   PointOnlyGuideEntry,
   UserGoal,
+  YearType,
+  MoveTag,
 } from "@/lib/types";
+import { YEAR_TYPE_LABELS } from "@/lib/types";
 import { STATES as DEFAULT_STATES, STATES_MAP as DEFAULT_STATES_MAP } from "@/lib/constants/states";
 import { SAMPLE_UNITS as DEFAULT_UNITS } from "@/lib/constants/sample-units";
 import type { State, Unit } from "@/lib/types";
@@ -725,6 +728,12 @@ export function generateStrategicAssessment(
     seasonCalendar,
     pointOnlyGuide,
     createdAt: new Date().toISOString(),
+    // v4: Strategic Product Sharpening — discipline rules + board state
+    // computed after generation by evaluateDisciplineRules + computeBoardState
+    boardState: undefined,
+    disciplineViolations: [],
+    portfolioMandate: undefined,
+    lockedAnchors: [],
   };
 }
 
@@ -1100,7 +1109,7 @@ function generateInsights(
   if (input.experienceLevel === "never_hunted_west") {
     insights.push({
       title: "First Time Out West",
-      description: "We recommend starting with a state that has manageable elevation and good road access. An OTC or high-draw-odds tag will get you in the field quickly so you can learn the landscape.",
+      description: "Start with a state that has manageable elevation and good road access. An OTC or high-draw-odds tag gets you in the field quickly to learn the landscape.",
       type: "tip",
     });
   }
@@ -1124,7 +1133,7 @@ function generateInsights(
   if (recs.some((r) => r.stateId === "CO")) {
     insights.push({
       title: "Colorado Second-Choice Tactic",
-      description: "Put a point-only code as your first choice and a hunt code with high second-choice odds as your second. You build a point AND get a tag — hunt CO nearly every year.",
+      description: "Put a point-only code as your first choice and a hunt code with high second-choice odds as your second. You build a point and get a tag — hunt CO nearly every year.",
       type: "opportunity",
     });
   }
@@ -1141,7 +1150,7 @@ function generateInsights(
   if (input.openToGuided) {
     insights.push({
       title: "Mixed Style Advantage",
-      description: "Being open to guided hunts for special opportunities means you can target trophy-tier units that benefit from local outfitter knowledge while keeping most hunts DIY to save money.",
+      description: "Open to guided hunts for special opportunities means you can target trophy-tier units that benefit from local outfitter knowledge while keeping most hunts DIY to save money.",
       type: "advantage",
     });
   }
@@ -1152,7 +1161,7 @@ function generateInsights(
       : input.bucketListDescription;
     insights.push({
       title: "Dream Hunt Alignment",
-      description: `Your dream — "${dreamSnippet}" — shaped state scoring. We weighted terrain, trophy potential, and success rates to match your vision.`,
+      description: `Your description — "${dreamSnippet}" — shaped state scoring. Terrain, trophy potential, and success rates were weighted to match.`,
       type: "personalization",
     });
   }
@@ -1171,8 +1180,8 @@ function generateKeyYears(
   // Year 1: First applications
   keyYears.push({
     year: currentYear,
-    label: "Portfolio Launch",
-    description: `Submit applications across ${recs.length} states. Start building points in preference states, apply for random draw wild cards.`,
+    label: "Build Year — Portfolio Launch",
+    description: `Applications across ${recs.length} states. Build points in preference states. Apply for random draw wild cards.`,
   });
 
   // Year 3: First potential burns
@@ -1181,16 +1190,16 @@ function generateKeyYears(
   if (shortTermUnits.length > 0) {
     keyYears.push({
       year: currentYear + 2,
-      label: "First Burn Opportunity",
-      description: `Points may be sufficient to draw in ${shortTermUnits.map(u => u.unitName).slice(0, 2).join(" or ")}. Time to cash in early investments.`,
+      label: "First Conversion Window",
+      description: `Points may be sufficient to draw in ${shortTermUnits.map(u => u.unitName).slice(0, 2).join(" or ")}. Early investments ready to convert.`,
     });
   }
 
-  // Year 6: Gap year
+  // Year 6: Recovery year
   keyYears.push({
     year: currentYear + 5,
-    label: "Gap Year — Reassess",
-    description: "Evaluate point totals vs. creep. E-scout for trophy phase. Rebuild points where you burned early.",
+    label: "Recovery Year — Reassess",
+    description: "Evaluate point totals vs. creep. E-scout for next cycle. Rebuild points where you burned early.",
   });
 
   // Year 8+: Trophy phase
@@ -1198,8 +1207,8 @@ function generateKeyYears(
   if (trophyRecs.length > 0) {
     keyYears.push({
       year: currentYear + 7,
-      label: "Trophy Phase",
-      description: `Cash in accumulated points for premium hunts. ${trophyRecs.map(r => _data.statesMap[r.stateId]?.name).join(", ")} are the targets.`,
+      label: "Burn Year — Conversion",
+      description: `Convert accumulated points into premium tags. ${trophyRecs.map(r => _data.statesMap[r.stateId]?.name).join(", ")} are the targets.`,
     });
   }
 
@@ -1219,14 +1228,15 @@ function generateYearlyPlan(
   for (let i = 0; i < duration; i++) {
     const year = currentYear + i;
     const actions: RoadmapAction[] = [];
-    let phase: RoadmapYear["phase"];
+    let phase: YearType;
 
-    if (i < 3) phase = "building";
+    // Dynamic phase assignment using new YearType system
+    if (i < 3) phase = "build";
     else if (i < 5) phase = "burn";
-    else if (i === 5) phase = "gap";
-    else phase = "trophy";
+    else if (i === 5) phase = "recovery";
+    else phase = "burn"; // trophy phase → burn in new system
 
-    const isHuntYear = phase === "burn" || phase === "trophy" || (phase === "building" && i <= 1);
+    const isHuntYear = phase === "burn" || (phase === "build" && i <= 1);
 
     // Point buying for all non-random states
     for (const rec of recs) {
@@ -1244,8 +1254,8 @@ function generateYearlyPlan(
           const pointApp = state.pointOnlyApplication;
           const sp = fmtSpecies(speciesId);
           const pointDesc = pointApp
-            ? `Buy ${state.abbreviation} ${sp} preference point via ${state.name} portal${pointApp.huntCode ? ` (code: ${pointApp.huntCode})` : ""}. Total: $${Math.round(totalPointCost)}.${pointApp.secondChoiceTactic ? ` Pro tip: ${pointApp.secondChoiceTactic}` : ""}${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`
-            : `${phase === "building" ? "Build" : "Maintain"} ${state.abbreviation} ${sp} points — $${Math.round(totalPointCost)}/yr.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`;
+            ? `Buy ${state.abbreviation} ${sp} preference point via ${state.name} portal${pointApp.huntCode ? ` (code: ${pointApp.huntCode})` : ""}. $${Math.round(totalPointCost)}.${pointApp.secondChoiceTactic ? ` ${pointApp.secondChoiceTactic}` : ""}${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`
+            : `${phase === "build" ? "Build" : "Maintain"} ${state.abbreviation} ${sp} points. $${Math.round(totalPointCost)}/yr.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`;
 
           actions.push({
             type: "buy_points",
@@ -1256,6 +1266,8 @@ function generateYearlyPlan(
             costs: itemCosts,
             dueDate: deadline?.close,
             url: state.buyPointsUrl,
+            moveTag: "hold_preserve",
+            locked: false,
           });
         }
       }
@@ -1278,7 +1290,7 @@ function generateYearlyPlan(
         if (appCost > 0) itemCosts.push({ label: `${state.abbreviation} ${fmtSpecies(speciesId)} app fee`, amount: appCost, category: "application", stateId: wc.stateId, speciesId });
 
         const applyTotal = appCost + licenseCost;
-        const applyDesc = `Apply for ${state.name} ${fmtSpecies(speciesId)} — pure random draw, same odds every year. Cost: $${Math.round(applyTotal)}.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""} ${state.statePersonality ? state.name + " is a wild-card play worth taking every year." : ""}`.trim();
+        const applyDesc = `${state.name} ${fmtSpecies(speciesId)}. Random draw, same odds every year. $${Math.round(applyTotal)}.${deadline?.close ? ` Deadline: ${deadline.close}.` : ""}`;
 
         actions.push({
           type: "apply",
@@ -1289,6 +1301,8 @@ function generateYearlyPlan(
           costs: itemCosts,
           dueDate: deadline?.close,
           url: state.buyPointsUrl,
+          moveTag: "opportunity_play",
+          locked: false,
         });
       }
     }
@@ -1297,68 +1311,86 @@ function generateYearlyPlan(
     const sp = input.species[0] ?? "elk";
     const defaultState = recs[0]?.stateId ?? "CO";
 
-    if (phase === "building" && i <= 1) {
+    if (phase === "build" && i <= 1) {
       for (const rec of recs) {
         const immediateUnit = rec.bestUnits.find(u => u.drawTimeline === "Drawable now");
         if (immediateUnit) {
           const huntState = _data.statesMap[rec.stateId];
           const { tNotes } = lookupUnit(immediateUnit.unitCode, rec.stateId);
           const flight = fmtFlight(findBestRoutes(input.homeState, rec.stateId));
-          const season = tNotes?.bestSeasonTier ? ` Best season: ${tNotes.bestSeasonTier}.` : "";
+          const season = tNotes?.bestSeasonTier ? ` ${tNotes.bestSeasonTier}.` : "";
           const arrival = tNotes?.bestArrivalDate ? ` ${tNotes.bestArrivalDate}.` : "";
-          const length = tNotes?.typicalHuntLength ? ` Plan ${tNotes.typicalHuntLength}.` : "";
+          const length = tNotes?.typicalHuntLength ? ` ${tNotes.typicalHuntLength}.` : "";
 
           actions.push({
             type: "hunt", stateId: rec.stateId, speciesId: sp, unitCode: immediateUnit.unitCode,
-            description: `Hunt ${fmtSpecies(sp)} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flight}${season}${arrival}${length} ${Math.round(immediateUnit.successRate * 100)}% success rate.`,
+            description: `${fmtSpecies(sp)} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flight}${season}${arrival}${length} ${Math.round(immediateUnit.successRate * 100)}% success rate.`,
             estimatedDrawOdds: immediateUnit.successRate, cost: 600,
             costs: [{ label: "Estimated tag + travel", amount: 600, category: "tag", stateId: rec.stateId, speciesId: sp }],
+            moveTag: "opportunity_play",
+            locked: false,
           });
           break;
         }
       }
     }
 
-    if (phase === "building" && i === 2) {
-      actions.push({ type: "scout", stateId: defaultState, speciesId: sp, description: "E-scout top units for burn phase. Identify glassing spots, camp locations, access routes.", cost: 0, costs: [] });
+    if (phase === "build" && i === 2) {
+      actions.push({
+        type: "scout", stateId: defaultState, speciesId: sp,
+        description: "E-scout top units for burn phase. Glassing spots, camp locations, access routes.",
+        cost: 0, costs: [],
+        moveTag: "hold_preserve",
+        locked: false,
+      });
     }
 
-    if (phase === "burn") {
+    if (phase === "burn" && i >= 3 && i < 6) {
       const burnTarget = recs.flatMap(r => r.bestUnits).find(u => u.drawTimeline.includes("Year") && u.trophyRating >= 6);
       if (burnTarget) {
         const sid = recs.find(r => r.bestUnits.includes(burnTarget))?.stateId ?? defaultState;
         const { tNotes } = lookupUnit(burnTarget.unitCode, sid);
         const flight = fmtFlight(findBestRoutes(input.homeState, sid));
-        const trophy = tNotes?.trophyExpectation ? ` Trophy expectation: ${tNotes.trophyExpectation}` : "";
-        const season = tNotes?.bestSeasonTier ? ` Target ${tNotes.bestSeasonTier}.` : "";
+        const trophy = tNotes?.trophyExpectation ? ` ${tNotes.trophyExpectation}.` : "";
+        const season = tNotes?.bestSeasonTier ? ` ${tNotes.bestSeasonTier}.` : "";
 
         actions.push({
           type: "hunt", stateId: sid, speciesId: sp, unitCode: burnTarget.unitCode,
-          description: `Burn points — ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flight}${season}${trophy} This is where your years of point-building pay off.`,
+          description: `Burn points. ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${burnTarget.unitCode} (${burnTarget.unitName}).${flight}${season}${trophy}`,
           estimatedDrawOdds: 0.75, cost: 1200,
           costs: [{ label: "Tag + travel (burn year)", amount: 1200, category: "tag", stateId: sid, speciesId: sp }],
+          moveTag: "primary_play",
+          locked: false,
         });
       }
     }
 
-    if (phase === "gap") {
-      actions.push({ type: "scout", stateId: defaultState, speciesId: sp, description: "Gap year: Reassess portfolio. Deep e-scout for trophy phase. Review point totals vs. creep.", cost: 0, costs: [] });
+    if (phase === "recovery") {
+      actions.push({
+        type: "scout", stateId: defaultState, speciesId: sp,
+        description: "Recovery year. Reassess portfolio. Review point totals vs. creep. Deep e-scout for next cycle.",
+        cost: 0, costs: [],
+        moveTag: "hold_preserve",
+        locked: false,
+      });
     }
 
-    if (phase === "trophy") {
+    if (phase === "burn" && i >= 6) {
       const trophyTarget = recs.flatMap(r => r.bestUnits).find(u => u.trophyRating >= 8);
       if (trophyTarget) {
         const sid = recs.find(r => r.bestUnits.includes(trophyTarget))?.stateId ?? defaultState;
         const { tNotes } = lookupUnit(trophyTarget.unitCode, sid);
         const flight = fmtFlight(findBestRoutes(input.homeState, sid));
-        const trophy = tNotes?.trophyExpectation ? ` Trophy potential: ${tNotes.trophyExpectation}` : "";
-        const guided = input.openToGuided ? " Consider hiring a local guide for this caliber of hunt." : "";
+        const trophy = tNotes?.trophyExpectation ? ` ${tNotes.trophyExpectation}.` : "";
+        const guided = input.openToGuided ? " Consider a local guide for this caliber." : "";
 
         actions.push({
           type: "hunt", stateId: sid, speciesId: sp, unitCode: trophyTarget.unitCode,
-          description: `Trophy hunt — ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flight}${trophy}${guided} This is the payoff for years of disciplined point-building.`,
+          description: `Conversion window. ${fmtSpecies(sp)} in ${_data.statesMap[sid]?.abbreviation ?? sid} Unit ${trophyTarget.unitCode} (${trophyTarget.unitName}).${flight}${trophy}${guided}`,
           estimatedDrawOdds: 0.85, cost: 1800,
-          costs: [{ label: "Trophy tag + travel + gear", amount: 1800, category: "tag", stateId: sid, speciesId: sp }],
+          costs: [{ label: "Tag + travel + gear", amount: 1800, category: "tag", stateId: sid, speciesId: sp }],
+          moveTag: "primary_play",
+          locked: false,
         });
       }
     }
@@ -1374,6 +1406,7 @@ function generateYearlyPlan(
     roadmap.push({
       year,
       phase,
+      phaseLabel: YEAR_TYPE_LABELS[phase],
       actions,
       estimatedCost: Math.round(yearCost),
       isHuntYear,
@@ -1399,20 +1432,20 @@ function buildProfileSummary(
   const homeAirport = getPrimaryAirport(input.homeState);
 
   const expNarrative: Record<string, string> = {
-    never_hunted_west: `You're new to western hunting, based in ${loc}. That's not a disadvantage — it means every recommendation here is built from the ground up for your situation, with no bad habits to unlearn. We've prioritized units with good road access, manageable terrain, and high-enough success rates that your first trip west will be a confidence builder, not a suffer-fest.`,
-    "1_2_trips": `You've been out west once or twice, so you know the basics — the scale of the landscape, how different the air feels at 8,000 feet, how far a "short drive" really is. Based in ${loc}, your portfolio builds on that foundation with units that reward return trips and familiarity rather than pure luck.`,
-    "3_5_trips": `With several western hunts under your belt, you know what works and what doesn't. Based in ${loc}, you're ready for a strategic portfolio that balances immediate hunting opportunities with long-term point investments that pay off in years 5-10.`,
-    veteran: `As a veteran western hunter based in ${loc}, this portfolio is tuned for efficiency — maximizing the return on every dollar and every point. We've prioritized high-value units where your experience gives you an edge over the first-timers.`,
+    never_hunted_west: `New to western hunting, based in ${loc}. Every recommendation is built from the ground up for your situation. Units are prioritized for good road access, manageable terrain, and high-enough success rates that your first trip west builds confidence, not frustration.`,
+    "1_2_trips": `Been out west once or twice — you know the scale of the landscape, how the air feels at 8,000 feet, how far a "short drive" really is. Based in ${loc}, the portfolio builds on that foundation with units that reward return trips and familiarity over pure luck.`,
+    "3_5_trips": `Several western hunts under your belt — you know what works and what does not. Based in ${loc}, the portfolio balances immediate hunting opportunities with long-term point investments that pay off in years 5-10.`,
+    veteran: `Veteran western hunter based in ${loc}. This portfolio is tuned for efficiency — maximizing the return on every dollar and every point. High-value units where your experience gives you an edge over first-timers.`,
   };
 
   const styleName = STYLE_LABELS[input.huntStylePrimary ?? "diy_truck"]?.long ?? "DIY approach";
 
   const trophyNarrative: Record<string, string> = {
-    trophy_focused: `You're chasing quality over quantity — this means we weight toward states with predictable preference point systems (CO, WY) where you can plan exactly when you'll draw a premium unit, and long-term investments (NV, AZ) where patience pays off with the biggest animals.`,
-    lean_trophy: `You lean trophy but want to hunt along the way. That's the sweet spot — we can build points in preference states while taking random-draw shots and OTC opportunities almost every year. Your ${styleName} opens up great road-accessible units.`,
-    balanced: `You want a mix of quality hunts and regular opportunities. Your portfolio balances preference-point states (where you know when you'll draw) with random-draw wildcards (where you might draw tomorrow). Your ${styleName} gives you flexibility across unit types.`,
-    lean_meat: `You're focused on getting out there regularly with quality as a bonus. We've prioritized states with annual hunting opportunities — OTC tags, high-draw-odds units, and random-draw states where you don't have to wait years for a tag.`,
-    meat_focused: `Freezer first, antlers second. Your portfolio maximizes tags-per-year with OTC opportunities, general tags, and random draws. Point building is secondary — we invest where it's cheap and guarantees a quality hunt down the road.`,
+    trophy_focused: `Quality over quantity — the portfolio weights toward states with predictable preference point systems (CO, WY) where you can plan exactly when you draw a premium unit, and long-term investments (NV, AZ) where patience pays off with the biggest animals.`,
+    lean_trophy: `Lean trophy but want to hunt along the way. Points build in preference states while random-draw shots and OTC opportunities keep you in the field almost every year. Your ${styleName} opens up solid road-accessible units.`,
+    balanced: `Mix of quality hunts and regular opportunities. The portfolio balances preference-point states (where you know when you draw) with random-draw wildcards (where you might draw tomorrow). Your ${styleName} gives flexibility across unit types.`,
+    lean_meat: `Focused on getting out there regularly with quality as a bonus. States with annual hunting opportunities are prioritized — OTC tags, high-draw-odds units, and random-draw states where you do not wait years for a tag.`,
+    meat_focused: `Freezer first, antlers second. The portfolio maximizes tags-per-year with OTC opportunities, general tags, and random draws. Point building is secondary — invest where it is cheap and guarantees a quality hunt down the road.`,
   };
 
   // Paragraph 1: Who you are
@@ -1420,18 +1453,18 @@ function buildProfileSummary(
 
   // Paragraph 2: Goals and style
   const guidedNote = input.openToGuided
-    ? ` You're open to guided hunts for special opportunities — that's smart. For premium draws like AZ elk or NV mule deer, a local outfitter's knowledge can be the difference between a tag and a trophy.`
+    ? ` Open to guided hunts for special opportunities. For premium draws like AZ elk or NV mule deer, a local outfitter's knowledge can be the difference between a tag and a trophy.`
     : "";
   const para2 = (trophyNarrative[input.trophyVsMeat] ?? trophyNarrative.balanced) + guidedNote;
 
   // Paragraph 3: Travel and logistics strategy
   let para3 = "";
   if (distance === "far") {
-    para3 = `Every trip is a flight-based expedition from ${homeAirport}. We've built your portfolio around states with direct or one-stop flights, factored in rental car logistics (4WD where needed), and identified meat shipping solutions so you can focus on hunting instead of planning. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets support a ${recs?.length ?? 5}-state portfolio with enough headroom for flights and gear.`;
+    para3 = `Every trip is a flight-based expedition from ${homeAirport}. The portfolio is built around states with direct or one-stop flights, rental car logistics (4WD where needed) factored in, and meat shipping solutions identified. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets support a ${recs?.length ?? 5}-state portfolio with enough headroom for flights and gear.`;
   } else if (distance === "medium") {
-    para3 = `From ${loc}, you can drive to some states and fly to others — that flexibility is a real asset. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets let you build a ${recs?.length ?? 5}-state portfolio that mixes driveable hunts with fly-in trips for premium draws.`;
+    para3 = `From ${loc}, some states are driveable, others need flights — that flexibility is a real asset. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets let you build a ${recs?.length ?? 5}-state portfolio that mixes driveable hunts with fly-in trips for premium draws.`;
   } else {
-    para3 = `Your proximity to western hunting states is a major advantage — you can scout, do day trips, and extend hunts without the overhead of flights. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets stretch further when travel costs are lower, supporting a full ${recs?.length ?? 5}-state portfolio.`;
+    para3 = `Proximity to western hunting states is a major advantage — scout, do day trips, and extend hunts without the overhead of flights. Your $${input.pointYearBudget.toLocaleString()} point-year and $${input.huntYearBudget.toLocaleString()} hunt-year budgets stretch further when travel costs are lower, supporting a full ${recs?.length ?? 5}-state portfolio.`;
   }
 
   return `${para1}\n\n${para2}\n\n${para3}`;
@@ -1459,9 +1492,9 @@ function buildPointStrategy(
     const appCost = wcFees.appFee + wcFees.qualifyingLicense;
     return `No points needed — ${state.name} is a pure random draw. Apply every year for $${Math.round(appCost)} total. Same odds whether it's your first application or your tenth. ${
       stateId === "NM"
-        ? "New Mexico doesn't even require a license to apply — just the $12 application fee. It's the cheapest lottery ticket in western hunting."
+        ? "New Mexico does not even require a license to apply — just the $12 application fee. Cheapest lottery ticket in western hunting."
         : stateId === "ID"
-          ? "Your Idaho hunting license IS your tag for general units. Buy it ($185), and you're guaranteed to hunt elk and deer in general-tag zones."
+          ? "Idaho hunting license IS your tag for general units. Buy it ($185), and you are guaranteed to hunt elk and deer in general-tag zones."
           : "Low-cost annual play that could pay off any year."
     }`;
   }
@@ -1475,7 +1508,7 @@ function buildPointStrategy(
           : ""
     }Annual cost: ~$${Math.round(annualCost)}/yr.${
       topUnit ? ` Target: Unit ${topUnit.unitCode} (${topUnit.unitName}) — ${topUnit.drawTimeline}.` : ""
-    }${topUnit?.tacticalNotes?.trophyExpectation ? ` Trophy potential: ${topUnit.tacticalNotes.trophyExpectation}` : ""} This is your long-game play — don't burn these points early.`;
+    }${topUnit?.tacticalNotes?.trophyExpectation ? ` Trophy potential: ${topUnit.tacticalNotes.trophyExpectation}` : ""} This is the long-game play — do not burn these points early.`;
   }
 
   if (role === "primary") {
@@ -1783,7 +1816,7 @@ function buildStrategyOverview(
   const wildcards = recs.filter((r) => r.role === "wildcard");
   const longTerms = recs.filter((r) => r.role === "long_term");
 
-  let overview = "Your portfolio is built around ";
+  let overview = "Portfolio built around ";
   if (primaries.length > 0) {
     overview += `${primaries.map((a) => _data.statesMap[a.stateId]?.name).join(" and ")} as your anchor state${primaries.length > 1 ? "s" : ""}`;
   }
@@ -1796,7 +1829,7 @@ function buildStrategyOverview(
   if (longTerms.length > 0) {
     overview += `, and ${longTerms.map((l) => _data.statesMap[l.stateId]?.name).join(", ")} as long-term trophy investments`;
   }
-  overview += `. At ~$${Math.round(annualSub)}/year in point subscriptions, this keeps you positioned across ${recs.length} states.`;
+  overview += `. At ~$${Math.round(annualSub)}/year in point subscriptions, positioned across ${recs.length} states.`;
 
   return overview;
 }

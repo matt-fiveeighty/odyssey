@@ -133,7 +133,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
         <div className="flex items-center gap-2">
           <PlanExport assessment={assessment} milestones={assessment.milestones} />
           <Button onClick={handleConfirmPlan} className="gap-1.5">
-            <Check className="w-4 h-4" /> Confirm &amp; Track This Plan
+            <Check className="w-4 h-4" /> Confirm &amp; Start Tracking
           </Button>
         </div>
       </div>

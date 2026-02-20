@@ -88,15 +88,33 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // ── Legacy route redirects ───────────────────────────────────────
+  if (pathname.startsWith("/dashboard")) {
+    const redirectUrl = request.nextUrl.clone();
+    redirectUrl.pathname = "/roadmap";
+    return NextResponse.redirect(redirectUrl);
+  }
+
   // ── Route protection ─────────────────────────────────────────────
   const isAppRoute =
-    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/roadmap") ||
+    pathname.startsWith("/portfolio") ||
+    pathname.startsWith("/rebalance") ||
+    pathname.startsWith("/this-year") ||
+    pathname.startsWith("/deadlines") ||
     pathname.startsWith("/plan-builder") ||
     pathname.startsWith("/goals") ||
     pathname.startsWith("/units") ||
+    pathname.startsWith("/odds") ||
     pathname.startsWith("/calculator") ||
     pathname.startsWith("/points") ||
-    pathname.startsWith("/settings");
+    pathname.startsWith("/budget") ||
+    pathname.startsWith("/settings") ||
+    pathname.startsWith("/planner") ||
+    pathname.startsWith("/journey") ||
+    pathname.startsWith("/groups") ||
+    pathname.startsWith("/opportunity-finder") ||
+    pathname.startsWith("/odds-finder");
 
   // Allow valid guest users through to app routes
   if (isValidGuest && isAppRoute) {
@@ -116,7 +134,7 @@ export async function updateSession(request: NextRequest) {
     (pathname.startsWith("/auth/") || pathname === "/")
   ) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/dashboard";
+    redirectUrl.pathname = "/roadmap";
     return NextResponse.redirect(redirectUrl);
   }
 

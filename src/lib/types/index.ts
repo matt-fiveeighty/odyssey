@@ -2,6 +2,142 @@
 // Core Domain Types for Odyssey Outdoors
 // ============================================================================
 
+// ============================================================================
+// Board State System (Strategic Product Sharpening v2)
+// ============================================================================
+
+export type BoardStatus =
+  | "position_strong"
+  | "on_track"
+  | "overexposed"
+  | "plateau_detected"
+  | "conversion_approaching"
+  | "conversion_ready"
+  | "conversion_executed"
+  | "off_track";
+
+export interface BoardSignal {
+  type: "positive" | "warning" | "critical";
+  message: string;
+}
+
+export interface BoardState {
+  status: BoardStatus;
+  primaryFocus: string;         // e.g. "CO Elk — Year 3 of 5"
+  cadence: string;              // e.g. "1.2 hunts/yr — target 1.5"
+  capitalDeployed: number;      // total $ deployed this year
+  capitalBudgeted: number;      // total $ budgeted this year
+  statesActive: number;
+  speciesActive: number;
+  lastUpdated: string;          // ISO date
+  signals: BoardSignal[];
+}
+
+// ============================================================================
+// Year Type & Move Tag System
+// ============================================================================
+
+export type YearType = "build" | "positioning" | "burn" | "recovery" | "youth_window";
+export type MoveTag = "primary_play" | "opportunity_play" | "hold_preserve" | "locked_anchor";
+
+export const YEAR_TYPE_LABELS: Record<YearType, string> = {
+  build: "Build Year",
+  positioning: "Positioning Year",
+  burn: "Burn Year",
+  recovery: "Recovery Year",
+  youth_window: "Youth Window",
+};
+
+export const MOVE_TAG_LABELS: Record<MoveTag, string> = {
+  primary_play: "Primary Play",
+  opportunity_play: "Opportunity Play",
+  hold_preserve: "Hold",
+  locked_anchor: "Locked Anchor",
+};
+
+/** Map legacy phase values to new YearType */
+export function migratePhaseToYearType(phase: string): YearType {
+  const map: Record<string, YearType> = {
+    building: "build",
+    burn: "burn",
+    gap: "recovery",
+    trophy: "burn",
+  };
+  return map[phase] ?? "build";
+}
+
+// ============================================================================
+// Discipline Rule Engine
+// ============================================================================
+
+export type DisciplineRuleId =
+  | "budget_concentration"
+  | "premium_overload"
+  | "build_fatigue"
+  | "cadence_below_target"
+  | "plateau_detected"
+  | "strategic_drift"
+  | "point_abandonment";
+
+export interface DisciplineViolation {
+  ruleId: DisciplineRuleId;
+  severity: "info" | "warning" | "critical";
+  observation: string;
+  implication: string;
+  recommendation: string;
+  affectedStates?: string[];
+  affectedSpecies?: string[];
+  affectedYears?: number[];
+}
+
+// ============================================================================
+// Lockable Anchors
+// ============================================================================
+
+export type AnchorType = "species" | "state" | "youth_arc" | "emotional";
+
+export interface LockedAnchor {
+  id: string;
+  type: AnchorType;
+  label: string;                // "Dall Sheep in AK"
+  stateId?: string;
+  speciesId?: string;
+  reason: string;               // "Once in a lifetime dream"
+  createdAt: string;
+}
+
+// ============================================================================
+// Portfolio Mandate (Onboarding Output)
+// ============================================================================
+
+export interface PortfolioMandate {
+  annualBudgetCeiling: number;
+  annualHuntFrequencyTarget: number;
+  speciesPriorityRanking: string[];
+  trophyVsOpportunityLeaning: TrophyVsMeat;
+  statesInPlay: string[];
+  timeHorizonYears: 5 | 10 | 15;
+  youthToggle: boolean;
+  youthAge?: number;
+  homeState: string;
+  homeCity: string;
+  experienceLevel: ExperienceLevel;
+  huntStyle: HuntStyle;
+  existingPoints: Record<string, Record<string, number>>;
+  lockedAnchors: LockedAnchor[];
+}
+
+// ============================================================================
+// Experience & Preference Types (moved from store.ts for shared access)
+// ============================================================================
+
+export type ExperienceLevel = "never_hunted_west" | "1_2_trips" | "3_5_trips" | "veteran";
+export type TrophyVsMeat = "trophy_focused" | "lean_trophy" | "balanced" | "lean_meat" | "meat_focused";
+
+// ============================================================================
+// Point System & Base Types
+// ============================================================================
+
 export type PointSystemType =
   | "preference"       // CO (true preference, 80/20 hybrid)
   | "hybrid"           // WY (75/25), OR (75/25)
@@ -338,9 +474,13 @@ export interface UserPlan {
 // Roadmap Types
 // ============================================================================
 
+/** Legacy phase values for backwards compat */
+export type LegacyPhase = "building" | "burn" | "gap" | "trophy";
+
 export interface RoadmapYear {
   year: number;
-  phase: "building" | "burn" | "gap" | "trophy";
+  phase: YearType | LegacyPhase;
+  phaseLabel?: string;          // "Build Year", "Burn Year", etc. (new assessments always set this)
   actions: RoadmapAction[];
   estimatedCost: number;
   isHuntYear: boolean;
@@ -359,6 +499,9 @@ export interface RoadmapAction {
   costs: CostLineItem[];    // Itemized cost breakdown
   dueDate?: string;          // Application deadline
   url?: string;              // Direct link to F&G
+  moveTag?: MoveTag;         // Strategic role of this action (new assessments always set this)
+  locked?: boolean;          // User-locked anchor (engine cannot override)
+  lockReason?: string;       // "Dream species", "Youth arc", etc.
 }
 
 // ============================================================================
@@ -570,4 +713,9 @@ export interface StrategicAssessment {
   seasonCalendar?: SeasonCalendarEntry[];
   pointOnlyGuide?: PointOnlyGuideEntry[];
   createdAt: string;
+  // v4: Strategic Product Sharpening
+  boardState?: BoardState;
+  disciplineViolations?: DisciplineViolation[];
+  portfolioMandate?: PortfolioMandate;
+  lockedAnchors?: LockedAnchor[];
 }

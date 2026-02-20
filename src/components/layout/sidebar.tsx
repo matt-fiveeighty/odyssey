@@ -3,10 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
   Calculator,
   Map,
-  Target,
   Compass,
   Wallet,
   Settings,
@@ -15,8 +13,10 @@ import {
   ChevronRight,
   Search,
   DollarSign,
-  Users,
   Route,
+  PieChart,
+  RefreshCw,
+  Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -24,29 +24,33 @@ import { Logo } from "@/components/shared/Logo";
 
 const navSections = [
   {
-    label: "Explore",
+    label: "Strategy",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: Home },
-      { href: "/units", label: "Units", icon: Map },
-      { href: "/opportunity-finder", label: "Opportunity Finder", icon: Search },
-      { href: "/calculator", label: "Calculator", icon: Calculator },
+      { href: "/roadmap", label: "Roadmap", icon: Route },
+      { href: "/portfolio", label: "Portfolio", icon: PieChart },
+      { href: "/rebalance", label: "Rebalance", icon: RefreshCw },
     ],
   },
   {
-    label: "Plan",
+    label: "Execution",
     items: [
-      { href: "/planner", label: "My Year", icon: Compass },
-      { href: "/goals", label: "Goals", icon: Target },
+      { href: "/this-year", label: "This Year", icon: Compass },
+      { href: "/deadlines", label: "Deadlines", icon: Calendar },
+    ],
+  },
+  {
+    label: "Capital",
+    items: [
       { href: "/points", label: "Points", icon: Wallet },
-      { href: "/journey", label: "Journey Map", icon: Route },
+      { href: "/budget", label: "Budget", icon: DollarSign },
     ],
   },
   {
-    label: "Tools",
+    label: "Research",
     items: [
-      { href: "/budget", label: "Budget", icon: DollarSign },
-      { href: "/groups", label: "Hunt Plans", icon: Users },
-      { href: "/plan-builder", label: "Plan Builder", icon: Compass },
+      { href: "/units", label: "Units", icon: Map },
+      { href: "/odds", label: "Odds", icon: Search },
+      { href: "/calculator", label: "Calculator", icon: Calculator },
     ],
   },
 ];

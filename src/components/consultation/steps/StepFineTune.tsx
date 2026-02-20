@@ -26,8 +26,8 @@ export function StepFineTune() {
       <Card className="bg-card border-border">
         <CardContent className="p-6 text-center">
           <Settings className="w-8 h-8 text-primary mx-auto mb-3" />
-          <h2 className="text-lg font-bold mb-2">Looking good &mdash; no fine-tuning needed.</h2>
-          <p className="text-sm text-muted-foreground">Your selections are clear. Ready to generate your strategy.</p>
+          <h2 className="text-lg font-bold mb-2">No fine-tuning needed.</h2>
+          <p className="text-sm text-muted-foreground">Your selections are clear. Ready to build your roadmap.</p>
         </CardContent>
       </Card>
     );
@@ -38,7 +38,7 @@ export function StepFineTune() {
       <CardContent className="p-6 space-y-6">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 9 of 9</p>
-          <h2 className="text-xl font-bold">A few follow-up questions to dial in your strategy.</h2>
+          <h2 className="text-xl font-bold">A few follow-ups to sharpen the portfolio.</h2>
           <p className="text-sm text-muted-foreground mt-1">Based on the states you selected, we have some specific questions to optimize your plan.</p>
         </div>
 

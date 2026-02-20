@@ -24,7 +24,7 @@ import { estimateCreepRate, yearsToDrawWithCreep } from "@/lib/engine/point-cree
 
 export interface JourneyYearData {
   year: number;
-  phase: "building" | "burn" | "gap" | "trophy";
+  phase: import("@/lib/types").RoadmapYear["phase"];
   activeStates: string[];
   hunts: { stateId: string; speciesId: string; unitCode?: string }[];
   pointPurchases: { stateId: string; speciesId: string }[];

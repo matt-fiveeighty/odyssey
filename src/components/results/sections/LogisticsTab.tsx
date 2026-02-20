@@ -326,7 +326,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
 
       {/* ── Dream Hunt Investments ── */}
       {dreamHuntRecommendations.length > 0 && (
-        <CollapsibleSection title="Dream Hunt Investments" icon={Heart} badge={`${dreamHuntRecommendations.length} dreams`}>
+        <CollapsibleSection title="Long-Term Hunt Investments" icon={Heart} badge={`${dreamHuntRecommendations.length} targets`}>
           <div className="space-y-3">
             {dreamHuntRecommendations.map((dream) => (
               <div key={dream.id} className="p-4 rounded-xl bg-gradient-to-br from-secondary/30 to-secondary/10 border border-border/50">
@@ -361,7 +361,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
             {/* Dream hunt total */}
             {dreamHuntRecommendations.some((d) => d.annualPointCost != null && d.annualPointCost > 0) && (
               <div className="flex justify-between px-1 pt-2 border-t border-border/30">
-                <span className="text-xs font-semibold">Annual Dream Hunt Investment</span>
+                <span className="text-xs font-semibold">Annual Long-Term Investment</span>
                 <span className="text-xs font-bold text-chart-4">
                   ${dreamHuntRecommendations.reduce((s, d) => s + (d.annualPointCost ?? 0), 0).toLocaleString()}/yr
                 </span>

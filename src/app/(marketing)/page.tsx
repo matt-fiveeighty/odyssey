@@ -56,9 +56,9 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Goal Tracking",
+    title: "Discipline Rules",
     description:
-      "Set species goals, track milestones, and watch your western hunting portfolio grow over time.",
+      "Seven built-in rules surface when your portfolio drifts — budget concentration, build fatigue, point abandonment, and more.",
   },
 ];
 
@@ -75,12 +75,12 @@ const rtbs = [
   },
   {
     value: "10-Year Plan",
-    detail: "Phased build-burn-trophy roadmap with point projections, cost forecasts, and hunt scheduling.",
+    detail: "Phased build-burn-recovery roadmap with point projections, cost forecasts, and conversion windows identified.",
     icon: Calendar,
   },
   {
     value: "Quick Setup",
-    detail: "Answer a few questions about your goals and budget. Get a scored state portfolio, unit picks, and a full action timeline.",
+    detail: "Answer a few questions about your goals and budget. Get a scored state portfolio, unit picks, and a full action roadmap.",
     icon: Users,
   },
 ];
@@ -105,7 +105,7 @@ const showcaseSteps = [
     step: "02",
     title: "Receive Your Strategy",
     description:
-      "A personalized state portfolio with scoring breakdowns, unit recommendations, and a 10-year phased roadmap.",
+      "A scored state portfolio with visible reasoning, unit recommendations, and a 10-year phased roadmap.",
     highlights: [
       "State-by-state scoring with visible reasoning",
       "Best units matched to your profile",
@@ -120,7 +120,7 @@ const showcaseSteps = [
     step: "03",
     title: "Track & Execute",
     description:
-      "Manage points, set goals, track milestones, and follow your timeline across every state you're applying in.",
+      "Manage points, track deadlines, and follow your roadmap across every state you are applying in.",
     highlights: [
       "Points portfolio dashboard",
       "Application deadline tracking",
@@ -154,19 +154,18 @@ export default function LandingPage() {
           <div className="hero-stagger-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8 glow-primary">
             <Mountain className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">
-              Every State. One Strategy. Your Roadmap.
+              15 States. One Roadmap. Every Season Planned.
             </span>
           </div>
 
           <h1 className="hero-stagger-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-            Your Western Hunt Strategy,{" "}
-            <span className="text-primary">Engineered</span>
+            Make This Season Count.{" "}
+            <span className="text-primary">And the Next.</span>
           </h1>
 
           <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-            Stop guessing where to apply. Odyssey Outdoors builds a personalized
-            multi-year strategy across the top western states — optimized for
-            your budget, experience, and goals.
+            Your multi-year tag strategy, built and rebalanced automatically.
+            Plan across states. Convert when the window opens.
           </p>
 
           <div className="hero-stagger-4 mt-10">
@@ -443,14 +442,13 @@ export default function LandingPage() {
 
           <ScrollReveal animation="blur-in" delay={100} once={false}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Your 10-Year Strategy Starts Now
+              Build Your Roadmap
             </h2>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={200} once={false}>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              Build your personalized strategy across 15 states. Get a
-              multi-year roadmap with state rankings, unit picks, cost
-              breakdowns, and an action timeline.
+              15 states. Every point dollar mapped. Burn windows identified.
+              Discipline rules that surface when you drift.
             </p>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={300} once={false}>

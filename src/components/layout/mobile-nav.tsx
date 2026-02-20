@@ -4,37 +4,38 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  Home,
   Compass,
-  Target,
   Wallet,
   Map,
   MoreHorizontal,
   Calculator,
   Search,
   DollarSign,
-  Users,
   Route,
   Settings,
   X,
+  PieChart,
+  Calendar,
+  RefreshCw,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const primaryItems = [
-  { href: "/dashboard", label: "Home", icon: Home },
-  { href: "/planner", label: "Planner", icon: Compass },
-  { href: "/goals", label: "Goals", icon: Target },
+  { href: "/roadmap", label: "Roadmap", icon: Route },
+  { href: "/this-year", label: "This Year", icon: Compass },
   { href: "/points", label: "Points", icon: Wallet },
   { href: "/units", label: "Units", icon: Map },
 ];
 
 const moreItems = [
-  { href: "/opportunity-finder", label: "Opportunities", icon: Search },
-  { href: "/calculator", label: "Calculator", icon: Calculator },
-  { href: "/journey", label: "Journey Map", icon: Route },
+  { href: "/portfolio", label: "Portfolio", icon: PieChart },
+  { href: "/deadlines", label: "Deadlines", icon: Calendar },
   { href: "/budget", label: "Budget", icon: DollarSign },
-  { href: "/groups", label: "Groups", icon: Users },
-  { href: "/plan-builder", label: "Plan Builder", icon: Compass },
+  { href: "/odds", label: "Odds", icon: Search },
+  { href: "/calculator", label: "Calculator", icon: Calculator },
+  { href: "/rebalance", label: "Rebalance", icon: RefreshCw },
+  { href: "/plan-builder", label: "Onboarding", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

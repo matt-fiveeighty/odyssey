@@ -10,6 +10,7 @@ import {
 } from "react";
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured, createClient } from "@/lib/supabase/client";
+import { migrateAssessmentToRoadmapStore } from "@/lib/store";
 
 interface AuthContextValue {
   user: User | null;
@@ -83,6 +84,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     setUser(null);
   }, [supabase]);
+
+  // One-time migration: sync confirmedAssessment from AppStore → RoadmapStore
+  useEffect(() => {
+    migrateAssessmentToRoadmapStore();
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, isGuest, loading, signOut }}>

@@ -50,7 +50,7 @@ export function StepHelpMeChoose() {
       <CardContent className="p-6 space-y-6">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 8 of 9</p>
-          <h2 className="text-xl font-bold">Here&apos;s how the states stack up for your profile.</h2>
+          <h2 className="text-xl font-bold">State rankings for your profile.</h2>
           <p className="text-sm text-muted-foreground mt-1">We scored every state based on your answers. Toggle states on or off to build your portfolio.</p>
         </div>
 

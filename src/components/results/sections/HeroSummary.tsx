@@ -17,7 +17,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
     <div className="fade-in-up rounded-2xl bg-gradient-to-br from-[#1a2332] to-[#0f1923] border border-primary/20 p-6 md:p-8 glow-primary-lg">
       <div className="flex items-center gap-2 mb-4">
         <Sparkles className="w-5 h-5 text-primary" />
-        <h2 className="text-lg font-bold">Your Strategic Hunt Plan</h2>
+        <h2 className="text-lg font-bold">Your Roadmap</h2>
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed mb-6">{assessment.profileSummary}</p>

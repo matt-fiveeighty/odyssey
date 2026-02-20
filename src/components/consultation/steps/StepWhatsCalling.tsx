@@ -10,14 +10,14 @@ import { SPECIES_IMAGES, SPECIES_GRADIENTS, SPECIES_DESCRIPTIONS } from "@/lib/c
 import { Target, Heart, Users, Mountain, Drumstick } from "lucide-react";
 
 const COMBO_INSIGHTS: Record<string, string> = {
-  "elk+mule_deer": "Elk and mule deer is the classic western combo. Many states let you hold both tags simultaneously \u2014 we\u2019ll look for overlap units where you can hunt both in one trip.",
+  "elk+mule_deer": "Elk and mule deer is the classic western combo. Many states let you hold both tags simultaneously — overlap units let you hunt both in one trip.",
   "elk+black_bear": "Elk and black bear is smart portfolio building. Bear tags are often OTC or high-draw-odds, giving you something to hunt in point-building years.",
-  "elk+moose": "Elk as your workhorse species, moose as your 15-year dream investment. That\u2019s exactly how the best portfolios are structured.",
-  "elk+pronghorn": "Elk and pronghorn is a great combo. Pronghorn draws are easier and the seasons often overlap \u2014 two hunts in one western trip.",
-  "bighorn_sheep": "Bighorn sheep is the ultimate long game. Most hunters build points for 15-20 years. We\u2019ll structure your portfolio around this dream while keeping you hunting other species every year.",
+  "elk+moose": "Elk as your workhorse species, moose as your 15-year long-term investment. That is how the strongest portfolios are structured.",
+  "elk+pronghorn": "Elk and pronghorn pair well. Pronghorn draws are easier and the seasons often overlap — two hunts in one western trip.",
+  "bighorn_sheep": "Bighorn sheep is the longest game in western hunting. Most hunters build points for 15-20 years. The portfolio is structured around that timeline while keeping you hunting other species every year.",
   "elk+bighorn_sheep": "The classic portfolio: elk keeps you hunting while sheep points build quietly in the background. Smart money strategy.",
-  "elk+grizzly": "Elk and grizzly is a bold combination. Grizzly hunts in MT, WY, and ID are once-in-a-lifetime pursuits that add real edge to your portfolio.",
-  "coues_deer": "Coues deer is the ultimate glassing challenge. Arizona and New Mexico offer the best opportunities for the \u201cgray ghost\u201d of the Southwest.",
+  "elk+grizzly": "Elk and grizzly is a strong combination. Grizzly hunts in MT, WY, and ID are once-in-a-lifetime pursuits that add real depth to your portfolio.",
+  "coues_deer": "Coues deer is the hardest glassing challenge in North America. Arizona and New Mexico offer the best opportunities for the gray ghost of the Southwest.",
   "blacktail": "Columbia blacktail in the Pacific Northwest rainforests is a completely different experience from open-country western hunting. Great diversity play.",
 };
 
@@ -31,7 +31,7 @@ function getComboInsight(species: string[]): string | null {
   if (species.includes("elk") && species.includes("moose")) return COMBO_INSIGHTS["elk+moose"];
   if (species.includes("coues_deer")) return COMBO_INSIGHTS["coues_deer"];
   if (species.includes("blacktail")) return COMBO_INSIGHTS["blacktail"];
-  if (species.length >= 3) return `${species.length} species is an ambitious portfolio. We\u2019ll identify states where multiple species overlap so you maximize each trip.`;
+  if (species.length >= 3) return `${species.length} species across your portfolio. States with multiple species overlap are prioritized so you maximize each trip.`;
   return null;
 }
 
@@ -52,8 +52,8 @@ export function StepWhatsCalling() {
       <CardContent className="p-6 space-y-8">
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 2 of 9</p>
-          <h2 className="text-xl font-bold">What&apos;s calling you west?</h2>
-          <p className="text-sm text-muted-foreground mt-1">Select every species you&apos;re interested in. We&apos;ll build a portfolio that covers them all.</p>
+          <h2 className="text-xl font-bold">Target species and motivation.</h2>
+          <p className="text-sm text-muted-foreground mt-1">Select every species you want to pursue. The portfolio covers them all.</p>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">

@@ -117,7 +117,7 @@ export function buildPlanNarrativePrompt(
 PLAN ITEMS:
 ${itemList}
 
-Write 2-3 paragraphs covering: what this year looks like overall, key preparation milestones, and a motivational closing. Be specific about timing and activities from the plan.`;
+Write 2-3 paragraphs covering: what this year looks like overall, key preparation milestones, and a direct summary of what to prioritize. Be specific about timing and activities from the plan. Use a calm, direct tone — no hype or romance.`;
 }
 
 /**
@@ -148,5 +148,5 @@ SUGGESTED UNIT:
 - Points Required: ${suggestedUnit.pointsRequiredNonresident} NR
 - Est. Years to Unlock: ${yearsToUnlock}
 
-Write 1-2 paragraphs outlining the strategy: when to expect to draw, what to do in the meantime, and why this unit is the right target. Be specific with numbers.`;
+Write 1-2 paragraphs outlining the strategy: when to expect to draw, what to do in the meantime, and why this unit is the right target. Be specific with numbers. Use a calm, direct tone.`;
 }

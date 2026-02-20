@@ -87,8 +87,8 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
       {/* Header */}
       <div className="flex items-center justify-between mb-2">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">Your 10-Year Roadmap</p>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Click a year to expand. Use the pencil to edit units and actions.</p>
+          <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">10-Year Roadmap</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5">Click a year to expand. Pencil icon to edit actions.</p>
         </div>
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <DollarSign className="w-3.5 h-3.5" />

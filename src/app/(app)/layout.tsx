@@ -5,9 +5,9 @@ import { Header } from "@/components/layout/header";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
+  title: "Roadmap",
   description:
-    "Manage your western big game hunting portfolio — track points, plan applications, and execute your multi-year strategy.",
+    "Your multi-year tag strategy, built and rebalanced automatically. Plan across states. Convert when the window opens.",
 };
 
 export default function AppLayout({

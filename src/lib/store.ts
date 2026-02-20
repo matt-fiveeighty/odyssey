@@ -1,6 +1,10 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { HuntStyle, UserPoints, UserGoal, Milestone, DreamHunt, StrategicAssessment, StateScoreBreakdown } from "@/lib/types";
+import type {
+  HuntStyle, UserPoints, UserGoal, Milestone, DreamHunt, StrategicAssessment,
+  StateScoreBreakdown, BoardState, DisciplineViolation, LockedAnchor, PortfolioMandate,
+  ExperienceLevel, TrophyVsMeat,
+} from "@/lib/types";
 import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 
 // ============================================================================
@@ -12,8 +16,8 @@ import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 export type PhysicalComfort = "sea_level" | "moderate_elevation" | "high_alpine" | "any";
 export type HuntFrequency = "every_year" | "every_other" | "every_3" | "when_opportunity";
 export type TravelWillingness = "drive_only" | "short_flight" | "will_fly_anywhere";
-export type ExperienceLevel = "never_hunted_west" | "1_2_trips" | "3_5_trips" | "veteran";
-export type TrophyVsMeat = "trophy_focused" | "lean_trophy" | "balanced" | "lean_meat" | "meat_focused";
+// ExperienceLevel and TrophyVsMeat now live in @/lib/types — re-export for backwards compat
+export type { ExperienceLevel, TrophyVsMeat } from "@/lib/types";
 export type TimeAvailable = "weekend_warrior" | "full_week" | "10_plus_days" | "flexible";
 export type HuntingMotivation = "challenge" | "connection" | "tradition" | "escape" | "meat_provider";
 export type UncertaintyComfort = "love_it" | "tolerate" | "prefer_certainty";
@@ -390,7 +394,13 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      setConfirmedAssessment: (assessment) => set({ confirmedAssessment: assessment }),
+      setConfirmedAssessment: (assessment) => {
+        set({ confirmedAssessment: assessment });
+        // Sync to roadmap store — the roadmap store is the new center of gravity
+        if (assessment) {
+          useRoadmapStore.getState().setActiveAssessment(assessment);
+        }
+      },
       clearConfirmedAssessment: () =>
         set((state) => ({
           confirmedAssessment: null,
@@ -403,3 +413,81 @@ export const useAppStore = create<AppState>()(
     { name: "hunt-planner-app-v2" }
   )
 );
+
+// ============================================================================
+// Roadmap Store — the center of gravity for the living strategic plan
+// Holds the active assessment, board state, discipline violations, and anchors.
+// Synced from AppStore.confirmedAssessment for backwards compat; new features
+// read from here directly.
+// ============================================================================
+
+interface RoadmapStoreState {
+  activeAssessment: StrategicAssessment | null;
+  portfolioMandate: PortfolioMandate | null;
+  boardState: BoardState | null;
+  disciplineViolations: DisciplineViolation[];
+  lockedAnchors: LockedAnchor[];
+  version: number;
+  lastRebalancedAt: string | null;
+
+  // Actions
+  setActiveAssessment: (assessment: StrategicAssessment) => void;
+  setPortfolioMandate: (mandate: PortfolioMandate) => void;
+  setBoardState: (state: BoardState) => void;
+  setDisciplineViolations: (violations: DisciplineViolation[]) => void;
+  addLockedAnchor: (anchor: LockedAnchor) => void;
+  removeLockedAnchor: (id: string) => void;
+  clear: () => void;
+}
+
+export const useRoadmapStore = create<RoadmapStoreState>()(
+  persist(
+    (set) => ({
+      activeAssessment: null,
+      portfolioMandate: null,
+      boardState: null,
+      disciplineViolations: [],
+      lockedAnchors: [],
+      version: 0,
+      lastRebalancedAt: null,
+
+      setActiveAssessment: (assessment) =>
+        set({
+          activeAssessment: assessment,
+          boardState: assessment.boardState ?? null,
+          disciplineViolations: assessment.disciplineViolations ?? [],
+          lockedAnchors: assessment.lockedAnchors ?? [],
+        }),
+      setPortfolioMandate: (mandate) => set({ portfolioMandate: mandate }),
+      setBoardState: (boardState) => set({ boardState }),
+      setDisciplineViolations: (disciplineViolations) => set({ disciplineViolations }),
+      addLockedAnchor: (anchor) =>
+        set((state) => ({ lockedAnchors: [...state.lockedAnchors, anchor] })),
+      removeLockedAnchor: (id) =>
+        set((state) => ({ lockedAnchors: state.lockedAnchors.filter((a) => a.id !== id) })),
+      clear: () =>
+        set({
+          activeAssessment: null,
+          portfolioMandate: null,
+          boardState: null,
+          disciplineViolations: [],
+          lockedAnchors: [],
+          version: 0,
+          lastRebalancedAt: null,
+        }),
+    }),
+    { name: "hunt-planner-roadmap-v1" }
+  )
+);
+
+/**
+ * One-time migration: if AppStore has a confirmedAssessment but RoadmapStore doesn't,
+ * copy it over. Call this from a top-level layout effect.
+ */
+export function migrateAssessmentToRoadmapStore() {
+  const appAssessment = useAppStore.getState().confirmedAssessment;
+  const roadmapAssessment = useRoadmapStore.getState().activeAssessment;
+  if (appAssessment && !roadmapAssessment) {
+    useRoadmapStore.getState().setActiveAssessment(appAssessment);
+  }
+}

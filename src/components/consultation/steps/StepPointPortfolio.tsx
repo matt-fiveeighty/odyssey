@@ -26,7 +26,7 @@ export function StepPointPortfolio() {
         <div>
           <p className="text-xs text-primary font-semibold uppercase tracking-wider mb-1">Step 7 of 9</p>
           <h2 className="text-xl font-bold">Do you have any <HuntingTerm term="preference points">points</HuntingTerm> already?</h2>
-          <p className="text-sm text-muted-foreground mt-1">Existing points are invested capital. We&apos;ll never recommend abandoning an investment.</p>
+          <p className="text-sm text-muted-foreground mt-1">Existing points are invested capital. The portfolio never abandons an investment.</p>
         </div>
 
         <div className="flex gap-3">
@@ -84,7 +84,7 @@ export function StepPointPortfolio() {
 
         {totalPoints > 0 && (
           <AdvisorInsight
-            text={`You have ${totalPoints} total point${totalPoints > 1 ? "s" : ""} across ${statesWithPoints.join(", ")}. That\u2019s real capital \u2014 we\u2019ll build your strategy around protecting and leveraging those investments.`}
+            text={`You have ${totalPoints} total point${totalPoints > 1 ? "s" : ""} across ${statesWithPoints.join(", ")}. That is real capital — the strategy is built around protecting and leveraging those investments.`}
             icon={Wallet}
           />
         )}
