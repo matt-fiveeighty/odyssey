@@ -9,7 +9,7 @@
 import { useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Download } from "lucide-react";
-import { PlanItemCard, ITEM_TYPE_CONFIG } from "./PlanItemCard";
+import { PlanItemCard } from "./PlanItemCard";
 import { exportPlanItem } from "@/lib/calendar-export";
 import type { PlanItem } from "./PlanItemCard";
 
@@ -199,6 +199,30 @@ export function YearCalendar({
             </Card>
           );
         })}
+      </div>
+
+      {/* Calendar key / legend */}
+      <div className="flex flex-wrap items-center gap-4 px-1 text-[10px] text-muted-foreground/70">
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-destructive/15 border border-destructive/30" />
+          <span>Hunt window</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-amber-400/15 border border-amber-400/30" />
+          <span>Deadline / Application</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-primary/10 border border-primary/30" />
+          <span>Scout / Prep</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-primary/25 ring-1 ring-primary/50" />
+          <span>Selected day</span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-3 h-3 rounded-sm bg-primary/15 font-bold text-primary text-[6px] flex items-center justify-center">T</span>
+          <span>Today</span>
+        </div>
       </div>
 
       {/* Selected day detail panel — appears below calendar grid */}

@@ -61,6 +61,16 @@ export function formatCurrencyCompact(amount: number): string {
 }
 
 /**
+ * Format an ISO date string (YYYY-MM-DD) to American format (M/D/YYYY).
+ * Returns the original string if parsing fails.
+ */
+export function formatDate(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${parseInt(m)}/${parseInt(d)}/${y}`;
+}
+
+/**
  * Production-safe logger. Suppresses console output in production
  * unless NEXT_PUBLIC_DEBUG=true is set.
  */

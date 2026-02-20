@@ -209,11 +209,30 @@ export const useWizardStore = create<ConsultationState>()(
 // App State Store — enhanced with milestones from confirmed plans
 // ============================================================================
 
+/** A named plan that can be saved, switched between, and shared */
+export interface SavedPlan {
+  id: string;
+  name: string;
+  label?: string; // e.g. "Youth", "Dad", "2027 Trip"
+  assessment: StrategicAssessment;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface AppState {
   userPoints: UserPoints[];
   userGoals: UserGoal[];
   milestones: Milestone[];
   confirmedAssessment: StrategicAssessment | null;
+
+  // Multi-plan management
+  savedPlans: SavedPlan[];
+  activePlanId: string | null;
+  savePlan: (name: string, assessment: StrategicAssessment, label?: string) => string;
+  renamePlan: (id: string, name: string) => void;
+  deletePlan: (id: string) => void;
+  switchPlan: (id: string) => void;
+  duplicatePlan: (id: string, newName: string) => string;
 
   // Subscription / entitlements (client-side cache)
   subscriptionPlanId: string;
@@ -286,6 +305,72 @@ export const useAppStore = create<AppState>()(
       userGoals: [],
       milestones: [],
       confirmedAssessment: null,
+
+      // Multi-plan management
+      savedPlans: [],
+      activePlanId: null,
+      savePlan: (name, assessment, label) => {
+        const id = `plan-${Date.now()}`;
+        const now = new Date().toISOString();
+        const plan: SavedPlan = { id, name, label, assessment, createdAt: now, updatedAt: now };
+        set((state) => ({
+          savedPlans: [...state.savedPlans, plan],
+          activePlanId: id,
+          confirmedAssessment: assessment,
+        }));
+        useRoadmapStore.getState().setActiveAssessment(assessment);
+        return id;
+      },
+      renamePlan: (id, name) =>
+        set((state) => ({
+          savedPlans: state.savedPlans.map((p) =>
+            p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p
+          ),
+        })),
+      deletePlan: (id) =>
+        set((state) => {
+          const remaining = state.savedPlans.filter((p) => p.id !== id);
+          const wasActive = state.activePlanId === id;
+          if (wasActive && remaining.length > 0) {
+            // Switch to first remaining plan
+            const next = remaining[0];
+            useRoadmapStore.getState().setActiveAssessment(next.assessment);
+            return {
+              savedPlans: remaining,
+              activePlanId: next.id,
+              confirmedAssessment: next.assessment,
+            };
+          }
+          if (wasActive) {
+            useRoadmapStore.getState().clear();
+            return { savedPlans: remaining, activePlanId: null, confirmedAssessment: null };
+          }
+          return { savedPlans: remaining };
+        }),
+      switchPlan: (id) =>
+        set((state) => {
+          const plan = state.savedPlans.find((p) => p.id === id);
+          if (!plan) return {};
+          useRoadmapStore.getState().setActiveAssessment(plan.assessment);
+          return { activePlanId: id, confirmedAssessment: plan.assessment };
+        }),
+      duplicatePlan: (id, newName) => {
+        const newId = `plan-${Date.now()}`;
+        const now = new Date().toISOString();
+        set((state) => {
+          const source = state.savedPlans.find((p) => p.id === id);
+          if (!source) return {};
+          const clone: SavedPlan = {
+            id: newId,
+            name: newName,
+            assessment: { ...source.assessment, id: newId },
+            createdAt: now,
+            updatedAt: now,
+          };
+          return { savedPlans: [...state.savedPlans, clone] };
+        });
+        return newId;
+      },
 
       // Subscription defaults (free tier)
       subscriptionPlanId: "free",
@@ -395,7 +480,35 @@ export const useAppStore = create<AppState>()(
         })),
 
       setConfirmedAssessment: (assessment) => {
-        set({ confirmedAssessment: assessment });
+        set((state) => {
+          // Auto-save: if no saved plans exist yet, create one; otherwise update the active plan
+          const now = new Date().toISOString();
+          const existingActive = state.savedPlans.find((p) => p.id === state.activePlanId);
+          if (existingActive) {
+            return {
+              confirmedAssessment: assessment,
+              savedPlans: state.savedPlans.map((p) =>
+                p.id === state.activePlanId
+                  ? { ...p, assessment, updatedAt: now }
+                  : p
+              ),
+            };
+          }
+          // First plan — auto-create
+          const id = `plan-${Date.now()}`;
+          const plan: SavedPlan = {
+            id,
+            name: "My Strategy",
+            assessment,
+            createdAt: now,
+            updatedAt: now,
+          };
+          return {
+            confirmedAssessment: assessment,
+            savedPlans: [...state.savedPlans, plan],
+            activePlanId: id,
+          };
+        });
         // Sync to roadmap store — the roadmap store is the new center of gravity
         if (assessment) {
           useRoadmapStore.getState().setActiveAssessment(assessment);

@@ -6,7 +6,7 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { Plane, Calendar, Wallet, Heart, ExternalLink, Car, Package, Clock, DollarSign, AlertCircle } from "lucide-react";
-import { formatSpeciesName } from "@/lib/utils";
+import { formatSpeciesName, formatDate } from "@/lib/utils";
 
 interface LogisticsTabProps {
   assessment: StrategicAssessment;
@@ -229,7 +229,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                     <span className="text-sm font-semibold">{state?.name} — {formatSpeciesName(entry.species)}</span>
                     {appDeadline && (
                       <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
-                        Apply by {appDeadline.close}
+                        Apply by {formatDate(appDeadline.close)}
                       </span>
                     )}
                   </div>
@@ -253,7 +253,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                   {appDeadline && (
                     <div className="grid grid-cols-[180px_100px_1fr_1fr] gap-3 px-3 py-1.5 text-[10px] bg-primary/5 border-t border-primary/10">
                       <span className="font-medium text-primary/80 pl-8">Application Window</span>
-                      <span className="text-primary/70 font-mono">{appDeadline.open} — {appDeadline.close}</span>
+                      <span className="text-primary/70 font-mono">{formatDate(appDeadline.open)} — {formatDate(appDeadline.close)}</span>
                       <span className="text-primary/60 col-span-2">Submit your application before the deadline to be included in the draw</span>
                     </div>
                   )}

@@ -185,7 +185,7 @@ export function StatePortfolio({ assessment }: StatePortfolioProps) {
   const alsoConsidered = assessment.alsoConsidered ?? [];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       {assessment.stateRecommendations.map((rec) => (
         <StateCard key={rec.stateId} rec={rec} />
       ))}

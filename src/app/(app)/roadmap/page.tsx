@@ -2,11 +2,12 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { Route, ArrowRight } from "lucide-react";
+import { Route, ArrowRight, Pencil } from "lucide-react";
 import { useRoadmapStore, useAppStore } from "@/lib/store";
 import { BoardStateHeader } from "@/components/roadmap/BoardStateHeader";
 import { DisciplineAlerts } from "@/components/roadmap/DisciplineAlerts";
 import { RoadmapTimeline } from "@/components/roadmap/RoadmapTimeline";
+import { PlanManager } from "@/components/roadmap/PlanManager";
 import { InteractiveMap } from "@/components/journey/InteractiveMap";
 import { YearTimeline } from "@/components/journey/YearTimeline";
 import { MapLegend } from "@/components/journey/MapLegend";
@@ -78,6 +79,18 @@ export default function RoadmapPage() {
 
   return (
     <div className="p-6 space-y-6 fade-in-up">
+      {/* Plan switcher + edit action */}
+      <div className="flex items-center justify-between">
+        <PlanManager />
+        <Link
+          href="/plan-builder"
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+          Edit Plan
+        </Link>
+      </div>
+
       {/* Board State Header */}
       {boardState && <BoardStateHeader boardState={boardState} />}
 

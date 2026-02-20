@@ -31,6 +31,7 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import type { JourneyData } from "@/lib/engine/journey-data";
 import type { StrategicAssessment } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
 import {
   ChevronDown,
   ChevronUp,
@@ -613,12 +614,12 @@ export function StateDetailModal({
                     </div>
                     <div className="text-right shrink-0">
                       <span className="text-muted-foreground">
-                        {dl.open}
+                        {formatDate(dl.open)}
                       </span>
                       <span className="mx-1 text-muted-foreground/50">
                         &rarr;
                       </span>
-                      <span className="font-medium">{dl.close}</span>
+                      <span className="font-medium">{formatDate(dl.close)}</span>
                     </div>
                   </div>
                 ))}
@@ -642,7 +643,7 @@ export function StateDetailModal({
                           <span className="text-muted-foreground">
                             {sp.speciesName}
                           </span>
-                          <span>{date}</span>
+                          <span>{formatDate(date)}</span>
                         </div>
                       );
                     })}
