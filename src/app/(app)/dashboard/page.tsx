@@ -259,7 +259,7 @@ export default function DashboardPage() {
                           ? `Build Strategy from ${userGoals.length} Goal${userGoals.length > 1 ? "s" : ""}`
                           : "Run the Strategic Consultation",
                         description: hasGoals
-                          ? `We'll pre-fill the consultation with your ${speciesFromGoals.length} species and build a custom 10-year roadmap.`
+                          ? `We'll pre-fill the consultation with your ${speciesFromGoals.length} species and build a custom multi-year roadmap.`
                           : "Answer a few questions about your experience, budget, and goals. We'll build a custom multi-year strategy.",
                         href: "/plan-builder",
                         done: false,

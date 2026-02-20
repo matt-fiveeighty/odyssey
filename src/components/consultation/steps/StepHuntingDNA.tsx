@@ -5,7 +5,7 @@ import { OptionCard } from "../shared/OptionCard";
 import { ToggleChip } from "../shared/ToggleChip";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin } from "lucide-react";
+import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin, Shield } from "lucide-react";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import type { HuntStyle } from "@/lib/types";
 import { formatSpeciesName } from "@/lib/utils";
@@ -74,6 +74,13 @@ export function StepHuntingDNA() {
 
         {wizard.huntStylePrimary && STYLE_INSIGHTS[wizard.huntStylePrimary] && (
           <AdvisorInsight text={STYLE_INSIGHTS[wizard.huntStylePrimary]} />
+        )}
+
+        {wizard.planForAge !== null && wizard.planForAge < 16 && (
+          <AdvisorInsight
+            text={`At ${wizard.planForAge}, truck-camp hunts with a parent or mentor are the way to start. Accessible terrain, high-success units, and established campsites build confidence and create memories. Solo backcountry comes later.`}
+            icon={Shield}
+          />
         )}
 
         {wizard.huntStylePrimary && wizard.huntStylePrimary !== "guided" && (

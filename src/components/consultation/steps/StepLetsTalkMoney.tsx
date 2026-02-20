@@ -59,6 +59,13 @@ export function StepLetsTalkMoney() {
 
         <AdvisorInsight text={getBudgetInsight(wizard.pointYearBudget)} icon={TrendingUp} />
 
+        {wizard.planForAge !== null && wizard.planForAge < 18 && (
+          <AdvisorInsight
+            text={`Youth point-building is one of the best investments in hunting. $200–400/yr across 3 states now means being positioned for premium draws by their 20s. Most adults would kill for the head start.`}
+            icon={TrendingUp}
+          />
+        )}
+
         <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-chart-2" />

@@ -50,6 +50,7 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
   const currentYear = new Date().getFullYear();
   const recs = assessment.stateRecommendations;
   const roadmap = assessment.roadmap;
+  const horizon = roadmap.length || 10;
   const totalCost = assessment.financialSummary.tenYearTotal;
   const huntYears = roadmap.filter((y) => y.isHuntYear).length;
   const firstHunt = roadmap.find((y) => y.isHuntYear)?.year ?? currentYear + 5;
@@ -73,18 +74,18 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
       id: "aggressive",
       label: "Aggressive",
       icon: Zap,
-      description: "Maximum tags, faster timelines. Higher annual spend but more hunts in 10 years.",
+      description: `Maximum tags, faster timelines. Higher annual spend but more hunts in ${horizon} years.`,
       stateCount: aggressiveStates,
       firstHuntYear: aggressiveFirstHunt,
       totalHunts10yr: aggressiveHunts,
       tenYearCost: aggressiveCost,
-      annualAvg: Math.round(aggressiveCost / 10),
+      annualAvg: Math.round(aggressiveCost / horizon),
       riskLevel: "High",
       pointBurnYear: Math.max(currentYear + 2, burnYear - 2),
       highlights: [
         `Apply in ${aggressiveStates} states simultaneously`,
         `First hunt as early as ${aggressiveFirstHunt}`,
-        `Target ${aggressiveHunts} hunts in 10 years`,
+        `Target ${aggressiveHunts} hunts in ${horizon} years`,
         "Burn points aggressively at 70% draw probability",
         "Higher financial commitment but maximum field time",
       ],
@@ -99,13 +100,13 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
       firstHuntYear: firstHunt,
       totalHunts10yr: huntYears,
       tenYearCost: totalCost,
-      annualAvg: Math.round(totalCost / 10),
+      annualAvg: Math.round(totalCost / horizon),
       riskLevel: "Medium",
       pointBurnYear: burnYear,
       highlights: [
         `${recs.length} states in your portfolio`,
         `First hunt projected for ${firstHunt}`,
-        `${huntYears} hunts planned over 10 years`,
+        `${huntYears} hunts planned over ${horizon} years`,
         "Strategic burn at optimal point thresholds",
         "Budget-matched to your targets",
       ],
@@ -120,7 +121,7 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
       firstHuntYear: conservativeFirstHunt,
       totalHunts10yr: conservativeHunts,
       tenYearCost: conservativeCost,
-      annualAvg: Math.round(conservativeCost / 10),
+      annualAvg: Math.round(conservativeCost / horizon),
       riskLevel: "Low",
       pointBurnYear: burnYear + 2,
       highlights: [
@@ -128,7 +129,7 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
         `Patient build — first hunt around ${conservativeFirstHunt}`,
         "Maximize point accumulation for trophy units",
         "Lower annual financial commitment",
-        `~$${Math.round(conservativeCost / 10).toLocaleString()}/yr average investment`,
+        `~$${Math.round(conservativeCost / horizon).toLocaleString()}/yr average investment`,
       ],
       color: "chart-2",
     },
@@ -138,12 +139,13 @@ function deriveVariants(assessment: StrategicAssessment): StrategyVariant[] {
 export function StrategyComparison({ assessment }: StrategyComparisonProps) {
   const variants = useMemo(() => deriveVariants(assessment), [assessment]);
   const [selected, setSelected] = useState<"aggressive" | "balanced" | "conservative">("balanced");
+  const horizon = assessment.roadmap.length || 10;
 
   const metrics = [
     { label: "States", key: "stateCount" as const, suffix: "" },
     { label: "First Hunt", key: "firstHuntYear" as const, suffix: "" },
-    { label: "10-Yr Hunts", key: "totalHunts10yr" as const, suffix: "" },
-    { label: "10-Year Cost", key: "tenYearCost" as const, suffix: "", format: (v: number) => `$${v.toLocaleString()}` },
+    { label: `${horizon}-Yr Hunts`, key: "totalHunts10yr" as const, suffix: "" },
+    { label: `${horizon}-Year Cost`, key: "tenYearCost" as const, suffix: "", format: (v: number) => `$${v.toLocaleString()}` },
     { label: "Annual Avg", key: "annualAvg" as const, suffix: "/yr", format: (v: number) => `$${v.toLocaleString()}` },
     { label: "Risk Level", key: "riskLevel" as const, suffix: "" },
   ];

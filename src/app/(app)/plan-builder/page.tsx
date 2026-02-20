@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Compass } from "lucide-react";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { generateStrategicAssessment } from "@/lib/engine/roadmap-generator";
@@ -29,10 +30,21 @@ function getInitialAssessment(): StrategicAssessment | null {
 export default function PlanBuilderPage() {
   const wizard = useWizardStore();
   const appStore = useAppStore();
+  const searchParams = useSearchParams();
   const [isGenerating, setIsGenerating] = useState(false);
   const [assessment, setAssessment] = useState<StrategicAssessment | null>(getInitialAssessment);
 
   const [generationError, setGenerationError] = useState<string | null>(null);
+
+  // Fresh wizard mode: reset state when coming from "Plan for another person"
+  useEffect(() => {
+    if (searchParams.get("fresh") === "true") {
+      useWizardStore.getState().reset();
+      setAssessment(null);
+      // Clean the URL so refreshing doesn't reset again
+      window.history.replaceState({}, "", "/plan-builder");
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Hydration recovery: if Zustand hydrates after initial render with
   // a confirmed plan, sync the assessment state to match
@@ -44,6 +56,8 @@ export default function PlanBuilderPage() {
       if (restored) setAssessment(restored);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const horizonYears = wizard.planningHorizon || 10;
 
   async function handleGenerate() {
     setIsGenerating(true);
@@ -59,7 +73,7 @@ export default function PlanBuilderPage() {
     const phases = [
       { phase: "Scoring states against your profile...", pct: 20 },
       { phase: "Selecting optimal state portfolio...", pct: 40 },
-      { phase: "Building 10-year roadmap...", pct: 60 },
+      { phase: `Building ${horizonYears}-year roadmap...`, pct: 60 },
       { phase: "Calculating costs and budgets...", pct: 75 },
       { phase: "Crafting personalized narrative...", pct: 90 },
     ];
@@ -96,6 +110,9 @@ export default function PlanBuilderPage() {
           preferredTerrain: wizard.preferredTerrain,
           importantFactors: wizard.importantFactors,
           selectedStatesConfirmed: wizard.selectedStatesConfirmed,
+          planForName: wizard.planForName || undefined,
+          planForAge: wizard.planForAge ?? undefined,
+          planningHorizon: wizard.planningHorizon,
         });
 
         // Deduplicate: only add points not already in the store
@@ -124,8 +141,13 @@ export default function PlanBuilderPage() {
         wizard.setGenerationPhase("Complete!");
         setAssessment(result);
         wizard.confirmPlan(result);
-        // Persist to app store immediately so it survives navigation
-        appStore.setConfirmedAssessment(result);
+
+        // Save with person name if this is a plan for someone else
+        if (wizard.planForName) {
+          appStore.savePlan(wizard.planForName, result, "person");
+        } else {
+          appStore.setConfirmedAssessment(result);
+        }
         wizard.setStep(10);
       } catch (err) {
         console.error("Strategy generation failed:", err);
@@ -141,6 +163,10 @@ export default function PlanBuilderPage() {
   const showConsultation = wizard.step >= 1 && wizard.step <= 9 && !isGenerating;
   const showResults = wizard.step === 10 && assessment && !isGenerating;
 
+  const personLabel = wizard.planForName
+    ? `${wizard.planForName}'s`
+    : "Your";
+
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div className="text-center">
@@ -150,7 +176,7 @@ export default function PlanBuilderPage() {
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           {showResults
-            ? "Your personalized 10-year western big game strategy"
+            ? `${personLabel} personalized ${assessment.roadmap.length}-year western big game strategy`
             : "Answer honestly \u2014 the best strategy comes from understanding who you are as a hunter."}
         </p>
       </div>

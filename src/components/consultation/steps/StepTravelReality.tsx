@@ -5,7 +5,7 @@ import type { HuntFrequency, TimeAvailable, TravelWillingness } from "@/lib/stor
 import { OptionCard } from "../shared/OptionCard";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, Clock, Plane, Car, Globe } from "lucide-react";
+import { Calendar, Clock, Plane, Car, Globe, Users, Mountain } from "lucide-react";
 import { getPrimaryAirport, findBestRoutes } from "@/lib/constants/flight-hubs";
 
 const FREQUENCY_OPTIONS: { id: HuntFrequency; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -73,6 +73,19 @@ export function StepTravelReality() {
             ))}
           </div>
         </div>
+
+        {wizard.planForAge !== null && wizard.planForAge < 16 && (
+          <AdvisorInsight
+            text={`At ${wizard.planForAge}, a parent or guardian companion is required in most states. Plan for 2 sets of travel logistics. Solo hunting becomes an option around 16–18 depending on the state.`}
+            icon={Users}
+          />
+        )}
+        {wizard.planForAge !== null && wizard.planForAge > 60 && (
+          <AdvisorInsight
+            text={`Accessibility matters more with age. We'll prioritize states and units with good road access, shorter pack-outs, and guided options for the most demanding terrain.`}
+            icon={Mountain}
+          />
+        )}
 
         {wizard.travelWillingness && wizard.travelWillingness !== "drive_only" && sampleEstimates.length > 0 && (
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">

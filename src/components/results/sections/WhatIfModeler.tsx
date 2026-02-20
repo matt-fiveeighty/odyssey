@@ -40,9 +40,10 @@ function computeMetrics(assessment: StrategicAssessment, excludedStates: Set<str
     plannedHunts += filteredActions.filter((a) => a.type === "hunt").length;
   }
 
+  const horizon = assessment.roadmap.length || 10;
   return {
     tenYearCost,
-    annualAvg: Math.round(tenYearCost / 10),
+    annualAvg: Math.round(tenYearCost / horizon),
     plannedHunts,
     stateCount: recs.length,
   };
@@ -57,7 +58,7 @@ function DeltaDisplay({ label, base, current }: { label: string; base: number; c
   return (
     <div className="text-center p-3 rounded-lg bg-secondary/30">
       <p className="text-lg font-bold">
-        {label === "10-Year Cost" || label === "Annual Avg" ? `$${current.toLocaleString()}` : current}
+        {label.includes("Cost") || label === "Annual Avg" ? `$${current.toLocaleString()}` : current}
       </p>
       <p className="text-[9px] text-muted-foreground">{label}</p>
       {delta !== 0 && (
@@ -176,7 +177,7 @@ export function WhatIfModeler({ assessment }: WhatIfModelerProps) {
         <CardContent className="p-4">
           <div className="grid grid-cols-4 gap-3">
             <DeltaDisplay label="States" base={baseMetrics.stateCount} current={currentMetrics.stateCount} />
-            <DeltaDisplay label="10-Year Cost" base={baseMetrics.tenYearCost} current={currentMetrics.tenYearCost} />
+            <DeltaDisplay label={`${assessment.roadmap.length || 10}-Yr Cost`} base={baseMetrics.tenYearCost} current={currentMetrics.tenYearCost} />
             <DeltaDisplay label="Annual Avg" base={baseMetrics.annualAvg} current={currentMetrics.annualAvg} />
             <DeltaDisplay label="Hunts" base={baseMetrics.plannedHunts} current={currentMetrics.plannedHunts} />
           </div>
@@ -189,7 +190,7 @@ export function WhatIfModeler({ assessment }: WhatIfModelerProps) {
                   <span className="text-chart-2 font-semibold">
                     ${(baseMetrics.tenYearCost - currentMetrics.tenYearCost).toLocaleString()}
                   </span>{" "}
-                  over 10 years
+                  over {assessment.roadmap.length || 10} years
                 </p>
                 <button
                   onClick={() => setExcludedStates(new Set())}

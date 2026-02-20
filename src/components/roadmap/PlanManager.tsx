@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import type { SavedPlan } from "@/lib/store";
 import { ChevronDown, Plus, Copy, Trash2, Pencil, Check, X, Users, UserPlus } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export function PlanManager() {
   const { savedPlans, activePlanId, switchPlan, renamePlan, deletePlan, duplicatePlan } = useAppStore();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
-  const [showNewPlan, setShowNewPlan] = useState(false);
+  const [showDuplicate, setShowDuplicate] = useState(false);
   const [newPlanSource, setNewPlanSource] = useState<string | null>(null);
   const [newPlanName, setNewPlanName] = useState("");
 
@@ -33,10 +35,16 @@ export function PlanManager() {
     if (!newPlanSource || !newPlanName.trim()) return;
     const newId = duplicatePlan(newPlanSource, newPlanName.trim());
     switchPlan(newId);
-    setShowNewPlan(false);
+    setShowDuplicate(false);
     setNewPlanName("");
     setNewPlanSource(null);
     setOpen(false);
+  }
+
+  function handleNewPersonPlan() {
+    useWizardStore.getState().reset();
+    setOpen(false);
+    router.push("/plan-builder?fresh=true");
   }
 
   return (
@@ -85,7 +93,7 @@ export function PlanManager() {
       {/* Dropdown panel */}
       {open && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowNewPlan(false); }} />
+          <div className="fixed inset-0 z-40" onClick={() => { setOpen(false); setShowDuplicate(false); }} />
           <div className="absolute top-full left-0 mt-2 z-50 w-80 rounded-xl border border-border bg-card shadow-xl">
             <div className="p-2 space-y-0.5">
               <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider font-medium px-2 py-1">
@@ -152,21 +160,21 @@ export function PlanManager() {
             </div>
 
             <div className="border-t border-border p-2">
-              {!showNewPlan ? (
+              {!showDuplicate ? (
                 <div className="space-y-1">
                   <button
-                    onClick={() => { setShowNewPlan(true); setNewPlanSource(activePlanId); }}
+                    onClick={() => { setShowDuplicate(true); setNewPlanSource(activePlanId); }}
                     className="w-full flex items-center gap-2 p-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer"
                   >
                     <Copy className="w-4 h-4" />
                     Duplicate current plan
                   </button>
                   <button
-                    onClick={() => { setShowNewPlan(true); setNewPlanSource(activePlanId); setNewPlanName("Youth Plan"); }}
+                    onClick={handleNewPersonPlan}
                     className="w-full flex items-center gap-2 p-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer"
                   >
                     <UserPlus className="w-4 h-4" />
-                    Add plan for another person
+                    Plan for another person
                   </button>
                   <Link
                     href="/plan-builder"
@@ -179,12 +187,12 @@ export function PlanManager() {
                 </div>
               ) : (
                 <div className="space-y-2 p-1">
-                  <p className="text-xs font-medium">New plan name</p>
+                  <p className="text-xs font-medium">Duplicate plan</p>
                   <input
                     autoFocus
                     value={newPlanName}
                     onChange={(e) => setNewPlanName(e.target.value)}
-                    placeholder="e.g., Youth Plan, Dad's Strategy"
+                    placeholder="e.g., What-If Aggressive, Budget Version"
                     className="w-full text-sm bg-secondary border border-border rounded-lg px-3 py-2 focus:outline-none focus:border-primary"
                     onKeyDown={(e) => { if (e.key === "Enter") handleDuplicate(); }}
                   />
@@ -214,10 +222,10 @@ export function PlanManager() {
                       disabled={!newPlanName.trim() || !newPlanSource}
                       className="flex-1 text-xs px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors cursor-pointer"
                     >
-                      Create Plan
+                      Duplicate
                     </button>
                     <button
-                      onClick={() => { setShowNewPlan(false); setNewPlanName(""); }}
+                      onClick={() => { setShowDuplicate(false); setNewPlanName(""); }}
                       className="text-xs px-3 py-1.5 rounded-lg bg-secondary text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                     >
                       Cancel

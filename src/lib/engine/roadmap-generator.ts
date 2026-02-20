@@ -111,6 +111,12 @@ export interface ConsultationInput {
   importantFactors: string[];
   /** States the user confirmed in Step 8. If provided, the generator respects this selection. */
   selectedStatesConfirmed?: string[];
+  /** Person this plan is for (e.g., "My son Jake", "Dad"). Empty string = self. */
+  planForName?: string;
+  /** Age of the person this plan is for. Affects phase assignment and horizon. */
+  planForAge?: number;
+  /** Planning horizon in years (10, 15, 20, 25). Defaults to 10. */
+  planningHorizon?: number;
 }
 
 // --- Shared Helpers ---
@@ -698,11 +704,12 @@ export function generateStrategicAssessment(
     })
     .filter((s) => s !== null);
 
-  const tenYearTotal = roadmap.reduce((sum, yr) => sum + yr.estimatedCost, 0);
+  const totalCost = roadmap.reduce((sum, yr) => sum + yr.estimatedCost, 0);
   const totalHunts = roadmap.reduce(
     (sum, yr) => sum + yr.actions.filter((a) => a.type === "hunt").length,
     0
   );
+  const horizonYears = input.planningHorizon ?? 10;
 
   return {
     id: `assessment-${Date.now()}`,
@@ -715,9 +722,9 @@ export function generateStrategicAssessment(
     keyYears: keyYears.map(k => ({ year: k.year, description: k.description })),
     financialSummary: {
       annualSubscription: subscription.total,
-      tenYearTotal,
+      tenYearTotal: totalCost,
       yearOneInvestment: roadmap[0]?.estimatedCost ?? 0,
-      roi: `${totalHunts} planned hunts over 10 years`,
+      roi: `${totalHunts} planned hunts over ${horizonYears} years`,
     },
     macroSummary,
     budgetBreakdown,
@@ -1223,20 +1230,59 @@ function generateYearlyPlan(
 ): RoadmapYear[] {
   const currentYear = new Date().getFullYear();
   const roadmap: RoadmapYear[] = [];
-  const duration = 10;
+  const duration = input.planningHorizon ?? 10;
+  const age = input.planForAge ?? null;
 
   for (let i = 0; i < duration; i++) {
     const year = currentYear + i;
     const actions: RoadmapAction[] = [];
     let phase: YearType;
 
-    // Dynamic phase assignment using new YearType system
-    if (i < 3) phase = "build";
-    else if (i < 5) phase = "burn";
-    else if (i === 5) phase = "recovery";
-    else phase = "burn"; // trophy phase → burn in new system
+    // Age-aware phase assignment — youth/senior get different cadences
+    const hunterAge = age !== null ? age + i : null;
+    const isYouthPreHunt = hunterAge !== null && hunterAge < 14;
+    const isSenior = hunterAge !== null && hunterAge > 65;
 
-    const isHuntYear = phase === "burn" || (phase === "build" && i <= 1);
+    if (isYouthPreHunt) {
+      // Too young to hunt solo — points only
+      phase = "youth_window";
+    } else if (isSenior) {
+      // Senior — maximize immediate burn opportunities
+      if (i === 0) phase = "burn";
+      else if (i % 3 === 0) phase = "recovery";
+      else phase = "burn";
+    } else if (duration <= 10) {
+      // Standard 10-year cadence
+      if (i < 3) phase = "build";
+      else if (i < 5) phase = "burn";
+      else if (i === 5) phase = "recovery";
+      else phase = "burn";
+    } else if (duration <= 15) {
+      // 15-year cadence
+      if (i < 4) phase = "build";
+      else if (i < 7) phase = "positioning";
+      else if (i < 11) phase = "burn";
+      else if (i === 11) phase = "recovery";
+      else phase = "burn";
+    } else if (duration <= 20) {
+      // 20-year cadence
+      if (i < 3 && hunterAge !== null && hunterAge < 16) phase = "youth_window";
+      else if (i < 5) phase = "build";
+      else if (i < 9) phase = "positioning";
+      else if (i < 15) phase = "burn";
+      else if (i === 15) phase = "recovery";
+      else phase = "burn";
+    } else {
+      // 25-year cadence
+      if (i < 5 && hunterAge !== null && hunterAge < 16) phase = "youth_window";
+      else if (i < 8) phase = "build";
+      else if (i < 13) phase = "positioning";
+      else if (i < 20) phase = "burn";
+      else if (i === 20) phase = "recovery";
+      else phase = "burn";
+    }
+
+    const isHuntYear = phase === "burn" || (phase === "build" && i <= 1) || (phase === "positioning" && i % 2 === 0);
 
     // Point buying for all non-random states
     for (const rec of recs) {

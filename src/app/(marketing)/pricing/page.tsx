@@ -25,14 +25,14 @@ const plans = [
     annual: "Free",
     period: "forever",
     description:
-      "The full strategy engine. All 11 states, unlimited runs, personalized 10-year roadmaps.",
+      "The full strategy engine. All 11 states, unlimited runs, personalized multi-year roadmaps (10–25 years).",
     icon: Compass,
     featured: true,
     features: [
       { name: "Species & state explorer", included: true },
       { name: "All 11 states scored & ranked", included: true },
       { name: "Unlimited strategy engine runs", included: true },
-      { name: "Full 10-year roadmap", included: true },
+      { name: "Full multi-year roadmap (10–25 years)", included: true },
       { name: "Budget projections & cost breakdowns", included: true },
       { name: "Goal tracking & point portfolio", included: true },
       { name: "Deadline calendar", included: true },
@@ -267,7 +267,7 @@ export default function PricingPage() {
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Every hunter deserves a real strategy &mdash; not a paywall. The full
-              engine, all 11 states, unlimited runs, and your complete 10-year
+              engine, all 11 states, unlimited runs, and your complete multi-year
               roadmap are free forever. When we launch Scout and Outfitter,
               they&apos;ll add unit-level analytics, deadline alerts, and
               advanced tools for hunters who want to go deeper.

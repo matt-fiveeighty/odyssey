@@ -26,6 +26,9 @@ interface ConsultationState {
   step: number;
 
   // Step 1: Tell me about yourself
+  planForName: string; // "My son Jake", "Dad", "" (self)
+  planForAge: number | null; // null = not specified
+  planningHorizon: number; // 10, 15, 20, 25
   homeState: string;
   homeCity: string;
   experienceLevel: ExperienceLevel | null;
@@ -104,6 +107,9 @@ const consultationInitial: Omit<ConsultationState,
   | "setGenerationPhase" | "setGenerationProgress"
 > = {
   step: 1,
+  planForName: "",
+  planForAge: null,
+  planningHorizon: 10,
   homeState: "",
   homeCity: "",
   experienceLevel: null,
@@ -201,7 +207,7 @@ export const useWizardStore = create<ConsultationState>()(
       },
       reset: () => set(consultationInitial as ConsultationState),
     }),
-    { name: "hunt-planner-wizard-v5" }
+    { name: "hunt-planner-wizard-v6" }
   )
 );
 

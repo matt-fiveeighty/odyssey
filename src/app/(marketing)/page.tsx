@@ -105,7 +105,7 @@ const showcaseSteps = [
     step: "02",
     title: "Receive Your Strategy",
     description:
-      "A scored state portfolio with visible reasoning, unit recommendations, and a 10-year phased roadmap.",
+      "A scored state portfolio with visible reasoning, unit recommendations, and a multi-year phased roadmap.",
     highlights: [
       "State-by-state scoring with visible reasoning",
       "Best units matched to your profile",

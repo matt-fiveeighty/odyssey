@@ -116,7 +116,7 @@ export interface PortfolioMandate {
   speciesPriorityRanking: string[];
   trophyVsOpportunityLeaning: TrophyVsMeat;
   statesInPlay: string[];
-  timeHorizonYears: 5 | 10 | 15;
+  timeHorizonYears: 5 | 10 | 15 | 20 | 25;
   youthToggle: boolean;
   youthAge?: number;
   homeState: string;

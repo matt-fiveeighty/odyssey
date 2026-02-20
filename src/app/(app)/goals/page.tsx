@@ -543,7 +543,7 @@ export default function GoalsPage() {
                   We&apos;ll pre-fill the consultation with your {[...new Set(userGoals.map(g => g.speciesId))].length} species,
                   {userGoals.some(g => g.huntStyle) ? " hunt style," : ""}
                   {userGoals.some(g => g.trophyDescription) ? " dream descriptions," : ""}
-                  {" "}and build a 10-year roadmap with timelines, costs, and milestones.
+                  {" "}and build a multi-year roadmap with timelines, costs, and milestones.
                 </p>
               </div>
               <Button onClick={handleBuildFromGoals} className="gap-2 shrink-0">
