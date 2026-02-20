@@ -32,7 +32,7 @@ const testimonials = [
     name: "Mike S.",
     location: "Georgia",
     quote:
-      "As a DIY backpack hunter on a budget, I needed something that understood my constraints. The roadmap gave me a realistic 10-year plan that doesn't break the bank.",
+      "As a DIY backpack hunter on a budget, I needed something that understood my constraints. The roadmap gave me a realistic multi-year plan that doesn't break the bank.",
     species: "Elk",
     experience: "DIY backpack hunter",
   },

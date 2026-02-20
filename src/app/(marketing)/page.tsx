@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
+import { OutcomeComparison } from "@/components/marketing/OutcomeComparison";
 import { ParallaxImage } from "@/components/marketing/ParallaxImage";
 import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import { StateOutline } from "@/components/shared/StateOutline";
@@ -18,10 +19,57 @@ import {
   Compass,
   Shield,
   CheckCircle2,
-  MapPin,
-  Trophy,
-  Users,
+  X,
+  AlertTriangle,
+  DollarSign,
+  Clock,
+  Eye,
 } from "lucide-react";
+
+/* ------------------------------------------------------------------ */
+/*  Data                                                              */
+/* ------------------------------------------------------------------ */
+
+const problems = [
+  {
+    icon: AlertTriangle,
+    title: "15 different draw systems",
+    detail:
+      "Every state runs its own game. Preference, bonus, hybrid, weighted, squared — all with different rules, deadlines, and gotchas.",
+  },
+  {
+    icon: DollarSign,
+    title: "Thousands in wasted fees",
+    detail:
+      "Applying broadly without a plan means paying into states that will never pay off for your profile.",
+  },
+  {
+    icon: Clock,
+    title: "Years of misallocated points",
+    detail:
+      "Building points in the wrong states is invisible until it's too late. By then you've lost years you can't get back.",
+  },
+  {
+    icon: Eye,
+    title: "No way to see the full picture",
+    detail:
+      "Scattered spreadsheets, forum threads, and gut feelings. No single view of where you stand across every state.",
+  },
+];
+
+const isItems = [
+  "A strategic planning engine that scores every western state against your profile",
+  "A multi-year phased roadmap with build, burn, and recovery windows",
+  "Budget-aware — point-year costs, hunt-year costs, guided estimates, all itemized",
+  "A discipline system that flags when your strategy drifts",
+];
+
+const isntItems = [
+  "A point tracker that tells you what you already know",
+  "A generic 'best states for elk' article dressed up as software",
+  "A social platform, forum, or hunting community",
+  "A replacement for scouting, fitness, or field skills",
+];
 
 const features = [
   {
@@ -49,48 +97,25 @@ const features = [
       "Year-one costs, long-term projections, application fees, guided hunt estimates — all calculated per state.",
   },
   {
-    icon: Compass,
-    title: "Unit Database",
-    description:
-      "Browse units across every state with success rates, point requirements, and tactical hunt notes.",
-  },
-  {
     icon: Shield,
     title: "Discipline Rules",
     description:
       "Seven built-in rules surface when your portfolio drifts — budget concentration, build fatigue, point abandonment, and more.",
   },
-];
-
-const rtbs = [
   {
-    value: "15 States",
-    detail: "CO, WY, MT, NV, AZ, UT, NM, OR, ID, KS, WA, NE, SD, ND, AK — every major western draw state covered.",
-    icon: MapPin,
-  },
-  {
-    value: "18 Species",
-    detail: "Elk, mule deer, moose, grizzly, sheep, goat, bison, pronghorn, wolf, caribou, and more.",
-    icon: Trophy,
-  },
-  {
-    value: "10-Year Plan",
-    detail: "Phased build-burn-recovery roadmap with point projections, cost forecasts, and conversion windows identified.",
-    icon: Calendar,
-  },
-  {
-    value: "Quick Setup",
-    detail: "Answer a few questions about your goals and budget. Get a scored state portfolio, unit picks, and a full action roadmap.",
-    icon: Users,
+    icon: Compass,
+    title: "Unit Database",
+    description:
+      "Browse units across every state with success rates, point requirements, and tactical hunt notes.",
   },
 ];
 
 const showcaseSteps = [
   {
     step: "01",
-    title: "Tell Us About You",
+    title: "Answer 9 Questions",
     description:
-      "Species, budget, experience, style — a quick questionnaire captures who you are as a hunter.",
+      "Species, budget, experience, style — a quick consultation captures who you are as a hunter.",
     highlights: [
       "Elk, Deer, Moose, Bear, and more",
       "DIY Backpack to Guided trip styles",
@@ -118,7 +143,7 @@ const showcaseSteps = [
   },
   {
     step: "03",
-    title: "Track & Execute",
+    title: "Execute the Plan",
     description:
       "Manage points, track deadlines, and follow your roadmap across every state you are applying in.",
     highlights: [
@@ -133,11 +158,15 @@ const showcaseSteps = [
   },
 ];
 
+/* ------------------------------------------------------------------ */
+/*  Page                                                              */
+/* ------------------------------------------------------------------ */
+
 export default function LandingPage() {
   return (
     <div className="flex flex-col">
       {/* ================================================================ */}
-      {/* HERO */}
+      {/* HERO — "Stop Applying Blind."                                    */}
       {/* ================================================================ */}
       <section className="relative overflow-hidden">
         <ParallaxImage
@@ -154,19 +183,20 @@ export default function LandingPage() {
           <div className="hero-stagger-1 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-8 glow-primary">
             <Mountain className="w-3.5 h-3.5 text-primary" />
             <span className="text-xs font-medium text-primary">
-              15 States. One Roadmap. Every Season Planned.
+              The Strategic Planning Engine for Western Big Game
             </span>
           </div>
 
           <h1 className="hero-stagger-2 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight">
-            Make This Season Count.
+            Stop Applying Blind.
             <br />
-            <span className="text-primary">And the Next.</span>
+            <span className="text-primary">Build a Real Strategy.</span>
           </h1>
 
           <p className="hero-stagger-3 mt-6 text-lg md:text-xl text-white/90 max-w-2xl mx-auto leading-relaxed">
-            Your multi-year tag strategy, built and rebalanced automatically.
-            Plan across states. Convert when the window opens.
+            Most hunters throw money at random states hoping to draw. Odyssey
+            builds a multi-year plan tuned to your species, budget, and timeline
+            — so every dollar and every point is working toward a tag.
           </p>
 
           <div className="hero-stagger-4 mt-10">
@@ -175,7 +205,7 @@ export default function LandingPage() {
                 size="lg"
                 className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
               >
-                Start Planning <ArrowRight className="w-4 h-4" />
+                Build Your Strategy <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
           </div>
@@ -239,39 +269,32 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* REASONS TO BELIEVE */}
+      {/* PROBLEM — "The System Is Designed to Confuse You."               */}
       {/* ================================================================ */}
-      <section className="border-t border-border bg-card/30 relative overflow-hidden">
-        <ParallaxImage
-          src="/images/hero/rtb-bear.png"
-          alt=""
-          className="opacity-50 pointer-events-none"
-          speed={0.2}
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/60 to-background pointer-events-none" />
-        <div className="relative max-w-5xl mx-auto px-6 py-16">
+      <section className="border-t border-border bg-card/30">
+        <div className="max-w-5xl mx-auto px-6 py-16">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Built for the Western Draw Game
+              The System Is Designed to Confuse You.
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              One platform. Every state, species, and draw system — mapped to your strategy.
+              Western draw hunting rewards discipline and long-term planning. Most hunters have neither — not because they lack drive, but because nobody shows them the full picture.
             </p>
           </ScrollReveal>
 
           <ScrollReveal animation="fade-up" stagger={100} once={false} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {rtbs.map((rtb) => (
-              <div key={rtb.value} className="relative flex flex-col p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30 h-full">
+            {problems.map((p) => (
+              <div key={p.title} className="relative flex flex-col p-4 rounded-xl bg-background/50 border border-border transition-all duration-300 hover:scale-[1.06] hover:-translate-y-2 hover:z-10 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] hover:border-primary/30 h-full">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <rtb.icon className="w-4.5 h-4.5 text-primary" />
+                    <p.icon className="w-4.5 h-4.5 text-primary" />
                   </div>
                   <p className="text-sm font-bold text-foreground">
-                    {rtb.value}
+                    {p.title}
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                  {rtb.detail}
+                  {p.detail}
                 </p>
               </div>
             ))}
@@ -280,16 +303,77 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* APP SHOWCASE — Alternating layout */}
+      {/* WHAT IT IS / ISN'T                                               */}
+      {/* ================================================================ */}
+      <section className="border-t border-border">
+        <div className="max-w-4xl mx-auto px-6 py-16">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              What Odyssey Is (and Isn&apos;t)
+            </h2>
+          </ScrollReveal>
+
+          <ScrollReveal animation="fade-up" stagger={80} once={false} className="grid md:grid-cols-2 gap-6">
+            {/* IS */}
+            <div className="p-6 rounded-xl bg-card border border-primary/20">
+              <h3 className="text-sm font-bold text-primary mb-4">What Odyssey Is</h3>
+              <ul className="space-y-3">
+                {isItems.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <CheckCircle2 className="w-4 h-4 text-primary/70 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* ISN'T */}
+            <div className="p-6 rounded-xl bg-card border border-border">
+              <h3 className="text-sm font-bold text-muted-foreground mb-4">What Odyssey Isn&apos;t</h3>
+              <ul className="space-y-3">
+                {isntItems.map((item) => (
+                  <li key={item} className="flex items-start gap-2.5 text-sm text-muted-foreground">
+                    <X className="w-4 h-4 text-muted-foreground/50 shrink-0 mt-0.5" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* OUTCOME COMPARISON — "Same budget. Different outcome."           */}
+      {/* ================================================================ */}
+      <section className="border-t border-border bg-card/30">
+        <div className="max-w-4xl mx-auto px-6 py-16">
+          <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+              Same Budget. Different Outcome.
+            </h2>
+            <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
+              Two hunters spending the same money. One applies blind. The other follows a strategy.
+            </p>
+          </ScrollReveal>
+
+          <ScrollReveal animation="scale-in" once={false}>
+            <OutcomeComparison />
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* ================================================================ */}
+      {/* HOW IT WORKS — 3 steps                                           */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/50">
         <div className="max-w-5xl mx-auto px-6 py-20">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              See It In Action
+              How It Works
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-balance">
-              From strategy to execution — here&apos;s what your experience looks like.
+              From consultation to execution — here&apos;s what your experience looks like.
             </p>
           </ScrollReveal>
 
@@ -301,7 +385,7 @@ export default function LandingPage() {
                   i % 2 === 1 ? "md:flex-row-reverse" : "md:flex-row"
                 } gap-8 md:gap-12 items-center`}
               >
-                {/* Text side — copy builds in, bullets stagger */}
+                {/* Text side */}
                 <div className="flex-1 space-y-4">
                   <ScrollReveal animation="fade-up" delay={0} once={false}>
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
@@ -329,7 +413,7 @@ export default function LandingPage() {
                   </ScrollReveal>
                 </div>
 
-                {/* Image side — slides in from the opposite direction */}
+                {/* Image side */}
                 <ScrollReveal
                   animation={i % 2 === 1 ? "fade-left" : "fade-right"}
                   delay={200}
@@ -359,13 +443,13 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* FEATURES */}
+      {/* FEATURES — "Built for the Long Game"                             */}
       {/* ================================================================ */}
       <section id="features" className="border-t border-border scroll-mt-20">
         <div className="max-w-5xl mx-auto px-6 py-20">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Everything You Need
+              Built for the Long Game
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
               Built for serious western hunters who treat their hunting like an
@@ -395,7 +479,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* TESTIMONIALS */}
+      {/* TESTIMONIALS                                                      */}
       {/* ================================================================ */}
       <section
         id="testimonials"
@@ -418,7 +502,7 @@ export default function LandingPage() {
       </section>
 
       {/* ================================================================ */}
-      {/* BOTTOM CTA */}
+      {/* BOTTOM CTA — "Build Your Strategy."                              */}
       {/* ================================================================ */}
       <section className="border-t border-border relative overflow-hidden">
         <ParallaxImage
@@ -443,13 +527,13 @@ export default function LandingPage() {
 
           <ScrollReveal animation="blur-in" delay={100} once={false}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              Build Your Roadmap
+              Build Your Strategy.
             </h2>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={200} once={false}>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto">
-              15 states. Every point dollar mapped. Burn windows identified.
-              Discipline rules that surface when you drift.
+              15 states. 18 species. Every point dollar mapped. A plan that
+              adapts to who you are.
             </p>
           </ScrollReveal>
           <ScrollReveal animation="fade-up" delay={300} once={false}>
@@ -459,7 +543,7 @@ export default function LandingPage() {
                   size="lg"
                   className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
                 >
-                  Start Planning <ArrowRight className="w-4 h-4" />
+                  Build Your Strategy <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
               <GuestEntryButton />
