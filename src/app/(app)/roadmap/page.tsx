@@ -1,13 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Route, ArrowRight } from "lucide-react";
 import { useRoadmapStore, useAppStore } from "@/lib/store";
 import { BoardStateHeader } from "@/components/roadmap/BoardStateHeader";
 import { DisciplineAlerts } from "@/components/roadmap/DisciplineAlerts";
 import { RoadmapTimeline } from "@/components/roadmap/RoadmapTimeline";
-import { StateYearGrid } from "@/components/roadmap/StateYearGrid";
+import { InteractiveMap } from "@/components/journey/InteractiveMap";
+import { YearTimeline } from "@/components/journey/YearTimeline";
+import { MapLegend } from "@/components/journey/MapLegend";
+import { StateDetailModal } from "@/components/journey/StateDetailModal";
+import { buildJourneyData } from "@/lib/engine/journey-data";
 import { computeBoardState } from "@/lib/engine/board-state";
 import { evaluateDisciplineRules } from "@/lib/engine/discipline-rules";
 
@@ -15,6 +19,10 @@ export default function RoadmapPage() {
   const activeAssessment = useRoadmapStore((s) => s.activeAssessment);
   const portfolioMandate = useRoadmapStore((s) => s.portfolioMandate);
   const userPoints = useAppStore((s) => s.userPoints);
+
+  const currentYear = new Date().getFullYear();
+  const [selectedYear, setSelectedYear] = useState(currentYear);
+  const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
 
   // Compute discipline violations and board state on the fly
   const violations = useMemo(() => {
@@ -31,6 +39,17 @@ export default function RoadmapPage() {
       userPoints,
     );
   }, [activeAssessment, portfolioMandate, violations, userPoints]);
+
+  // Build journey data for the interactive map
+  const journeyData = useMemo(
+    () => buildJourneyData(activeAssessment?.roadmap ?? [], userPoints),
+    [activeAssessment, userPoints],
+  );
+
+  const selectedYearData = useMemo(
+    () => journeyData.years.find((y) => y.year === selectedYear) ?? null,
+    [journeyData, selectedYear],
+  );
 
   // No plan state
   if (!activeAssessment) {
@@ -65,11 +84,32 @@ export default function RoadmapPage() {
       {/* Discipline Alerts */}
       <DisciplineAlerts violations={violations} />
 
-      {/* State × Year Grid — scrollable state view with hover */}
-      <StateYearGrid roadmap={activeAssessment.roadmap} />
+      {/* Interactive State Map — click a state for details, year selector on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_80px] gap-4">
+        <InteractiveMap
+          yearData={selectedYearData}
+          onStateClick={setSelectedStateId}
+          selectedYear={selectedYear}
+        />
+        <YearTimeline
+          years={journeyData.years}
+          selectedYear={selectedYear}
+          onYearSelect={setSelectedYear}
+          currentYear={currentYear}
+        />
+      </div>
+      <MapLegend />
 
       {/* Roadmap Timeline */}
       <RoadmapTimeline roadmap={activeAssessment.roadmap} />
+
+      {/* State Detail Modal */}
+      <StateDetailModal
+        stateId={selectedStateId}
+        onClose={() => setSelectedStateId(null)}
+        journeyData={journeyData}
+        assessment={activeAssessment}
+      />
     </div>
   );
 }
