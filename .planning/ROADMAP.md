@@ -12,7 +12,7 @@ This milestone transforms Odyssey Outdoors from a static results generator into 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data Foundation** - VerifiedDatum type system, Redis data layer, cache helpers, and unwrap utilities
+- [ ] **Phase 1: Data Foundation** - VerifiedDatum type system, Redis data layer, cache helpers, and three-tier data resolution
 - [ ] **Phase 2: Shareable Plan Links** - Token-based read-only plan snapshots via unique URLs
 - [ ] **Phase 3: Season Calendar** - Month-by-month swimlane calendar showing all hunt activities within a single year
 - [ ] **Phase 4: Calendar Subscription** - Isomorphic .ics builder and webcal:// subscription endpoint
@@ -35,14 +35,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. Data resolution follows three tiers (live scrape > cached last-known-good > hardcoded constants) and the app renders with reasonable data even when all external sources are disabled
   3. A shared Upstash Redis client is available to any server-side module, with configurable TTL helpers for flight prices (6h), CPI data (30d), share links (90d), and calendar plans (365d)
   4. Derived calculations (e.g., cost projections combining verified odds with estimated creep) automatically inherit the lowest confidence of their inputs
-**Plans**: 5 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 01-01: VerifiedDatum type system and factory functions
-- [ ] 01-02: Unwrap helpers and confidence propagation for derived calculations
-- [ ] 01-03: Shared Redis client extraction from rate-limit.ts
-- [ ] 01-04: Cache helper utilities with configurable TTLs
-- [ ] 01-05: Three-tier data resolution validation and fallback chain tests
+- [ ] 01-01-PLAN.md — VerifiedDatum type system, factory functions, unwrap helpers, and confidence propagation (TDD)
+- [ ] 01-02-PLAN.md — Shared Redis client extraction and cache helper utilities with configurable TTLs
+- [ ] 01-03-PLAN.md — Three-tier data resolution (Supabase > Redis > constants) in data-loader
 
 ### Phase 2: Shareable Plan Links
 **Goal**: Users can share their hunting strategy with anyone via a unique URL that renders a read-only snapshot of their plan
@@ -238,7 +236,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Foundation | 0/5 | Not started | - |
+| 1. Data Foundation | 0/3 | Not started | - |
 | 2. Shareable Plan Links | 0/5 | Not started | - |
 | 3. Season Calendar | 0/6 | Not started | - |
 | 4. Calendar Subscription | 0/6 | Not started | - |
