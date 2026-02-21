@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronUp, ExternalLink, Calendar, Download } from "lucide-react";
+import { ChevronDown, ChevronUp, ExternalLink, Calendar, Download, Check, Trophy, X } from "lucide-react";
 import { MoveTagBadge } from "./MoveTagBadge";
-import type { RoadmapYear, YearType } from "@/lib/types";
+import type { RoadmapYear, YearType, Milestone } from "@/lib/types";
 import { YEAR_TYPE_LABELS, migratePhaseToYearType } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { formatSpeciesName, cn } from "@/lib/utils";
 import { exportDeadline } from "@/lib/calendar-export";
+import { useAppStore } from "@/lib/store";
 
 const YEAR_TYPE_COLORS: Record<YearType, string> = {
   build: "bg-blue-500/15 text-blue-400 border-blue-500/30",
@@ -33,11 +34,67 @@ interface RoadmapTimelineProps {
   roadmap: RoadmapYear[];
 }
 
+/** Match a roadmap action to a milestone */
+function findMilestone(
+  milestones: Milestone[],
+  stateId: string,
+  speciesId: string,
+  type: string,
+  year: number,
+): Milestone | undefined {
+  return milestones.find(
+    (m) => m.stateId === stateId && m.speciesId === speciesId && m.type === type && m.year === year,
+  );
+}
+
+function ActionStatusBadge({ milestone }: { milestone: Milestone | undefined }) {
+  if (!milestone) return null;
+  if (milestone.drawOutcome === "drew") {
+    return (
+      <span className="flex items-center gap-0.5 text-[8px] px-1 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
+        <Trophy className="w-2 h-2" /> Drew
+      </span>
+    );
+  }
+  if (milestone.drawOutcome === "didnt_draw") {
+    return (
+      <span className="flex items-center gap-0.5 text-[8px] px-1 py-0.5 rounded-full bg-chart-4/15 text-chart-4 font-medium">
+        <X className="w-2 h-2" /> No draw
+      </span>
+    );
+  }
+  if (milestone.completed) {
+    return (
+      <span className="flex items-center gap-0.5 text-[8px] px-1 py-0.5 rounded-full bg-chart-2/15 text-chart-2 font-medium">
+        <Check className="w-2 h-2" /> Done
+      </span>
+    );
+  }
+  return null;
+}
+
 export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
   const currentYear = new Date().getFullYear();
   const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
+  const milestones = useAppStore((s) => s.milestones);
 
   const totalCost = roadmap.reduce((s, y) => s + y.estimatedCost, 0);
+
+  // Compute per-year completion stats from milestones
+  const yearStats = useMemo(() => {
+    const stats: Record<number, { total: number; completed: number; drew: number }> = {};
+    for (const yr of roadmap) {
+      let completed = 0;
+      let drew = 0;
+      for (const a of yr.actions) {
+        const m = findMilestone(milestones, a.stateId, a.speciesId, a.type, yr.year);
+        if (m?.drawOutcome === "drew") { completed++; drew++; }
+        else if (m?.completed) completed++;
+      }
+      stats[yr.year] = { total: yr.actions.length, completed, drew };
+    }
+    return stats;
+  }, [roadmap, milestones]);
 
   return (
     <div className="space-y-4">
@@ -121,10 +178,26 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
                 )}
               </div>
 
-              {/* Cost */}
-              <p className="text-xs font-medium tabular-nums mt-1.5 text-muted-foreground">
-                ${year.estimatedCost.toLocaleString()}
-              </p>
+              {/* Cost + completion */}
+              <div className="flex items-center justify-between mt-1.5">
+                <p className="text-xs font-medium tabular-nums text-muted-foreground">
+                  ${year.estimatedCost.toLocaleString()}
+                </p>
+                {yearStats[year.year]?.completed > 0 && (
+                  <span className="text-[9px] text-chart-2 font-medium">
+                    {yearStats[year.year].completed}/{yearStats[year.year].total}
+                  </span>
+                )}
+              </div>
+              {/* Mini completion bar */}
+              {yearStats[year.year]?.completed > 0 && yearStats[year.year].total > 0 && (
+                <div className="h-1 rounded-full bg-secondary overflow-hidden mt-1.5">
+                  <div
+                    className="h-full rounded-full bg-chart-2 transition-all duration-500"
+                    style={{ width: `${Math.round((yearStats[year.year].completed / yearStats[year.year].total) * 100)}%` }}
+                  />
+                </div>
+              )}
             </button>
           );
         })}
@@ -170,8 +243,17 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
                 <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded text-[10px] font-semibold border", colors)}>
                   {label}
                 </span>
-                <span className="text-xs text-muted-foreground ml-auto">
-                  {year.actions.length} moves &middot; ${year.estimatedCost.toLocaleString()}
+                <span className="text-xs text-muted-foreground ml-auto flex items-center gap-2">
+                  {yearStats[year.year]?.completed > 0 && (
+                    <span className="flex items-center gap-1 text-chart-2">
+                      <Check className="w-3 h-3" />
+                      {yearStats[year.year].completed}/{yearStats[year.year].total}
+                      {yearStats[year.year].drew > 0 && (
+                        <span className="text-primary ml-1">({yearStats[year.year].drew} drew)</span>
+                      )}
+                    </span>
+                  )}
+                  <span>{year.actions.length} moves &middot; ${year.estimatedCost.toLocaleString()}</span>
                 </span>
               </div>
 
@@ -203,6 +285,9 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
                                 {action.moveTag && (
                                   <MoveTagBadge tag={action.moveTag} locked={action.locked} />
                                 )}
+                                <ActionStatusBadge
+                                  milestone={findMilestone(milestones, action.stateId, action.speciesId, action.type, year.year)}
+                                />
                               </div>
                               <p className="text-[11px] text-muted-foreground leading-relaxed">
                                 {action.description}

@@ -6,9 +6,10 @@ import { AnimatedBar } from "../shared/AnimatedBar";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
-import { useWizardStore } from "@/lib/store";
+import { useWizardStore, useAppStore } from "@/lib/store";
 import { DataSourceInline } from "@/components/shared/DataSourceBadge";
-import { ChevronDown, Target, Mountain, Eye } from "lucide-react";
+import { ChevronDown, Target, Mountain, Eye, TrendingUp } from "lucide-react";
+import { estimateCreepRate, projectPointCreep, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { formatSpeciesName } from "@/lib/utils";
 import type { AlsoConsideredState } from "@/lib/types";
 
@@ -21,7 +22,12 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
   const state = STATES_MAP[rec.stateId];
   const vis = STATE_VISUALS[rec.stateId];
   const userSpecies = useWizardStore((s) => s.species);
+  const userPoints = useAppStore((s) => s.userPoints);
   if (!state) return null;
+
+  // Find user's actual points for this state (sum across species/point types)
+  const stateUserPoints = userPoints.filter((p) => p.stateId === rec.stateId);
+  const totalUserPts = stateUserPoints.reduce((sum, p) => sum + p.points, 0);
 
   const stateSpecies = state.availableSpecies.filter((sp) => userSpecies.includes(sp));
 
@@ -134,6 +140,127 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
               </div>
             </div>
           )}
+
+          {/* Point Creep Projection */}
+          {rec.bestUnits.length > 0 && (() => {
+            // Use the highest-trophy unit for creep projection (most relevant for purists)
+            const topUnit = [...rec.bestUnits].sort((a, b) => b.trophyRating - a.trophyRating)[0];
+            if (!topUnit || topUnit.trophyRating < 3) return null; // skip OTC/low-tier units
+
+            const creepRate = estimateCreepRate(topUnit.trophyRating);
+            const pointsRequired = topUnit.drawConfidence?.expected
+              ? topUnit.drawConfidence.expected // years as proxy for points needed
+              : Math.round(topUnit.trophyRating * 1.5);
+
+            const projections = projectPointCreep(
+              { currentPointsRequired: pointsRequired, annualCreepRate: creepRate },
+              10,
+            );
+
+            const maxPts = projections[projections.length - 1]?.projectedPoints ?? 1;
+
+            // If user has actual points tracked, compute real gap
+            const hasRealPoints = totalUserPts > 0;
+            const adjustedDrawYears = hasRealPoints
+              ? yearsToDrawWithCreep(totalUserPts, pointsRequired, creepRate)
+              : null;
+            const gapDirection = hasRealPoints
+              ? (1 > creepRate ? "closing" : creepRate > 1 ? "widening" : "flat")
+              : null;
+
+            return (
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="w-3.5 h-3.5 text-chart-4" />
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Point Creep Forecast</p>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-4/10 text-chart-4 font-medium">
+                    +{creepRate.toFixed(1)} pts/yr
+                  </span>
+                </div>
+
+                {/* Your Position — only shows when user has tracked points */}
+                {hasRealPoints && (
+                  <div className="flex items-center gap-3 mb-2 p-2 rounded-lg bg-primary/5 border border-primary/15">
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-primary">{totalUserPts}</p>
+                      <p className="text-[8px] text-muted-foreground uppercase">Your pts</p>
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">vs</div>
+                    <div className="text-center">
+                      <p className="text-sm font-bold text-chart-4">{pointsRequired}</p>
+                      <p className="text-[8px] text-muted-foreground uppercase">Need</p>
+                    </div>
+                    <div className="flex-1 text-right">
+                      {adjustedDrawYears !== null && adjustedDrawYears < 30 ? (
+                        <p className="text-[10px] font-medium">
+                          <span className="text-chart-2">~{adjustedDrawYears} yr{adjustedDrawYears !== 1 ? "s" : ""}</span>
+                          <span className="text-muted-foreground"> to draw</span>
+                        </p>
+                      ) : (
+                        <p className="text-[10px] text-chart-4 font-medium">30+ yrs at current pace</p>
+                      )}
+                      {gapDirection && (
+                        <p className={`text-[9px] ${gapDirection === "closing" ? "text-chart-2" : gapDirection === "widening" ? "text-chart-4" : "text-muted-foreground"}`}>
+                          Gap {gapDirection}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  {hasRealPoints
+                    ? `You gain 1 pt/yr; requirements creep at ~${creepRate.toFixed(1)} pts/yr. ${gapDirection === "widening" ? "Consider OTC hunts or burning points sooner." : ""}`
+                    : `Estimated point requirements for top-tier ${state.name} units over the next 10 years. You gain 1 point/year; requirements creep at ~${creepRate.toFixed(1)} pts/year.`
+                  }
+                </p>
+                {/* Creep bar chart */}
+                <div className="space-y-1">
+                  {projections.filter((_, i) => i % 2 === 0 || i === projections.length - 1).map((p) => {
+                    const widthPct = Math.max(8, (p.projectedPoints / maxPts) * 100);
+                    const isNow = p.year === projections[0]?.year;
+                    // Show user's projected points alongside requirement
+                    const userPtsAtYear = hasRealPoints ? totalUserPts + (p.year - (projections[0]?.year ?? p.year)) : null;
+                    const userWidthPct = userPtsAtYear !== null ? Math.max(4, (userPtsAtYear / maxPts) * 100) : null;
+                    return (
+                      <div key={p.year} className="flex items-center gap-2">
+                        <span className={`text-[10px] font-mono w-10 ${isNow ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                          {p.year}
+                        </span>
+                        <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden relative">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${isNow ? "bg-primary/60" : "bg-chart-4/40"}`}
+                            style={{ width: `${widthPct}%` }}
+                          />
+                          {userWidthPct !== null && (
+                            <div
+                              className="absolute top-0 left-0 h-full rounded-full bg-chart-2/50 border-r-2 border-chart-2"
+                              style={{ width: `${Math.min(userWidthPct, 100)}%` }}
+                            />
+                          )}
+                        </div>
+                        <span className={`text-[10px] font-mono w-8 text-right ${isNow ? "text-primary font-bold" : "text-muted-foreground"}`}>
+                          {p.projectedPoints}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+                {hasRealPoints && (
+                  <div className="flex items-center gap-3 mt-1 text-[9px] text-muted-foreground/60">
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-chart-2/50 border border-chart-2 inline-block" /> Your points</span>
+                    <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-chart-4/40 inline-block" /> Points needed</span>
+                  </div>
+                )}
+                <p className="text-[9px] text-muted-foreground/50 mt-1.5">
+                  Based on {topUnit.unitName || topUnit.unitCode} (trophy {topUnit.trophyRating}/10).
+                  {hasRealPoints
+                    ? " Track your points on the Points page to keep this up to date."
+                    : " Actual creep varies by species, quota changes, and applicant growth."}
+                </p>
+              </div>
+            );
+          })()}
         </div>
       </div>
     </div>

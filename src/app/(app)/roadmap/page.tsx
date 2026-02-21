@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useRoadmapStore, useAppStore } from "@/lib/store";
 import { BoardStateHeader } from "@/components/roadmap/BoardStateHeader";
 import { DisciplineAlerts } from "@/components/roadmap/DisciplineAlerts";
+import { ApplicationStatusBoard } from "@/components/roadmap/ApplicationStatusBoard";
 import { RoadmapTimeline } from "@/components/roadmap/RoadmapTimeline";
 import { PlanManager } from "@/components/roadmap/PlanManager";
 import { InteractiveMap } from "@/components/journey/InteractiveMap";
@@ -101,6 +102,9 @@ export default function RoadmapPage() {
 
       {/* Board State Header */}
       {boardState && <BoardStateHeader boardState={boardState} />}
+
+      {/* Application Status — "where do things stand right now?" */}
+      <ApplicationStatusBoard assessment={activeAssessment} />
 
       {/* Discipline Alerts */}
       <DisciplineAlerts violations={violations} />

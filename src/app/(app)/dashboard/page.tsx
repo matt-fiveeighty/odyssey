@@ -18,12 +18,16 @@ import {
   AlertTriangle,
   Shield,
   Activity,
+  RefreshCw,
+  Check,
+  X,
+  Zap,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
-import { useAppStore, useWizardStore } from "@/lib/store";
+import { useAppStore, useWizardStore, useRoadmapStore } from "@/lib/store";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
@@ -90,11 +94,57 @@ export default function DashboardPage() {
   const homeState = useWizardStore((s) => s.homeState);
   const router = useRouter();
 
+  const activeAssessment = useRoadmapStore((s) => s.activeAssessment);
+
   const hasPlan = confirmedAssessment !== null;
   const completedMilestones = milestones.filter((m) => m.completed).length;
   const pendingMilestones = milestones.filter((m) => !m.completed);
   const totalPoints = userPoints.reduce((s, p) => s + p.points, 0);
   const activeStates = new Set(userPoints.map((p) => p.stateId)).size;
+
+  // Welcome Back — context reinstatement for returning users
+  const welcomeBack = useMemo(() => {
+    if (!hasPlan || milestones.length === 0) return null;
+    const now = new Date();
+    const currentYear = now.getFullYear();
+
+    const drew = milestones.filter((m) => m.drawOutcome === "drew").length;
+    const didntDraw = milestones.filter((m) => m.drawOutcome === "didnt_draw").length;
+    const completed = milestones.filter((m) => m.completed).length;
+
+    // Unrecorded draw results: completed + drawResultDate in the past + no outcome
+    const unrecorded = milestones.filter(
+      (m) =>
+        m.type === "apply" &&
+        m.completed &&
+        !m.drawOutcome &&
+        m.drawResultDate &&
+        new Date(m.drawResultDate) <= now,
+    );
+
+    // Upcoming deadlines within 60 days
+    const upcomingSoon = STATES.flatMap((s) => {
+      const deadlines: { date: string }[] = [];
+      Object.entries(s.applicationDeadlines).forEach(([, dates]) => {
+        if (dates?.close) deadlines.push({ date: dates.close });
+      });
+      return deadlines;
+    }).filter((d) => {
+      const days = Math.ceil(
+        (new Date(d.date).getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      return days > 0 && days <= 60;
+    }).length;
+
+    // Plan year — which year of the plan we're in
+    const roadmapStart = activeAssessment?.roadmap?.[0]?.year ?? currentYear;
+    const planYear = currentYear - roadmapStart + 1;
+
+    // Only show if user has some tracked activity
+    if (completed === 0 && drew === 0 && didntDraw === 0) return null;
+
+    return { drew, didntDraw, completed, unrecorded, upcomingSoon, planYear };
+  }, [hasPlan, milestones, activeAssessment]);
 
   // Strategy metrics
   const metrics = useMemo(
@@ -155,12 +205,28 @@ export default function DashboardPage() {
               : "Start building your western big game strategy"}
           </p>
         </div>
-        <Link href="/plan-builder">
-          <Button className="gap-2">
-            <Plus className="w-4 h-4" />
-            {hasPlan ? "Adjust Plan" : "New Plan"}
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {!hasPlan && (
+            <Button
+              variant="outline"
+              className="gap-1.5"
+              onClick={() => {
+                useWizardStore.getState().reset();
+                useWizardStore.getState().setExpressMode(true);
+                router.push("/plan-builder");
+              }}
+            >
+              <Zap className="w-4 h-4 text-chart-2" />
+              <span className="hidden sm:inline">Quick Plan</span>
+            </Button>
+          )}
+          <Link href="/plan-builder">
+            <Button className="gap-2">
+              <Plus className="w-4 h-4" />
+              {hasPlan ? "Adjust Plan" : "New Plan"}
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Deadline Warning Banner */}
@@ -217,6 +283,74 @@ export default function DashboardPage() {
           </div>
         );
       })()}
+
+      {/* ================================================================ */}
+      {/* WELCOME BACK — Context Reinstatement                             */}
+      {/* ================================================================ */}
+      {welcomeBack && (
+        <Card className="bg-card border-border overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-chart-5" />
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <RefreshCw className="w-4 h-4 text-primary" />
+              <p className="text-sm font-semibold">
+                Welcome back! You&apos;re in Year {welcomeBack.planYear} of your plan.
+              </p>
+            </div>
+
+            {/* Status chips */}
+            <div className="flex flex-wrap gap-2 mb-3">
+              {welcomeBack.drew > 0 && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-chart-2/15 text-xs font-medium text-chart-2">
+                  <Check className="w-3 h-3" />
+                  {welcomeBack.drew} drew
+                </div>
+              )}
+              {welcomeBack.didntDraw > 0 && (
+                <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-secondary text-xs font-medium text-muted-foreground">
+                  <X className="w-3 h-3" />
+                  {welcomeBack.didntDraw} didn&apos;t draw
+                </div>
+              )}
+              <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-primary/10 text-xs font-medium text-primary">
+                <Target className="w-3 h-3" />
+                {welcomeBack.completed}/{milestones.length} milestones
+              </div>
+            </div>
+
+            {/* Action alerts */}
+            <div className="space-y-2">
+              {welcomeBack.unrecorded.length > 0 && (
+                <Link href="/goals" className="flex items-center gap-2 p-2 rounded-lg bg-chart-4/5 border border-chart-4/15 hover:bg-chart-4/10 transition-colors">
+                  <AlertTriangle className="w-3.5 h-3.5 text-chart-4 shrink-0" />
+                  <span className="text-xs font-medium text-chart-4">
+                    {welcomeBack.unrecorded.length} draw result{welcomeBack.unrecorded.length > 1 ? "s" : ""} ready to record
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-chart-4 ml-auto" />
+                </Link>
+              )}
+              {welcomeBack.upcomingSoon > 0 && (
+                <Link href="/deadlines" className="flex items-center gap-2 p-2 rounded-lg bg-primary/5 border border-primary/15 hover:bg-primary/10 transition-colors">
+                  <Calendar className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="text-xs font-medium">
+                    {welcomeBack.upcomingSoon} deadline{welcomeBack.upcomingSoon > 1 ? "s" : ""} in the next 60 days
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                </Link>
+              )}
+              {welcomeBack.didntDraw > 0 && (
+                <Link href="/rebalance" className="flex items-center gap-2 p-2 rounded-lg bg-chart-5/5 border border-chart-5/15 hover:bg-chart-5/10 transition-colors">
+                  <RefreshCw className="w-3.5 h-3.5 text-chart-5 shrink-0" />
+                  <span className="text-xs font-medium">
+                    Review rebalance options for {welcomeBack.didntDraw} missed draw{welcomeBack.didntDraw > 1 ? "s" : ""}
+                  </span>
+                  <ArrowRight className="w-3 h-3 text-muted-foreground ml-auto" />
+                </Link>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ================================================================ */}
       {/* STRATEGIC METRICS — Above the Fold                               */}

@@ -77,6 +77,9 @@ interface ConsultationState {
   generationPhase: string;
   generationProgress: number;
 
+  // Express mode (3-step quick plan)
+  expressMode: boolean;
+
   // Legacy/derived
   physicalLimitations: string;
   recommendedStates: string[];
@@ -97,6 +100,7 @@ interface ConsultationState {
   setGenerationProgress: (pct: number) => void;
   confirmPlan: (assessment: StrategicAssessment) => void;
   prefillFromGoals: (goals: import("@/lib/types").UserGoal[]) => void;
+  setExpressMode: (enabled: boolean) => void;
   reset: () => void;
 }
 
@@ -104,7 +108,7 @@ const consultationInitial: Omit<ConsultationState,
   | "setStep" | "setField" | "setExistingPoints" | "toggleArrayField"
   | "addDreamHunt" | "removeDreamHunt" | "confirmPlan" | "prefillFromGoals" | "reset"
   | "setPreviewScores" | "confirmStateSelection" | "setFineTuneAnswer"
-  | "setGenerationPhase" | "setGenerationProgress"
+  | "setGenerationPhase" | "setGenerationProgress" | "setExpressMode"
 > = {
   step: 1,
   planForName: "",
@@ -139,6 +143,7 @@ const consultationInitial: Omit<ConsultationState,
   fineTuneAnswers: {},
   generationPhase: "idle",
   generationProgress: 0,
+  expressMode: false,
   physicalLimitations: "",
   recommendedStates: [],
   planName: "My Western Strategy",
@@ -181,6 +186,7 @@ export const useWizardStore = create<ConsultationState>()(
       setGenerationPhase: (phase) => set({ generationPhase: phase }),
       setGenerationProgress: (pct) => set({ generationProgress: pct }),
       confirmPlan: (assessment) => set({ confirmedPlan: assessment }),
+      setExpressMode: (enabled) => set({ expressMode: enabled }),
       prefillFromGoals: (goals) => {
         // Extract unique species from goals
         const species = [...new Set(goals.map(g => g.speciesId))];

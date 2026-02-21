@@ -3,7 +3,7 @@
 import { useMemo, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ExternalLink, Download, Star } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Download, Star, Check, Trophy, X, History } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { useAppStore, useWizardStore } from "@/lib/store";
 import { formatSpeciesName } from "@/lib/utils";
@@ -40,7 +40,7 @@ type Deadline = {
 };
 
 export default function DeadlinesPage() {
-  const { userGoals, userPoints, confirmedAssessment } = useAppStore();
+  const { userGoals, userPoints, confirmedAssessment, milestones } = useAppStore();
   const wizardSpecies = useWizardStore((s) => s.species);
 
   const now = new Date();
@@ -354,6 +354,106 @@ export default function DeadlinesPage() {
             );
           })}
         </div>
+
+        {/* Completed Actions — past deadlines the user acted on */}
+        {(() => {
+          // Show milestones that match "apply" type and are completed or have draw outcomes
+          const completedActions = milestones.filter(
+            (m) => (m.type === "apply" || m.type === "buy_points") && (m.completed || m.drawOutcome)
+          );
+          if (completedActions.length === 0) return null;
+
+          // Group by state
+          const byState: Record<string, typeof completedActions> = {};
+          for (const m of completedActions) {
+            if (!byState[m.stateId]) byState[m.stateId] = [];
+            byState[m.stateId].push(m);
+          }
+
+          return (
+            <div className="pt-4 border-t border-border/30">
+              <div className="flex items-center gap-2 mb-4">
+                <History className="w-4 h-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
+                  Your Activity
+                </h2>
+                <span className="text-[10px] text-muted-foreground/50">
+                  {completedActions.length} action{completedActions.length !== 1 ? "s" : ""}
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {Object.entries(byState).map(([stateId, stateMs]) => {
+                  const state = STATES_MAP[stateId];
+                  if (!state) return null;
+
+                  return (
+                    <div key={stateId}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <Badge
+                          className="text-[10px] font-bold px-1.5 py-0"
+                          style={{ backgroundColor: state.color, color: "white" }}
+                        >
+                          {state.abbreviation}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{state.name}</span>
+                      </div>
+                      <div className="space-y-1">
+                        {stateMs.map((m) => (
+                          <div
+                            key={m.id}
+                            className={`flex items-center gap-2.5 px-3 py-2 rounded-lg border transition-colors ${
+                              m.drawOutcome === "drew"
+                                ? "border-primary/20 bg-primary/5"
+                                : m.drawOutcome === "didnt_draw"
+                                  ? "border-chart-4/20 bg-chart-4/5"
+                                  : "border-chart-2/20 bg-chart-2/5"
+                            }`}
+                          >
+                            <SpeciesAvatar speciesId={m.speciesId} size={20} />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-xs font-medium">{formatSpeciesName(m.speciesId)}</span>
+                              <span className="text-[10px] text-muted-foreground ml-2">
+                                {m.type === "apply" ? "Applied" : "Bought points"}
+                                {m.completedAt && (
+                                  <> &middot; {new Date(m.completedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}</>
+                                )}
+                              </span>
+                            </div>
+                            {m.drawOutcome === "drew" && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
+                                <Trophy className="w-2.5 h-2.5" /> Drew!
+                              </span>
+                            )}
+                            {m.drawOutcome === "didnt_draw" && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-chart-4/15 text-chart-4 font-medium">
+                                <X className="w-2.5 h-2.5" /> Didn&apos;t draw
+                              </span>
+                            )}
+                            {!m.drawOutcome && m.completed && (
+                              <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded-full bg-chart-2/15 text-chart-2 font-medium">
+                                <Check className="w-2.5 h-2.5" /> Done
+                              </span>
+                            )}
+                            {m.totalCost > 0 && (
+                              <span className="text-[10px] text-muted-foreground tabular-nums">
+                                ${m.totalCost.toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-[9px] text-muted-foreground/50 mt-3">
+                Based on milestones you&apos;ve marked complete. Record draw results on the Goals page.
+              </p>
+            </div>
+          );
+        })()}
 
         {/* Month quick-jump index — right sidebar */}
         <nav className="hidden lg:block">

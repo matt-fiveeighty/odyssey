@@ -6,6 +6,7 @@ import dynamic from "next/dynamic";
 import type { StrategicAssessment, RoadmapAction } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
+import { YearOneActionPlan } from "./sections/YearOneActionPlan";
 import { PlanExport } from "@/components/shared/PlanExport";
 import { Button } from "@/components/ui/button";
 import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows, Pencil } from "lucide-react";
@@ -87,6 +88,9 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
   return (
     <div className="space-y-6">
       <HeroSummary assessment={assessment} />
+
+      {/* Year 1 Action Plan — "just tell me what to do this year" */}
+      <YearOneActionPlan assessment={assessment} />
 
       {/* Tab bar */}
       <div role="tablist" aria-label="Results sections" className="flex gap-1 p-1 bg-secondary/50 rounded-xl" onKeyDown={handleTabKeyDown}>

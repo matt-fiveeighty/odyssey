@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { useWizardStore } from "@/lib/store";
 import { ConsultationProgress } from "./shared/ConsultationProgress";
 import { StepTransition } from "./shared/StepTransition";
@@ -14,12 +14,22 @@ import { StepPointPortfolio } from "./steps/StepPointPortfolio";
 import { StepHelpMeChoose } from "./steps/StepHelpMeChoose";
 import { StepFineTune } from "./steps/StepFineTune";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Sparkles, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, RotateCcw, Zap } from "lucide-react";
 
 interface ConsultationShellProps {
   onGenerate: () => void;
   isGenerating: boolean;
 }
+
+// Full 9-step sequence
+const FULL_STEPS = [1, 2, 3, 4, 5, 6, 7, 8, 9] as const;
+// Express: About You, Species, Budget → auto-fill rest → generate
+const EXPRESS_STEPS = [1, 2, 4] as const;
+
+/** Western states that can drive to most hunt destinations */
+const WESTERN_STATES = new Set([
+  "CO", "WY", "MT", "ID", "UT", "NV", "NM", "AZ", "OR", "WA", "SD", "ND", "NE", "KS",
+]);
 
 function canProceed(step: number, wizard: ReturnType<typeof useWizardStore.getState>): boolean {
   switch (step) {
@@ -86,33 +96,105 @@ function getValidationHint(step: number, wizard: ReturnType<typeof useWizardStor
   }
 }
 
+/** Auto-fills defaults for steps skipped in express mode and triggers generation. */
+function applyExpressDefaults(wizard: ReturnType<typeof useWizardStore.getState>) {
+  const travel = WESTERN_STATES.has(wizard.homeState) ? "drive_only" : "short_flight";
+
+  // Step 3: Paint the picture
+  if (!wizard.trophyVsMeat) wizard.setField("trophyVsMeat", "balanced");
+  if (!wizard.comfortWithUncertainty) wizard.setField("comfortWithUncertainty", "tolerate");
+
+  // Step 5: Hunting DNA
+  if (!wizard.huntStylePrimary) wizard.setField("huntStylePrimary", "diy_truck");
+  if (wizard.importantFactors.length === 0) wizard.setField("importantFactors", ["draw_odds", "cost"]);
+
+  // Step 6: Travel reality
+  if (!wizard.huntFrequency) wizard.setField("huntFrequency", "every_year");
+  if (!wizard.timeAvailable) wizard.setField("timeAvailable", "full_week");
+  if (!wizard.travelWillingness) wizard.setField("travelWillingness", travel);
+
+  // Step 8: States — use preview scores if available, otherwise pick top 3 from species availability
+  if (wizard.selectedStatesConfirmed.length === 0) {
+    if (wizard.previewScores.length > 0) {
+      const top3 = [...wizard.previewScores]
+        .sort((a, b) => b.totalScore - a.totalScore)
+        .slice(0, 3)
+        .map((s) => s.stateId);
+      wizard.confirmStateSelection(top3);
+    }
+    // If no preview scores yet, the engine will auto-select based on scoring
+  }
+}
+
 export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShellProps) {
   const wizard = useWizardStore();
   const [direction, setDirection] = useState<"forward" | "backward">("forward");
   const prevStep = useRef(wizard.step);
 
+  const steps = wizard.expressMode ? EXPRESS_STEPS : FULL_STEPS;
+  const totalSteps = steps.length;
+
+  // Map wizard.step to display position (1-based)
+  const displayPosition = useMemo(() => {
+    const idx = (steps as readonly number[]).indexOf(wizard.step);
+    return idx >= 0 ? idx + 1 : 1;
+  }, [wizard.step, steps]);
+
+  const isLastStep = displayPosition === totalSteps;
+
   const handleNext = useCallback(() => {
-    if (wizard.step < 9) {
-      setDirection("forward");
-      prevStep.current = wizard.step;
-      wizard.setStep(wizard.step + 1);
-    } else if (wizard.step === 9) {
-      onGenerate();
+    if (wizard.expressMode) {
+      const currentIdx = EXPRESS_STEPS.indexOf(wizard.step as (typeof EXPRESS_STEPS)[number]);
+      if (currentIdx < EXPRESS_STEPS.length - 1) {
+        // Move to next express step
+        setDirection("forward");
+        prevStep.current = wizard.step;
+        wizard.setStep(EXPRESS_STEPS[currentIdx + 1]);
+      } else {
+        // Last express step — apply defaults and generate
+        applyExpressDefaults(wizard);
+        onGenerate();
+      }
+    } else {
+      if (wizard.step < 9) {
+        setDirection("forward");
+        prevStep.current = wizard.step;
+        wizard.setStep(wizard.step + 1);
+      } else if (wizard.step === 9) {
+        onGenerate();
+      }
     }
   }, [wizard, onGenerate]);
 
   const handleBack = useCallback(() => {
-    if (wizard.step > 1) {
-      setDirection("backward");
-      prevStep.current = wizard.step;
-      wizard.setStep(wizard.step - 1);
+    if (wizard.expressMode) {
+      const currentIdx = EXPRESS_STEPS.indexOf(wizard.step as (typeof EXPRESS_STEPS)[number]);
+      if (currentIdx > 0) {
+        setDirection("backward");
+        prevStep.current = wizard.step;
+        wizard.setStep(EXPRESS_STEPS[currentIdx - 1]);
+      }
+    } else {
+      if (wizard.step > 1) {
+        setDirection("backward");
+        prevStep.current = wizard.step;
+        wizard.setStep(wizard.step - 1);
+      }
     }
   }, [wizard]);
 
   const handleStepClick = useCallback((step: number) => {
+    if (wizard.expressMode) return; // No step jumping in express mode
     setDirection(step < wizard.step ? "backward" : "forward");
     prevStep.current = wizard.step;
     wizard.setStep(step);
+  }, [wizard]);
+
+  const handleSwitchMode = useCallback(() => {
+    const newMode = !wizard.expressMode;
+    wizard.setExpressMode(newMode);
+    // Reset to step 1 when switching modes
+    wizard.setStep(1);
   }, [wizard]);
 
   const renderStep = () => {
@@ -135,7 +217,43 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
 
   return (
     <div className="space-y-4">
-      <ConsultationProgress currentStep={wizard.step} onStepClick={handleStepClick} />
+      {/* Express mode badge + mode toggle */}
+      {wizard.expressMode ? (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-chart-2/15 text-chart-2 text-xs font-medium">
+              <Zap className="w-3 h-3" />
+              Quick Plan
+            </div>
+            <span className="text-xs text-muted-foreground">
+              Step {displayPosition} of {totalSteps}
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSwitchMode}
+            className="text-xs text-muted-foreground gap-1"
+          >
+            Switch to Full Consultation
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between">
+          <ConsultationProgress currentStep={wizard.step} onStepClick={handleStepClick} />
+          {wizard.step === 1 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSwitchMode}
+              className="text-xs text-muted-foreground gap-1 shrink-0"
+            >
+              <Zap className="w-3 h-3" />
+              Quick Plan
+            </Button>
+          )}
+        </div>
+      )}
 
       <StepTransition direction={direction} stepKey={wizard.step}>
         {renderStep()}
@@ -143,7 +261,7 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
 
       <div className="flex items-center justify-between pt-2">
         <div>
-          {wizard.step > 1 && (
+          {displayPosition > 1 && (
             <Button variant="ghost" onClick={handleBack} className="gap-1.5">
               <ChevronLeft className="w-4 h-4" /> Back
             </Button>
@@ -151,13 +269,13 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
         </div>
 
         <div className="flex items-center gap-2">
-          {wizard.step === 1 && (
+          {wizard.step === 1 && !wizard.expressMode && (
             <Button variant="ghost" size="sm" onClick={() => wizard.reset()} className="gap-1 text-xs text-muted-foreground">
               <RotateCcw className="w-3 h-3" /> Reset
             </Button>
           )}
 
-          {wizard.step < 9 ? (
+          {!isLastStep ? (
             <div className="flex items-center gap-3">
               {!isComplete && hint && (
                 <span className="text-[11px] text-muted-foreground/70 hidden sm:block max-w-[200px] text-right">
@@ -175,11 +293,20 @@ export function ConsultationShell({ onGenerate, isGenerating }: ConsultationShel
           ) : (
             <Button
               onClick={handleNext}
-              disabled={isGenerating}
-              className="gap-1.5 bg-gradient-to-r from-primary to-chart-2 hover:opacity-90 glow-pulse shimmer-sweep"
+              disabled={isGenerating || !isComplete}
+              className={`gap-1.5 ${wizard.expressMode ? "bg-gradient-to-r from-chart-2 to-primary" : "bg-gradient-to-r from-primary to-chart-2"} hover:opacity-90 glow-pulse shimmer-sweep`}
             >
-              <Sparkles className="w-4 h-4" />
-              {isGenerating ? "Generating..." : <><span className="hidden sm:inline">Build My Roadmap</span><span className="sm:hidden">Build</span></>}
+              {wizard.expressMode ? (
+                <>
+                  <Zap className="w-4 h-4" />
+                  {isGenerating ? "Generating..." : "Build Quick Plan"}
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  {isGenerating ? "Generating..." : <><span className="hidden sm:inline">Build My Roadmap</span><span className="sm:hidden">Build</span></>}
+                </>
+              )}
             </Button>
           )}
         </div>
