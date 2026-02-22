@@ -123,16 +123,12 @@ Plans:
   3. Amadeus calls are batch-cached weekly via cron and never called in a user-facing request path -- monthly call budget is tracked in Redis with automatic switch to cache-only at 1800/2000 limit
   4. BLS data is cached 30 days and refreshed monthly via Vercel Cron on the 15th
   5. When either API fails or quota is exhausted, the app seamlessly falls back to static estimates with "estimated" confidence -- users never see $0 flights or broken projections
-**Plans**: 7 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 06-01: Amadeus SDK integration and flight quote client (src/lib/api/amadeus.ts)
-- [ ] 06-02: Amadeus Redis caching with 6h TTL and quota tracking
-- [ ] 06-03: GET /api/flights/quote route handler with cache-first pattern
-- [ ] 06-04: Flight price warm cron (monthly pre-cache of popular airport pairs)
-- [ ] 06-05: BLS CPI/inflation client (src/lib/api/bls.ts) with 30d cache
-- [ ] 06-06: GET /api/inflation/cpi route handler and monthly refresh cron
-- [ ] 06-07: Graceful degradation for both APIs (fallback to static estimates with "estimated" confidence)
+- [ ] 06-01-PLAN.md — Amadeus flight quote client + BLS CPI client (pure-logic API modules with OAuth, quota tracking, cache)
+- [ ] 06-02-PLAN.md — Cache-first route handlers (/api/flights/quote, /api/inflation/cpi) + cron jobs (warm-flights, refresh-cpi) + vercel.json
+- [ ] 06-03-PLAN.md — Wire real BLS inflation rate into PortfolioOverview and HeroSummary (replace hardcoded 3.5%)
 
 ### Phase 7: Scraper Enrichment & Data Freshness
 **Goal**: Existing state scrapers are enhanced to capture deadlines, fees, seasons, and leftover tags -- and every number on screen shows whether it is verified, estimated, or stale
@@ -228,7 +224,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 3. Season Calendar | 2/2 | Complete | 2026-02-21 |
 | 4. Calendar Subscription | 2/2 | Complete | 2026-02-22 |
 | 5. Advisor Voice | 4/4 | Complete | 2026-02-22 |
-| 6. API Integrations | 0/7 | Not started | - |
+| 6. API Integrations | 0/3 | Not started | - |
 | 7. Scraper Enrichment & Data Freshness | 0/8 | Not started | - |
 | 8. Savings & Budget Tracker | 0/6 | Not started | - |
 | 9. Diff View | 0/5 | Not started | - |
