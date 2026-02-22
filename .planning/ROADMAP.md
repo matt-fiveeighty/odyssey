@@ -104,15 +104,13 @@ Plans:
   3. The advisor uses temporal context -- referencing days since last visit, days until deadlines, and time-sensitive windows
   4. Deadline proximity generates urgency-calibrated commentary (immediate within 14 days, soon within 30, informational at 60+)
   5. Point creep detection alerts the user when draw timelines shift, with specific impact stated (e.g., "Year 5 to Year 6")
-**Plans**: 6 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: AdvisorInsight type system extending BoardSignal with interpretation, recommendation, and CTA
-- [ ] 05-02: Advisor insight generator engine (board state signals to advisor insights)
-- [ ] 05-03: Dashboard card rewrites with opinionated interpretations (portfolio health, deadlines, goals)
-- [ ] 05-04: Temporal context engine (days since last visit, deadline countdowns, time-sensitive windows)
-- [ ] 05-05: Point creep shift detection and draw timeline impact commentary
-- [ ] 05-06: Advisor voice integration with season calendar items
+- [ ] 05-01-PLAN.md — AdvisorInsight type system, temporal context engine, and lastVisitAt store integration
+- [ ] 05-02-PLAN.md — Advisor insight generator pipeline + point creep shift detection engine
+- [ ] 05-03-PLAN.md — AdvisorCard component + dashboard rewrite replacing Welcome Back with advisor insights
+- [ ] 05-04-PLAN.md — Calendar advisor notes generator + CalendarSlot tooltips + ICS description enrichment
 
 ### Phase 6: API Integrations
 **Goal**: Real flight pricing and real inflation data replace all hardcoded estimates, served from cache so API free tiers are never exhausted in user-facing request paths
@@ -229,7 +227,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 2. Shareable Plan Links | 0/2 | Not started | - |
 | 3. Season Calendar | 0/2 | Not started | - |
 | 4. Calendar Subscription | 0/2 | Not started | - |
-| 5. Advisor Voice | 0/6 | Not started | - |
+| 5. Advisor Voice | 0/4 | Not started | - |
 | 6. API Integrations | 0/7 | Not started | - |
 | 7. Scraper Enrichment & Data Freshness | 0/8 | Not started | - |
 | 8. Savings & Budget Tracker | 0/6 | Not started | - |
