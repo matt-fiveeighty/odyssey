@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 5 in progress -- Advisor Voice system.
+**Current focus:** Phase 6 next -- API Integrations (Amadeus flights + BLS inflation).
 
 ## Current Position
 
-Phase: 5 of 10 (Advisor Voice)
-Plan: 4 of 4 in current phase
-Status: Plan 05-04 complete (phase complete)
-Last activity: 2026-02-22 -- Completed 05-04 (Calendar advisor notes)
+Phase: 5 of 10 (Advisor Voice) — COMPLETE
+Plan: Proceeding to Phase 6
+Status: Phase 5 verified (5/5 success criteria + gap fix committed)
+Last activity: 2026-02-22 -- Phase 5 complete, gap fix for advisor calendar wiring
 
-Progress: [██████░░░░] 33%
+Progress: [█████████░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 9 min
-- Total execution time: 1.70 hours
+- Total plans completed: 13
+- Average duration: 8 min
+- Total execution time: 1.75 hours
 
 **By Phase:**
 
@@ -31,7 +31,7 @@ Progress: [██████░░░░] 33%
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
-| 05-advisor-voice | 3 | 8 min | 3 min |
+| 05-advisor-voice | 4 | 11 min | 3 min |
 
 **Recent Trend:**
 - Last 5 plans: 04-01 (12 min), 04-02 (18 min), 05-01 (2 min), 05-02 (3 min), 05-04 (3 min)
@@ -107,5 +107,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 05-03-PLAN.md (Advisor Cards + Dashboard Integration)
+Stopped at: Phase 5 complete, proceeding to Phase 6 planning
 Resume file: None
