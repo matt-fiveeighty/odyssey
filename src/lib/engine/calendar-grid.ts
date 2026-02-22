@@ -47,6 +47,7 @@ export interface CalendarSlotData {
   dueDate?: string; // ISO date for deadline proximity display
   url?: string; // Direct link to F&G portal for this action
   unitCode?: string; // Hunt unit code (e.g., "Unit 61" for CO elk)
+  advisorNote?: string; // Plain-text advisor interpretation for this slot
 }
 
 export interface CalendarRow {
