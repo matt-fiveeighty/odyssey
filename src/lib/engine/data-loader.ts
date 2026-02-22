@@ -1,12 +1,14 @@
 /**
- * Data Loader — Bridge between Supabase DB and the engine's DataContext.
+ * Data Loader — Three-tier data resolution for the engine's DataContext.
  *
- * Queries Supabase for scraped unit data and deadlines, merges with
- * hardcoded constants (DB takes precedence, constants fill gaps),
- * and calls setDataContext() to update the engine.
+ * Resolution chain:
+ *   Tier 1 (live):      Supabase scrape → merge with constants → cache to Redis
+ *   Tier 2 (cached):    Redis last-known-good → merge with constants
+ *   Tier 3 (fallback):  Hardcoded constants only
  *
- * Silently falls back to hardcoded constants on any error, so the app
- * never breaks when DB is unavailable.
+ * The app always renders with reasonable data regardless of which external
+ * services are available. Successful Supabase loads are cached to Redis so
+ * a subsequent Supabase outage serves recent data instead of stale constants.
  *
  * Usage:
  *   - Server-side: Call from API routes or server components
@@ -15,6 +17,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { setDataContext, resetDataContext } from "./roadmap-generator";
+import { cacheGet, cacheSet } from "@/lib/redis";
 import { STATES } from "@/lib/constants/states";
 import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import type { State, Unit } from "@/lib/types";
@@ -24,12 +27,17 @@ import { logger } from "@/lib/utils";
 let _lastLoadedAt: number | null = null;
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
+// Redis cache keys for three-tier resolution
+const CACHE_KEY_UNITS = "data:units:latest";
+const CACHE_KEY_DEADLINES = "data:deadlines:latest";
+const CACHE_KEY_TTL = 24 * 60 * 60; // 24 hours — longer than the 5min in-memory cache, shorter than scrape cadence
+
 // Concurrent request deduplication — prevents double-load from
 // simultaneous preview + full generation calls
 let _pendingLoad: Promise<void> | null = null;
 
 // Data source tracking for staleness indicators
-let _dataSource: "db" | "constants" = "constants";
+let _dataSource: "db" | "cache" | "constants" = "constants";
 let _dbUnitCount = 0;
 let _dbDeadlineCount = 0;
 
@@ -37,7 +45,9 @@ let _dbDeadlineCount = 0;
 export const STALE_THRESHOLD_DAYS = 10;
 
 export interface DataStatus {
-  source: "db" | "constants";
+  source: "db" | "cache" | "constants";
+  /** Which resolution tier provided the data: 1=Supabase, 2=Redis cache, 3=constants */
+  tier: 1 | 2 | 3;
   lastLoadedAt: number | null;
   staleMinutes: number | null;
   dbUnitCount: number;
@@ -54,18 +64,30 @@ export interface DataStatus {
  * Components can use this to show staleness warnings.
  */
 export function getDataStatus(): DataStatus {
-  const staleMinutes = _lastLoadedAt
-    ? Math.round((Date.now() - _lastLoadedAt) / 60_000)
+  // For cache tier, use the cached scrape timestamp if available
+  const referenceTime = _dataSource === "cache" && _cachedScrapeTimestamp
+    ? _cachedScrapeTimestamp
+    : _lastLoadedAt;
+
+  const staleMinutes = referenceTime
+    ? Math.round((Date.now() - referenceTime) / 60_000)
     : null;
   const staleDays = staleMinutes !== null ? Math.floor(staleMinutes / (60 * 24)) : null;
+
+  const tier: 1 | 2 | 3 = _dataSource === "db" ? 1 : _dataSource === "cache" ? 2 : 3;
+
   return {
     source: _dataSource,
+    tier,
     lastLoadedAt: _lastLoadedAt,
     staleMinutes,
     dbUnitCount: _dbUnitCount,
     dbDeadlineCount: _dbDeadlineCount,
     isUsingConstants: _dataSource === "constants",
-    isStale: staleDays === null || staleDays > STALE_THRESHOLD_DAYS,
+    // Cache tier without a scrape timestamp is conservatively marked stale
+    isStale: _dataSource === "cache" && !_cachedScrapeTimestamp
+      ? true
+      : staleDays === null || staleDays > STALE_THRESHOLD_DAYS,
     staleDays,
   };
 }
@@ -96,17 +118,39 @@ export async function loadDataContext(): Promise<void> {
   }
 }
 
+// Cached scrape timestamp — used by getDataStatus for cache-tier staleness
+let _cachedScrapeTimestamp: number | null = null;
+
 async function _loadDataContextInner(): Promise<void> {
+  // --- Tier 1: Try Supabase (live scrape) ---
+  const tier1Success = await _tryLoadFromSupabase();
+  if (tier1Success) return;
+
+  // --- Tier 2: Try Redis cache (last-known-good) ---
+  const tier2Success = await _tryLoadFromCache();
+  if (tier2Success) return;
+
+  // --- Tier 3: Hardcoded constants (always available) ---
+  logger.warn("[data-loader] Tier 3: Falling back to hardcoded constants");
+  _dataSource = "constants";
+  _dbUnitCount = 0;
+  _dbDeadlineCount = 0;
+  _cachedScrapeTimestamp = null;
+  resetDataContext();
+}
+
+/**
+ * Tier 1: Attempt to load data from Supabase.
+ * On success, caches the result to Redis (fire-and-forget) and returns true.
+ * On failure, returns false so the caller can try the next tier.
+ */
+async function _tryLoadFromSupabase(): Promise<boolean> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    // No Supabase credentials — use constants (normal for local dev)
-    _dataSource = "constants";
-    _dbUnitCount = 0;
-    _dbDeadlineCount = 0;
-    resetDataContext();
-    return;
+    // No Supabase credentials — skip to next tier (normal for local dev)
+    return false;
   }
 
   try {
@@ -120,10 +164,8 @@ async function _loadDataContextInner(): Promise<void> {
       .limit(5000);
 
     if (unitsError) {
-      logger.warn("[data-loader] ref_units query failed:", unitsError.message);
-      _dataSource = "constants";
-      resetDataContext();
-      return;
+      logger.warn("[data-loader] Tier 1: ref_units query failed:", unitsError.message);
+      return false;
     }
 
     // --- Fetch scraped deadlines for merging into state data ---
@@ -153,10 +195,63 @@ async function _loadDataContextInner(): Promise<void> {
     _dbUnitCount = dbUnits?.length ?? 0;
     _dbDeadlineCount = dbDeadlines?.length ?? 0;
     _lastLoadedAt = Date.now();
+    _cachedScrapeTimestamp = null;
+
+    logger.info(`[data-loader] Tier 1: Loaded from Supabase (${_dbUnitCount} units, ${_dbDeadlineCount} deadlines)`);
+
+    // Fire-and-forget cache write — don't block the response
+    cacheSet(CACHE_KEY_UNITS, dbUnits ?? [], CACHE_KEY_TTL).catch(() => {});
+    if (dbDeadlines?.length) {
+      cacheSet(CACHE_KEY_DEADLINES, dbDeadlines, CACHE_KEY_TTL).catch(() => {});
+    }
+
+    return true;
   } catch (err) {
-    logger.warn("[data-loader] Failed to load DB data, using constants:", (err as Error).message);
-    _dataSource = "constants";
-    resetDataContext();
+    logger.warn("[data-loader] Tier 1: Supabase load failed:", (err as Error).message);
+    return false;
+  }
+}
+
+/**
+ * Tier 2: Attempt to load data from Redis cache (last-known-good).
+ * Returns true if cache had valid data, false otherwise.
+ */
+async function _tryLoadFromCache(): Promise<boolean> {
+  try {
+    const cachedUnits = await cacheGet<DbUnit[]>(CACHE_KEY_UNITS);
+
+    if (!cachedUnits || cachedUnits.length === 0) {
+      logger.warn("[data-loader] Tier 2: Redis cache miss (no units)");
+      return false;
+    }
+
+    const cachedDeadlines = await cacheGet<DbDeadline[]>(CACHE_KEY_DEADLINES);
+
+    // --- Merge cached data with constants (reuse existing merge functions) ---
+    const mergedUnits = mergeUnits(cachedUnits, SAMPLE_UNITS);
+    const mergedStates = mergeDeadlines(STATES, cachedDeadlines ?? []);
+    const mergedStatesMap = Object.fromEntries(mergedStates.map((s) => [s.id, s]));
+
+    // --- Update engine context ---
+    setDataContext({
+      states: mergedStates,
+      statesMap: mergedStatesMap,
+      units: mergedUnits,
+    });
+
+    _dataSource = "cache";
+    _dbUnitCount = cachedUnits.length;
+    _dbDeadlineCount = cachedDeadlines?.length ?? 0;
+    _lastLoadedAt = Date.now();
+    // No scrape timestamp available from cache — mark as null (conservative staleness)
+    _cachedScrapeTimestamp = null;
+
+    logger.info("[data-loader] Tier 2: Loaded from Redis cache");
+
+    return true;
+  } catch (err) {
+    logger.warn("[data-loader] Tier 2: Redis cache load failed:", (err as Error).message);
+    return false;
   }
 }
 
