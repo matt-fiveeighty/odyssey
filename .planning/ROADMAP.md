@@ -87,15 +87,11 @@ Plans:
   3. Calendar events have stable content-derived UIDs so that refreshing the subscription never creates duplicate events
   4. Plan snapshots are stored server-side in Redis (365d TTL) -- the subscription works independently of the user's browser state
   5. User can regenerate their calendar token when their plan changes, and the old token continues serving its snapshot until TTL expires
-**Plans**: 6 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: Extract and refactor buildICS into isomorphic ics-builder.ts module
-- [ ] 04-02: Content-derived stable UID generation (replacing Date.now() pattern)
-- [ ] 04-03: GET /api/cal/[token] subscription endpoint with Redis plan snapshot retrieval
-- [ ] 04-04: webcal:// URL generation and "Subscribe to Calendar" UI
-- [ ] 04-05: VTIMEZONE handling and METHOD:PUBLISH header
-- [ ] 04-06: Token regeneration flow and old-token graceful continuation
+- [ ] 04-01-PLAN.md — Isomorphic ICS builder extraction + stable UIDs + VTIMEZONE/METHOD:PUBLISH (pure logic, no API/UI)
+- [ ] 04-02-PLAN.md — POST/GET /api/cal endpoints + SubscribeCalendar UI + token regeneration
 
 ### Phase 5: Advisor Voice
 **Goal**: The dashboard and calendar speak like an opinionated advisor -- interpreting data, making specific recommendations, and prompting action -- not just displaying numbers
@@ -232,7 +228,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 1. Data Foundation | 0/3 | Not started | - |
 | 2. Shareable Plan Links | 0/2 | Not started | - |
 | 3. Season Calendar | 0/2 | Not started | - |
-| 4. Calendar Subscription | 0/6 | Not started | - |
+| 4. Calendar Subscription | 0/2 | Not started | - |
 | 5. Advisor Voice | 0/6 | Not started | - |
 | 6. API Integrations | 0/7 | Not started | - |
 | 7. Scraper Enrichment & Data Freshness | 0/8 | Not started | - |
