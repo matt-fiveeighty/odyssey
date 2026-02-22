@@ -30,6 +30,8 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 // Redis cache keys for three-tier resolution
 const CACHE_KEY_UNITS = "data:units:latest";
 const CACHE_KEY_DEADLINES = "data:deadlines:latest";
+const CACHE_KEY_FEES = "data:fees:latest";
+const CACHE_KEY_SEASONS = "data:seasons:latest";
 const CACHE_KEY_TTL = 24 * 60 * 60; // 24 hours — longer than the 5min in-memory cache, shorter than scrape cadence
 
 // Concurrent request deduplication — prevents double-load from
@@ -40,6 +42,8 @@ let _pendingLoad: Promise<void> | null = null;
 let _dataSource: "db" | "cache" | "constants" = "constants";
 let _dbUnitCount = 0;
 let _dbDeadlineCount = 0;
+let _dbFeeCount = 0;
+let _dbSeasonCount = 0;
 
 /** Staleness threshold aligned with weekly crawl cadence + buffer */
 export const STALE_THRESHOLD_DAYS = 10;
@@ -52,6 +56,8 @@ export interface DataStatus {
   staleMinutes: number | null;
   dbUnitCount: number;
   dbDeadlineCount: number;
+  dbFeeCount: number;
+  dbSeasonCount: number;
   isUsingConstants: boolean;
   /** Whether the overall data context is stale (>10 days since last scrape) */
   isStale: boolean;
@@ -83,6 +89,8 @@ export function getDataStatus(): DataStatus {
     staleMinutes,
     dbUnitCount: _dbUnitCount,
     dbDeadlineCount: _dbDeadlineCount,
+    dbFeeCount: _dbFeeCount,
+    dbSeasonCount: _dbSeasonCount,
     isUsingConstants: _dataSource === "constants",
     // Cache tier without a scrape timestamp is conservatively marked stale
     isStale: _dataSource === "cache" && !_cachedScrapeTimestamp
@@ -134,6 +142,8 @@ async function _loadDataContextInner(): Promise<void> {
   _dataSource = "constants";
   _dbUnitCount = 0;
   _dbDeadlineCount = 0;
+  _dbFeeCount = 0;
+  _dbSeasonCount = 0;
   _cachedScrapeTimestamp = null;
   resetDataContext();
 }
@@ -176,11 +186,26 @@ async function _tryLoadFromSupabase(): Promise<boolean> {
       .in("year", [currentYear, currentYear + 1])
       .limit(1000);
 
+    // --- Fetch scraped fees for merging into state data ---
+    const { data: dbFees } = await supabase
+      .from("scraped_fees")
+      .select("*")
+      .limit(2000);
+
+    // --- Fetch scraped seasons for current + next year ---
+    const { data: dbSeasons } = await supabase
+      .from("scraped_seasons")
+      .select("*")
+      .in("year", [currentYear, currentYear + 1])
+      .limit(3000);
+
     // --- Merge DB units with hardcoded constants ---
     const mergedUnits = mergeUnits(dbUnits ?? [], SAMPLE_UNITS);
 
-    // --- Merge deadline data into state constants ---
-    const mergedStates = mergeDeadlines(STATES, dbDeadlines ?? []);
+    // --- Merge deadline, fee, and season data into state constants ---
+    const statesWithDeadlines = mergeDeadlines(STATES, dbDeadlines ?? []);
+    const statesWithFees = mergeFees(statesWithDeadlines, dbFees ?? []);
+    const mergedStates = mergeSeasons(statesWithFees, dbSeasons ?? []);
     const mergedStatesMap = Object.fromEntries(mergedStates.map((s) => [s.id, s]));
 
     // --- Update engine context ---
@@ -193,15 +218,23 @@ async function _tryLoadFromSupabase(): Promise<boolean> {
     _dataSource = "db";
     _dbUnitCount = dbUnits?.length ?? 0;
     _dbDeadlineCount = dbDeadlines?.length ?? 0;
+    _dbFeeCount = dbFees?.length ?? 0;
+    _dbSeasonCount = dbSeasons?.length ?? 0;
     _lastLoadedAt = Date.now();
     _cachedScrapeTimestamp = null;
 
-    logger.info(`[data-loader] Tier 1: Loaded from Supabase (${_dbUnitCount} units, ${_dbDeadlineCount} deadlines)`);
+    logger.info(`[data-loader] Tier 1: Loaded from Supabase (${_dbUnitCount} units, ${_dbDeadlineCount} deadlines, ${_dbFeeCount} fees, ${_dbSeasonCount} seasons)`);
 
     // Fire-and-forget cache write — don't block the response
     cacheSet(CACHE_KEY_UNITS, dbUnits ?? [], CACHE_KEY_TTL).catch(() => {});
     if (dbDeadlines?.length) {
       cacheSet(CACHE_KEY_DEADLINES, dbDeadlines, CACHE_KEY_TTL).catch(() => {});
+    }
+    if (dbFees?.length) {
+      cacheSet(CACHE_KEY_FEES, dbFees, CACHE_KEY_TTL).catch(() => {});
+    }
+    if (dbSeasons?.length) {
+      cacheSet(CACHE_KEY_SEASONS, dbSeasons, CACHE_KEY_TTL).catch(() => {});
     }
 
     return true;
@@ -225,10 +258,14 @@ async function _tryLoadFromCache(): Promise<boolean> {
     }
 
     const cachedDeadlines = await cacheGet<DbDeadline[]>(CACHE_KEY_DEADLINES);
+    const cachedFees = await cacheGet<DbFee[]>(CACHE_KEY_FEES);
+    const cachedSeasons = await cacheGet<DbSeason[]>(CACHE_KEY_SEASONS);
 
     // --- Merge cached data with constants (reuse existing merge functions) ---
     const mergedUnits = mergeUnits(cachedUnits, SAMPLE_UNITS);
-    const mergedStates = mergeDeadlines(STATES, cachedDeadlines ?? []);
+    const statesWithDeadlines = mergeDeadlines(STATES, cachedDeadlines ?? []);
+    const statesWithFees = mergeFees(statesWithDeadlines, cachedFees ?? []);
+    const mergedStates = mergeSeasons(statesWithFees, cachedSeasons ?? []);
     const mergedStatesMap = Object.fromEntries(mergedStates.map((s) => [s.id, s]));
 
     // --- Update engine context ---
@@ -241,6 +278,8 @@ async function _tryLoadFromCache(): Promise<boolean> {
     _dataSource = "cache";
     _dbUnitCount = cachedUnits.length;
     _dbDeadlineCount = cachedDeadlines?.length ?? 0;
+    _dbFeeCount = cachedFees?.length ?? 0;
+    _dbSeasonCount = cachedSeasons?.length ?? 0;
     _lastLoadedAt = Date.now();
     // No scrape timestamp available from cache — mark as null (conservative staleness)
     _cachedScrapeTimestamp = null;
@@ -384,5 +423,115 @@ function mergeDeadlines(states: State[], dbDeadlines: DbDeadline[]): State[] {
     }
 
     return { ...state, applicationDeadlines: updatedDeadlines };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Fee merging
+// ---------------------------------------------------------------------------
+
+interface DbFee {
+  state_id: string;
+  fee_name: string;
+  amount: number;
+  residency: string;
+  species_id: string | null;
+  frequency: string;
+  notes: string | null;
+}
+
+/**
+ * Merge scraped fees into state constants.
+ * Updates tagCosts and licenseFees on State objects where DB data is available.
+ */
+function mergeFees(states: State[], dbFees: DbFee[]): State[] {
+  if (dbFees.length === 0) return states;
+
+  // Group fees by state
+  const byState = new Map<string, DbFee[]>();
+  for (const f of dbFees) {
+    if (!byState.has(f.state_id)) byState.set(f.state_id, []);
+    byState.get(f.state_id)!.push(f);
+  }
+
+  return states.map((state) => {
+    const stateFees = byState.get(state.id);
+    if (!stateFees) return state;
+
+    // Build updated tagCosts and licenseFees from scraped data
+    const updatedTagCosts = { ...state.tagCosts };
+    const updatedLicenseFees = { ...state.licenseFees };
+
+    for (const fee of stateFees) {
+      // Tag costs: species-specific, nonresident or both
+      if (fee.species_id && (fee.residency === "nonresident" || fee.residency === "both")) {
+        // Only update if the scraped amount is plausible (>0 and <$20k)
+        if (fee.amount > 0 && fee.amount < 20000) {
+          updatedTagCosts[fee.species_id] = fee.amount;
+        }
+      }
+
+      // License-level fees (no species)
+      const nameLower = fee.fee_name.toLowerCase();
+      if (nameLower.match(/app(lication)?\s*(fee|cost)/)) {
+        updatedLicenseFees.appFee = fee.amount;
+      } else if (nameLower.match(/point\s*(fee|cost)|preference\s*(fee|cost)|bonus\s*(fee|cost)/)) {
+        updatedLicenseFees.pointFee = fee.amount;
+      } else if (nameLower.match(/license|qualifying|sportsman|conservation/)) {
+        updatedLicenseFees.qualifyingLicense = fee.amount;
+      }
+    }
+
+    return { ...state, tagCosts: updatedTagCosts, licenseFees: updatedLicenseFees };
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Season merging
+// ---------------------------------------------------------------------------
+
+interface DbSeason {
+  state_id: string;
+  species_id: string;
+  season_type: string;
+  start_date: string;
+  end_date: string;
+  year: number;
+  notes: string | null;
+}
+
+/**
+ * Merge scraped seasons into unit data via state-level aggregation.
+ * Stores season date ranges keyed by species:season_type on the state object.
+ *
+ * Note: Season dates are primarily stored at the unit level (Unit.seasonDates).
+ * This state-level merge creates a "latest known" season summary that downstream
+ * components can use as a fallback when unit-level data is missing.
+ */
+function mergeSeasons(states: State[], dbSeasons: DbSeason[]): State[] {
+  if (dbSeasons.length === 0) return states;
+
+  // Group by state
+  const byState = new Map<string, DbSeason[]>();
+  for (const s of dbSeasons) {
+    if (!byState.has(s.state_id)) byState.set(s.state_id, []);
+    byState.get(s.state_id)!.push(s);
+  }
+
+  return states.map((state) => {
+    const stateSeasons = byState.get(state.id);
+    if (!stateSeasons) return state;
+
+    // Attach scraped season summary to state for downstream consumers
+    // Uses a new field that doesn't conflict with existing State properties
+    const seasonSummary: Record<string, { start: string; end: string }> = {};
+
+    for (const s of stateSeasons) {
+      const key = `${s.species_id}:${s.season_type}`;
+      seasonSummary[key] = { start: s.start_date, end: s.end_date };
+    }
+
+    // Store as a non-breaking extension — cast to State with extra field
+    return { ...state, _scrapedSeasons: seasonSummary } as State;
   });
 }
