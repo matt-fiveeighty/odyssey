@@ -93,11 +93,10 @@ export function getDataStatus(): DataStatus {
 }
 
 /**
- * Load scraped data from Supabase and merge with hardcoded constants.
- * DB data takes precedence — constants fill gaps.
+ * Load data via three-tier resolution: Supabase > Redis cache > constants.
  *
- * Safe to call repeatedly; results are cached for 5 minutes.
- * Silently falls back to constants on any error.
+ * Safe to call repeatedly; results are cached in-memory for 5 minutes.
+ * Each tier falls through to the next on failure. Never throws.
  */
 export async function loadDataContext(): Promise<void> {
   // Check cache
