@@ -9,29 +9,29 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 
 ## Current Position
 
-Phase: 1 of 10 (Data Foundation)
-Plan: 2 of 3 in current phase
-Status: Executing
-Last activity: 2026-02-22 -- Completed 01-01 (VerifiedDatum type system and provenance helpers)
+Phase: 1 of 10 (Data Foundation) -- COMPLETE
+Plan: 3 of 3 in current phase (all done)
+Status: Phase Complete
+Last activity: 2026-02-22 -- Completed 01-03 (Three-tier data resolution)
 
-Progress: [██░░░░░░░░] 3%
+Progress: [██░░░░░░░░] 5%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 2 min
-- Total execution time: 0.07 hours
+- Total execution time: 0.12 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-data-foundation | 2 | 4 min | 2 min |
+| 01-data-foundation | 3 | 7 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min)
-- Trend: -
+- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (3 min)
+- Trend: stable
 
 *Updated after each plan completion*
 
@@ -50,6 +50,9 @@ Recent decisions affecting current work:
 - [01-01]: STALE_THRESHOLDS.default = 10 days, aligned with existing STALE_THRESHOLD_DAYS in data-loader.ts
 - [01-02]: All modules share single Redis client via getRedis() from src/lib/redis.ts
 - [01-02]: Cache helpers degrade gracefully (null on get, no-op on set/del) when Redis unavailable
+- [01-03]: Three-tier resolution chain: Supabase > Redis cache > hardcoded constants
+- [01-03]: Fire-and-forget Redis cache writes after successful Supabase loads
+- [01-03]: Cache tier conservatively marked isStale=true when no scrape timestamp available
 
 ### Pending Todos
 
@@ -64,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 01-01-PLAN.md (VerifiedDatum type system)
+Stopped at: Completed 01-03-PLAN.md (Three-tier data resolution) -- Phase 1 complete
 Resume file: None
