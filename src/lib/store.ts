@@ -237,6 +237,10 @@ interface AppState {
   milestones: Milestone[];
   confirmedAssessment: StrategicAssessment | null;
 
+  // Temporal context (Phase 5 Advisor Voice)
+  lastVisitAt: string | null;
+  recordVisit: () => void;
+
   // Multi-plan management
   savedPlans: SavedPlan[];
   activePlanId: string | null;
@@ -317,6 +321,18 @@ export const useAppStore = create<AppState>()(
       userGoals: [],
       milestones: [],
       confirmedAssessment: null,
+
+      // Temporal context (Phase 5 Advisor Voice)
+      lastVisitAt: null,
+      recordVisit: () => {
+        // Read current value BEFORE overwriting -- this is the "last" visit
+        const current = useAppStore.getState().lastVisitAt;
+        // Only update if the existing value is from a different day (avoid overwriting on same-session reloads)
+        const today = new Date().toISOString().slice(0, 10);
+        const lastDay = current?.slice(0, 10);
+        if (lastDay === today) return; // Same day, don't overwrite
+        set({ lastVisitAt: new Date().toISOString() });
+      },
 
       // Multi-plan management
       savedPlans: [],
