@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 6 of 10 (API Integrations) — IN PROGRESS
-Plan: 1 of 3 complete, proceeding to Plan 2
-Status: 06-01 complete -- Amadeus + BLS API client modules built
-Last activity: 2026-02-22 -- Plan 06-01 complete (API client modules)
+Plan: 2 of 3 complete, proceeding to Plan 3
+Status: 06-02 complete -- API route handlers + cron jobs built
+Last activity: 2026-02-22 -- Plan 06-02 complete (route handlers + crons)
 
 Progress: [██████████░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 8 min
-- Total execution time: 1.78 hours
+- Total execution time: 1.83 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [██████████░] 55%
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
 | 05-advisor-voice | 4 | 11 min | 3 min |
-| 06-api-integrations | 1 | 2 min | 2 min |
+| 06-api-integrations | 2 | 5 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (18 min), 05-01 (2 min), 05-02 (3 min), 05-04 (3 min), 06-01 (2 min)
-- Trend: Pure library code plans execute fast (2-3 min)
+- Last 5 plans: 05-01 (2 min), 05-02 (3 min), 05-04 (3 min), 06-01 (2 min), 06-02 (3 min)
+- Trend: Pure library/route code plans execute fast (2-3 min)
 
 *Updated after each plan completion*
 
@@ -99,6 +99,10 @@ Recent decisions affecting current work:
 - [06-01]: Soft quota limit at 1800/2000 monthly Amadeus calls with Redis INCR + auto-expire TTL
 - [06-01]: BLS API key optional -- graceful fallback to v1 rate limits when omitted
 - [06-01]: 3.5% FALLBACK_INFLATION_RATE exported as shared constant for downstream consumers
+- [06-02]: User-facing routes never call external APIs -- read from Redis cache or fall back to static estimates
+- [06-02]: warm-flights uses batch processing (10 pairs/group, 1s delay) with per-batch quota checks
+- [06-02]: Search date targets Oct 1 off-season, 6 weeks out during Sep-Nov hunting season
+- [06-02]: Cron auth uses simplified CRON_SECRET-only check (Vercel-triggered only, no admin fallback needed)
 
 ### Pending Todos
 
@@ -112,5 +116,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 06-01-PLAN.md (API client modules), proceeding to 06-02
+Stopped at: Completed 06-02-PLAN.md (API route handlers + crons), proceeding to 06-03
 Resume file: None
