@@ -1,0 +1,78 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { cacheGet, CACHE_TTLS } from "@/lib/redis";
+import type { StrategicAssessment } from "@/lib/types";
+import { SharedResultsShell } from "@/components/results/SharedResultsShell";
+import { Button } from "@/components/ui/button";
+import { Clock } from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+type Props = { params: Promise<{ token: string }> };
+
+interface SharePayload {
+  assessment: StrategicAssessment;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Metadata
+// ---------------------------------------------------------------------------
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { token } = await params;
+  const data = await cacheGet<SharePayload>(`share:${token}`);
+
+  if (!data) {
+    return { title: "Share Link Not Found | Odyssey Outdoors" };
+  }
+
+  return {
+    title: "Hunt Strategy Plan | Odyssey Outdoors",
+    description: data.assessment.strategyOverview.slice(0, 160),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
+
+export default async function SharedPlanPage({ params }: Props) {
+  const { token } = await params;
+  const data = await cacheGet<SharePayload>(`share:${token}`);
+
+  // Expired or invalid token -- friendly in-page message (not a generic 404)
+  if (!data) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4">
+        <div className="mx-auto max-w-md text-center">
+          <div className="mx-auto mb-6 flex size-16 items-center justify-center rounded-full bg-muted">
+            <Clock className="size-8 text-muted-foreground" />
+          </div>
+
+          <h1 className="mb-2 text-xl font-semibold">
+            This share link has expired or doesn&apos;t exist
+          </h1>
+
+          <p className="mb-8 text-muted-foreground">
+            Shared plans expire after 90 days. The link may have been removed or
+            never existed.
+          </p>
+
+          <Button size="lg" asChild>
+            <Link href="/plan-builder">Create your own plan</Link>
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculate expiration from creation timestamp + TTL
+  const expiresAt = new Date(
+    new Date(data.createdAt).getTime() + CACHE_TTLS.share_links * 1000
+  ).toISOString();
+
+  return <SharedResultsShell assessment={data.assessment} expiresAt={expiresAt} />;
+}

@@ -57,12 +57,13 @@ export async function POST(req: NextRequest) {
   const shareKey = `share:${token}`;
 
   // 5. Store in Redis with 90-day TTL (immutable snapshot per SHARE-04)
-  await cacheSet(shareKey, body.assessment, "share_links");
+  const createdAt = new Date().toISOString();
+  await cacheSet(shareKey, { assessment: body.assessment, createdAt }, "share_links");
 
   // 6. Build response
   const shareUrl = `${req.nextUrl.origin}/shared/${token}`;
   const expiresAt = new Date(
-    Date.now() + CACHE_TTLS.share_links * 1000
+    new Date(createdAt).getTime() + CACHE_TTLS.share_links * 1000
   ).toISOString();
 
   return NextResponse.json({ url: shareUrl, token, expiresAt }, { status: 201 });
