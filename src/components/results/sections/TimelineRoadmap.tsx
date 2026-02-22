@@ -7,6 +7,8 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { DataSourceInline } from "@/components/shared/DataSourceBadge";
+import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
+import { estimated } from "@/lib/engine/verified-datum";
 import { formatSpeciesName } from "@/lib/utils";
 import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus, List, CalendarDays } from "lucide-react";
 import { SeasonCalendar } from "./SeasonCalendar";
@@ -307,8 +309,8 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                               {action.estimatedDrawOdds !== undefined && action.estimatedDrawOdds > 0 && (
                                 <span>{action.estimatedDrawOdds}% draw odds</span>
                               )}
-                              <span className="font-mono">${action.cost.toLocaleString()}</span>
-                              {action.dueDate && <span>Due: {action.dueDate}</span>}
+                              <span className="font-mono inline-flex items-center gap-0.5">${action.cost.toLocaleString()}<FreshnessBadge datum={estimated(action.cost, "State fee schedule")} showLabel={false} /></span>
+                              {action.dueDate && <span className="inline-flex items-center gap-0.5">Due: {action.dueDate}<FreshnessBadge datum={estimated(action.dueDate, "State deadline schedule")} showLabel={false} /></span>}
                               {action.stateId && <DataSourceInline stateId={action.stateId} />}
                             </div>
                             {/* Itemized costs */}

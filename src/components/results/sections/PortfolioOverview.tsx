@@ -8,6 +8,8 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
 import { DollarSign, TrendingUp, Lightbulb, PieChart, AlertTriangle } from "lucide-react";
+import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
+import { estimated } from "@/lib/engine/verified-datum";
 import { WhatIfModeler } from "./WhatIfModeler";
 
 interface PortfolioOverviewProps {
@@ -74,7 +76,10 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
                         ))}
                       </div>
                     </div>
-                    <span className="text-xs text-muted-foreground">${cs.annualCost}/yr ({cs.pctOfTotal}%)</span>
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1">
+                          ${cs.annualCost}/yr ({cs.pctOfTotal}%)
+                          <FreshnessBadge datum={estimated(cs.annualCost, "Cost calculator estimate")} showLabel={false} />
+                        </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
                     <div className="h-full rounded-full bg-primary/60 bar-fill" style={{ width: `${cs.pctOfTotal}%` }} />
@@ -126,8 +131,9 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           })}
           <div className="flex justify-between pt-2 border-t border-border">
             <span className="text-sm font-semibold">10-Year Total</span>
-            <span className="text-sm font-bold text-primary">
+            <span className="text-sm font-bold text-primary inline-flex items-center gap-1">
               ${(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal).toLocaleString()}
+              <FreshnessBadge datum={estimated(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal, "Cost calculator estimate")} showLabel={false} />
             </span>
           </div>
           {inflationOn && (
@@ -189,7 +195,10 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
         <div className="grid md:grid-cols-2 gap-4">
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Point Year</p>
-            <p className="text-lg font-bold text-primary">${budgetBreakdown.pointYearCost.toLocaleString()}</p>
+            <p className="text-lg font-bold text-primary inline-flex items-center gap-1">
+              ${budgetBreakdown.pointYearCost.toLocaleString()}
+              <FreshnessBadge datum={estimated(budgetBreakdown.pointYearCost, "State fee schedule")} showLabel={false} />
+            </p>
             <div className="space-y-1 mt-2">
               {budgetBreakdown.pointYearItems.slice(0, 8).map((item, i) => (
                 <div key={i} className="flex justify-between text-[10px]">
@@ -201,7 +210,10 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           </div>
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Hunt Year</p>
-            <p className="text-lg font-bold text-chart-2">${budgetBreakdown.huntYearCost.toLocaleString()}</p>
+            <p className="text-lg font-bold text-chart-2 inline-flex items-center gap-1">
+              ${budgetBreakdown.huntYearCost.toLocaleString()}
+              <FreshnessBadge datum={estimated(budgetBreakdown.huntYearCost, "State fee schedule")} showLabel={false} />
+            </p>
             <div className="space-y-1 mt-2">
               {budgetBreakdown.huntYearItems.slice(0, 8).map((item, i) => (
                 <div key={i} className="flex justify-between text-[10px]">

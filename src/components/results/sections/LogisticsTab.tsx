@@ -9,6 +9,8 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { Plane, Calendar, Wallet, Heart, ExternalLink, Car, Package, Clock, DollarSign, AlertCircle } from "lucide-react";
 import { DataSourceInline } from "@/components/shared/DataSourceBadge";
+import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
+import { estimated, verified as verifiedDatum } from "@/lib/engine/verified-datum";
 import { formatSpeciesName, formatDate } from "@/lib/utils";
 
 interface LogisticsTabProps {
@@ -39,7 +41,10 @@ function PointOnlyRow({ entry, dimmed }: { entry: PointOnlyGuideEntry; dimmed?: 
         <span className="md:hidden text-[10px] text-muted-foreground ml-1">deadline</span>
       </div>
       <div className="text-right">
-        <span className="text-xs font-mono font-semibold">${entry.annualCost}</span>
+        <span className="text-xs font-mono font-semibold inline-flex items-center gap-0.5 justify-end">
+          ${entry.annualCost}
+          <FreshnessBadge datum={estimated(entry.annualCost, "State fee schedule")} showLabel={false} />
+        </span>
         <span className="md:hidden text-[10px] text-muted-foreground ml-1">/yr</span>
         <div className="mt-0.5"><DataSourceInline stateId={entry.stateId} /></div>
       </div>
@@ -108,6 +113,15 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
     return flightPrices[route.airport]?.isVerified ?? false;
   }
 
+  /** Create a FreshnessBadge datum appropriate for this flight cost source */
+  function flightCostDatum(route: { airport: string; flightCost: number }) {
+    const cost = getFlightCost(route);
+    if (isFlightVerified(route)) {
+      return verifiedDatum(cost, "https://amadeus.com", new Date().toISOString(), "Amadeus flight data");
+    }
+    return estimated(cost, "Static flight estimate");
+  }
+
   return (
     <div className="space-y-4">
       {/* ── Travel Logistics ── */}
@@ -147,9 +161,9 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
 
                     {/* Flight cost + type */}
                     <div>
-                      <p className="text-xs font-bold text-primary">
+                      <p className="text-xs font-bold text-primary inline-flex items-center gap-0.5">
                         ${getFlightCost(route)}
-                        {isFlightVerified(route) && <span className="text-[8px] text-chart-2 ml-0.5">(Amadeus)</span>}
+                        <FreshnessBadge datum={flightCostDatum(route)} showLabel={false} />
                       </p>
                       <p className="text-[10px] text-muted-foreground">{route.direct ? "Direct" : "Connecting"}</p>
                     </div>
@@ -190,9 +204,9 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                         <p className="text-sm font-semibold">{state.name}</p>
                         <p className="text-[10px] text-muted-foreground">{route.airport}</p>
                       </div>
-                      <span className="text-xs font-bold text-primary ml-auto">
+                      <span className="text-xs font-bold text-primary ml-auto inline-flex items-center gap-0.5">
                         ${getFlightCost(route)} RT
-                        {isFlightVerified(route) && <span className="text-[8px] text-chart-2 ml-0.5">(Amadeus)</span>}
+                        <FreshnessBadge datum={flightCostDatum(route)} showLabel={false} />
                       </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
@@ -254,8 +268,9 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                   <span className="text-right font-mono text-muted-foreground">
                     ~${(travelLogistics.stateRoutes.length * 500).toLocaleString()}
                   </span>
-                  <span className="text-right font-mono font-bold text-primary">
+                  <span className="text-right font-mono font-bold text-primary inline-flex items-center gap-0.5 justify-end">
                     ${travelLogistics.totalTravelBudget.toLocaleString()}
+                    <FreshnessBadge datum={estimated(travelLogistics.totalTravelBudget, "Travel cost estimate")} showLabel={false} />
                   </span>
                 </div>
               </div>
@@ -296,8 +311,9 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                     <SpeciesAvatar speciesId={entry.species} size={20} />
                     <span className="text-sm font-semibold">{state?.name} — {formatSpeciesName(entry.species)}</span>
                     {appDeadline && (
-                      <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                      <span className="ml-auto text-[9px] px-2 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium inline-flex items-center gap-0.5">
                         Apply by {formatDate(appDeadline.close)}
+                        <FreshnessBadge datum={estimated(appDeadline.close, "State deadline schedule")} showLabel={false} />
                       </span>
                     )}
                   </div>

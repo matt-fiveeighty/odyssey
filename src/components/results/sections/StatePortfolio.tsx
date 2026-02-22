@@ -7,7 +7,9 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore, useAppStore } from "@/lib/store";
-import { DataSourceInline } from "@/components/shared/DataSourceBadge";
+import { DataSourceInline, DataSourceBadge } from "@/components/shared/DataSourceBadge";
+import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
+import { estimated } from "@/lib/engine/verified-datum";
 import { ChevronDown, Target, Mountain, Eye, TrendingUp } from "lucide-react";
 import { estimateCreepRate, projectPointCreep, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { formatSpeciesName } from "@/lib/utils";
@@ -53,7 +55,10 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
             <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${roleColors[rec.role] ?? "bg-secondary text-muted-foreground"}`}>
               {rec.roleDescription}
             </span>
-            <span className="text-xs text-muted-foreground ml-auto">${rec.annualCost}/yr</span>
+            <span className="text-xs text-muted-foreground ml-auto inline-flex items-center gap-1">
+              ${rec.annualCost}/yr
+              <FreshnessBadge datum={estimated(rec.annualCost, "State fee schedule")} showLabel={false} />
+            </span>
           </div>
           {stateSpecies.length > 0 && (
             <div className="flex gap-1 mb-1">
@@ -63,7 +68,7 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
             </div>
           )}
           <p className="text-xs text-muted-foreground line-clamp-2">{rec.reason}</p>
-          <DataSourceInline stateId={rec.stateId} />
+          <DataSourceBadge stateId={rec.stateId} showLastUpdated />
         </div>
         <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 mt-1 ${expanded ? "rotate-180" : ""}`} />
       </button>
@@ -286,7 +291,10 @@ const AlsoConsideredCard = memo(function AlsoConsideredCard({ state: ac }: { sta
             <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground font-medium">
               {pct}% match
             </span>
-            <span className="text-xs text-muted-foreground ml-auto">${ac.annualCost}/yr</span>
+            <span className="text-xs text-muted-foreground ml-auto inline-flex items-center gap-1">
+              ${ac.annualCost}/yr
+              <FreshnessBadge datum={estimated(ac.annualCost, "State fee schedule")} showLabel={false} />
+            </span>
           </div>
           {ac.speciesAvailable.length > 0 && (
             <div className="flex gap-1 mb-1">
