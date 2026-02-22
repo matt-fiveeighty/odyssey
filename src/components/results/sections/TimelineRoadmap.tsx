@@ -8,7 +8,8 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 import { formatSpeciesName } from "@/lib/utils";
-import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus } from "lucide-react";
+import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus, List, CalendarDays } from "lucide-react";
+import { SeasonCalendar } from "./SeasonCalendar";
 
 interface TimelineRoadmapProps {
   assessment: StrategicAssessment;
@@ -31,6 +32,7 @@ const ACTION_TYPE_LABELS: Record<string, { label: string; color: string }> = {
 };
 
 export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChange }: TimelineRoadmapProps) {
+  const [viewMode, setViewMode] = useState<"years" | "months">("years");
   const [expandedYears, setExpandedYears] = useState<Set<number>>(new Set([assessment.roadmap[0]?.year]));
   const [editingYear, setEditingYear] = useState<number | null>(null);
 
@@ -91,12 +93,42 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
           <p className="text-xs text-muted-foreground uppercase tracking-wider font-medium">10-Year Roadmap</p>
           <p className="text-[10px] text-muted-foreground/60 mt-0.5">Click a year to expand. Pencil icon to edit actions.</p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <DollarSign className="w-3.5 h-3.5" />
-          <span className="font-bold text-foreground">
-            ${assessment.roadmap.reduce((s, yr) => s + getYearCost(yr.year), 0).toLocaleString()}
-          </span>
-          <span>total</span>
+        <div className="flex items-center gap-3">
+          {/* View mode toggle */}
+          <div className="flex items-center gap-0.5 rounded-lg bg-secondary/30 p-0.5">
+            <button
+              onClick={() => setViewMode("years")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "years"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label="Year view"
+              title="Year view"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => setViewMode("months")}
+              className={`p-1.5 rounded-lg transition-colors ${
+                viewMode === "months"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+              aria-label="Month calendar view"
+              title="Month calendar view"
+            >
+              <CalendarDays className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <DollarSign className="w-3.5 h-3.5" />
+            <span className="font-bold text-foreground">
+              ${assessment.roadmap.reduce((s, yr) => s + getYearCost(yr.year), 0).toLocaleString()}
+            </span>
+            <span>total</span>
+          </div>
         </div>
       </div>
 
@@ -117,6 +149,14 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
         })}
       </div>
 
+      {/* Season calendar (month view) */}
+      {viewMode === "months" && (
+        <SeasonCalendar assessment={assessment} />
+      )}
+
+      {/* Year view: key years + accordion */}
+      {viewMode === "years" && (
+        <>
       {/* Key years callout */}
       {assessment.keyYears.length > 0 && (
         <div className="p-3 rounded-xl bg-secondary/30 border border-border/50 mb-2">
@@ -313,6 +353,8 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
           </div>
         );
       })}
+        </>
+      )}
     </div>
   );
 }
