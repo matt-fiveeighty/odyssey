@@ -15,6 +15,8 @@
 
 import "dotenv/config";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import * as cheerio from "cheerio";
+import { PDFParse } from "pdf-parse";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -165,7 +167,20 @@ export abstract class BaseScraper {
           throw new Error(`HTTP ${res.status} ${res.statusText}`);
         }
 
-        return await res.text();
+        // 5MB guard: check Content-Length header first (avoids buffering)
+        const contentLength = res.headers.get("content-length");
+        if (contentLength && parseInt(contentLength, 10) > 5 * 1024 * 1024) {
+          throw new Error(`Response too large: ${contentLength} bytes (5MB limit)`);
+        }
+
+        const text = await res.text();
+
+        // 5MB guard: check actual body size (Content-Length may be absent)
+        if (text.length > 5 * 1024 * 1024) {
+          throw new Error(`Response body too large: ${text.length} chars (5MB limit)`);
+        }
+
+        return text;
       } catch (err) {
         this.log(
           `fetchPage attempt ${attempt}/${retries} failed: ${(err as Error).message}`
@@ -178,6 +193,111 @@ export abstract class BaseScraper {
 
     // Unreachable, but TypeScript wants a return
     throw new Error("fetchPage exhausted retries");
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: parse HTML with cheerio
+  // -------------------------------------------------------------------------
+
+  protected parseHtml(html: string): cheerio.CheerioAPI {
+    return cheerio.load(html);
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: extract table rows from HTML by selector (keyed by header names)
+  // -------------------------------------------------------------------------
+
+  protected extractTable(html: string, tableSelector: string): Record<string, string>[] {
+    const $ = this.parseHtml(html);
+    const rows: Record<string, string>[] = [];
+    const headers: string[] = [];
+
+    // Get headers from <th> elements
+    $(`${tableSelector} th`).each((_, el) => {
+      headers.push($(el).text().trim().toLowerCase());
+    });
+
+    // If no <th>, try first row of <td> as headers
+    if (headers.length === 0) {
+      $(`${tableSelector} tr:first-child td`).each((_, el) => {
+        headers.push($(el).text().trim().toLowerCase());
+      });
+    }
+
+    if (headers.length === 0) return rows;
+
+    // Get data rows from <tbody tr> or all <tr> after first
+    const dataRows = $(`${tableSelector} tbody tr`).length > 0
+      ? $(`${tableSelector} tbody tr`)
+      : $(`${tableSelector} tr`).slice(1);
+
+    dataRows.each((_, tr) => {
+      const row: Record<string, string> = {};
+      $(tr).find("td").each((i, td) => {
+        if (headers[i]) row[headers[i]] = $(td).text().trim();
+      });
+      if (Object.keys(row).length > 0) rows.push(row);
+    });
+
+    return rows;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: fetch a PDF as binary Buffer (with retry and 20MB size guard)
+  // -------------------------------------------------------------------------
+
+  protected async fetchPdfBuffer(url: string, retries = 3): Promise<Buffer> {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      try {
+        const res = await fetch(url, {
+          headers: {
+            "User-Agent": "HuntPlannerBot/1.0 (research; contact: admin@odysseyoutdoors.com)",
+            Accept: "application/pdf",
+          },
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+
+        const contentLength = res.headers.get("content-length");
+        if (contentLength && parseInt(contentLength, 10) > 20 * 1024 * 1024) {
+          throw new Error(`PDF too large: ${contentLength} bytes (20MB limit)`);
+        }
+
+        return Buffer.from(await res.arrayBuffer());
+      } catch (err) {
+        this.log(`fetchPdfBuffer attempt ${attempt}/${retries} failed: ${(err as Error).message}`);
+        if (attempt === retries) throw err;
+        await new Promise((r) => setTimeout(r, 1000 * Math.pow(2, attempt - 1)));
+      }
+    }
+    throw new Error("fetchPdfBuffer exhausted retries");
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: extract text from a PDF buffer
+  // -------------------------------------------------------------------------
+
+  protected async extractPdfText(buffer: Buffer): Promise<string> {
+    const pdf = new PDFParse({ data: new Uint8Array(buffer) });
+    const result = await pdf.getText();
+    await pdf.destroy();
+    return result.text;
+  }
+
+  // -------------------------------------------------------------------------
+  // Helper: heuristic table parser for PDF text
+  // -------------------------------------------------------------------------
+
+  /**
+   * Splits PDF text by newlines, then by 2+ whitespace.
+   * Works for simple columnar layouts. Returns empty array if text is empty.
+   */
+  protected parsePdfTableLines(text: string): string[][] {
+    return text
+      .split("\n")
+      .filter((line) => line.trim().length > 0)
+      .map((line) => line.split(/\s{2,}/).map((s) => s.trim()))
+      .filter((cols) => cols.length >= 2);
   }
 
   // -------------------------------------------------------------------------
