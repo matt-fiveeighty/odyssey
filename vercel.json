@@ -3,6 +3,14 @@
     {
       "path": "/api/cron/scrape",
       "schedule": "0 6 * * 0"
+    },
+    {
+      "path": "/api/cron/warm-flights",
+      "schedule": "0 8 1 * *"
+    },
+    {
+      "path": "/api/cron/refresh-cpi",
+      "schedule": "0 10 15 * *"
     }
   ]
 }
