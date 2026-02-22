@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 3 complete. Ready for Phase 4.
+**Current focus:** Phase 4 complete. Ready for Phase 5.
 
 ## Current Position
 
-Phase: 3 of 10 (Season Calendar) -- COMPLETE
+Phase: 4 of 10 (Calendar Subscription) -- COMPLETE
 Plan: 2 of 2 in current phase (all complete)
 Status: Phase Complete
-Last activity: 2026-02-22 -- Completed 03-02 (SeasonCalendar swimlane + TimelineRoadmap integration)
+Last activity: 2026-02-22 -- Completed 04-02 (Calendar subscription API + Subscribe UI + enriched event descriptions)
 
-Progress: [███░░░░░░░] 17%
+Progress: [████░░░░░░] 22%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 10 min
-- Total execution time: 1.1 hours
+- Total plans completed: 9
+- Average duration: 11 min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [███░░░░░░░] 17%
 | 01-data-foundation | 3 | 7 min | 2 min |
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
 | 03-season-calendar | 2 | 12 min | 6 min |
+| 04-calendar-subscription | 2 | 30 min | 15 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (3 min), 02-01 (3 min), 02-02 (44 min), 03-01 (4 min), 03-02 (8 min)
-- Trend: Phase 3 fast execution -- pure UI work on well-researched data model
+- Last 5 plans: 02-02 (44 min), 03-01 (4 min), 03-02 (8 min), 04-01 (12 min), 04-02 (18 min)
+- Trend: Phase 4 steady pace -- API endpoints + ICS generation + UI component + enrichment
 
 *Updated after each plan completion*
 
@@ -69,6 +70,16 @@ Recent decisions affecting current work:
 - [03-02]: Calendar is a zoom level inside Timeline tab (not a new tab) per CAL-08
 - [03-02]: Mobile renders vertical month list below md breakpoint (matching MilestoneCalendar pattern)
 - [03-02]: +N more overflow for cells with >3 items (prevents overcrowding from multi-species states)
+- [04-01]: Isomorphic ICS builder (zero DOM deps) reused by browser export + server subscription endpoint
+- [04-01]: SHA-256 content-derived UIDs from EventIdentity (alphabetical key ordering for determinism)
+- [04-01]: timezones-ical-library returns string[] -- first element is VTIMEZONE block
+- [04-01]: Refactored calendar-export.ts into thin browser-only wrapper delegating to ics-builder.ts
+- [04-02]: POST /api/cal stores entire StrategicAssessment in Redis (50-100KB, 365d TTL)
+- [04-02]: GET /api/cal/[token] generates ICS dynamically for ALL roadmap years (not just one)
+- [04-02]: webcal:// URL via window.open(url, "_self") — doesn't create new tab, hands to OS handler
+- [04-02]: Token regeneration creates new Redis entry; old tokens never invalidated (serve until 365d TTL expires)
+- [04-02]: Rich calendar descriptions: F&G portal links, cost breakdowns, unit codes, license reminders, step-by-step nav
+- [04-02]: SubscribeCalendar uses popover-style absolute positioning to avoid breaking action bar flex layout
 
 ### Pending Todos
 
@@ -78,10 +89,9 @@ None yet.
 
 - pdf-parse v2 table extraction quality is unvalidated against actual state draw PDFs (affects Phase 7)
 - Amadeus SDK v11 compatibility with Next.js 16 server components is unverified (affects Phase 6)
-- Google Calendar subscription refresh behavior (12-24h) means no real-time calendar updates (affects Phase 4 user-facing copy)
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 03-02-PLAN.md (SeasonCalendar + TimelineRoadmap Integration) -- Phase 03 complete
+Stopped at: Completed Phase 04 (Calendar Subscription) -- all 8 requirements verified, enrichment added
 Resume file: None
