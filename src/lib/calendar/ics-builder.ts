@@ -21,6 +21,9 @@ import type {
   CalendarGrid,
   CalendarSlotData,
 } from "@/lib/engine/calendar-grid";
+import { STATES_MAP } from "@/lib/constants/states";
+import { SPECIES_MAP } from "@/lib/constants/species";
+import type { State } from "@/lib/types";
 
 // ── Exported Types ──────────────────────────────────────────────────────────
 
@@ -167,6 +170,148 @@ export function buildICS(
 
 // ── Grid-to-Events Conversion ───────────────────────────────────────────────
 
+// ── Rich Description Builder ──────────────────────────────────────────────────
+
+/**
+ * Build a detailed, actionable calendar event description with:
+ *   - What to do (concise action steps)
+ *   - Portal link (direct F&G URL)
+ *   - Cost breakdown
+ *   - Unit code (if applicable)
+ *   - License reminder (qualifying license, habitat stamp, etc.)
+ *   - Species name (human-readable)
+ */
+function buildRichDescription(
+  slot: CalendarSlotData,
+  stateName: string,
+  stateAbbr: string,
+  state: State | undefined,
+): string {
+  const lines: string[] = [];
+  const speciesName = SPECIES_MAP[slot.speciesId]?.name ?? slot.speciesId;
+
+  // ── Action summary ──────────────────────────────────────────────────────
+  lines.push(slot.description);
+  lines.push("");
+
+  // ── Quick steps based on action type ────────────────────────────────────
+  lines.push("WHAT TO DO:");
+
+  if (slot.itemType === "application") {
+    const portalUrl = slot.url ?? state?.buyPointsUrl ?? state?.fgUrl;
+    lines.push(`1. Go to ${stateAbbr} F&G portal${portalUrl ? `: ${portalUrl}` : ""}`);
+    lines.push(`2. Submit your ${speciesName} application${slot.unitCode ? ` for ${slot.unitCode}` : ""}`);
+    if (slot.dueDate) {
+      lines.push(`3. Must be submitted by ${slot.dueDate}`);
+    }
+    if (state?.licenseFees?.qualifyingLicense) {
+      lines.push(`4. Requires NR qualifying license ($${state.licenseFees.qualifyingLicense}) — buy first if you haven't`);
+    }
+  } else if (slot.itemType === "point_purchase") {
+    const portalUrl = slot.url ?? state?.buyPointsUrl;
+    const pointApp = state?.pointOnlyApplication;
+    lines.push(`1. Go to ${stateAbbr} F&G portal${portalUrl ? `: ${portalUrl}` : ""}`);
+    if (pointApp?.huntCode) {
+      lines.push(`2. Select "${pointApp.huntCode}" (Point Only) as your choice`);
+    } else {
+      lines.push(`2. Select "Preference Point Only" option`);
+    }
+    if (pointApp?.secondChoiceTactic) {
+      lines.push(`3. Pro tip: ${pointApp.secondChoiceTactic}`);
+    }
+    if (state?.licenseFees?.qualifyingLicense) {
+      lines.push(`4. Requires NR qualifying license ($${state.licenseFees.qualifyingLicense}) — buy first if you haven't`);
+    }
+  } else if (slot.itemType === "hunt") {
+    lines.push(`1. Confirm your ${speciesName} tag and season dates`);
+    if (slot.unitCode) {
+      lines.push(`2. Hunt area: ${slot.unitCode}`);
+    }
+    lines.push(`${slot.unitCode ? "3" : "2"}. Check regulations for weapon restrictions and bag limits`);
+    lines.push(`${slot.unitCode ? "4" : "3"}. Arrange lodging, meat processing, and travel`);
+  } else if (slot.itemType === "scout") {
+    lines.push(`1. Pre-season scouting for ${speciesName} in ${stateName}`);
+    if (slot.unitCode) {
+      lines.push(`2. Focus area: ${slot.unitCode}`);
+    }
+    lines.push(`${slot.unitCode ? "3" : "2"}. Check access points, water sources, game trails`);
+    lines.push(`${slot.unitCode ? "4" : "3"}. Use onX or HuntStand for public land boundaries`);
+  } else {
+    // deadline / prep
+    const portalUrl = slot.url ?? state?.fgUrl;
+    if (portalUrl) {
+      lines.push(`1. Visit: ${portalUrl}`);
+    }
+  }
+
+  lines.push("");
+
+  // ── Details section ─────────────────────────────────────────────────────
+  lines.push("DETAILS:");
+  lines.push(`• Species: ${speciesName}`);
+  lines.push(`• State: ${stateName} (${stateAbbr})`);
+  if (slot.unitCode) {
+    lines.push(`• Unit: ${slot.unitCode}`);
+  }
+  lines.push(`• Type: ${formatTagType(slot.tagType)}`);
+  if (slot.estimatedCost > 0) {
+    lines.push(`• Estimated Cost: $${slot.estimatedCost.toLocaleString()}`);
+  }
+  if (slot.dueDate) {
+    lines.push(`• Deadline: ${slot.dueDate}`);
+  }
+
+  // ── License reminder ────────────────────────────────────────────────────
+  if (state && (slot.itemType === "application" || slot.itemType === "point_purchase")) {
+    const needsLicense: string[] = [];
+    if (state.licenseFees?.qualifyingLicense) {
+      needsLicense.push(`NR Qualifying License ($${state.licenseFees.qualifyingLicense})`);
+    }
+    const habitatFee = state.feeSchedule?.find(
+      (f) => f.name.toLowerCase().includes("habitat") || f.name.toLowerCase().includes("stamp"),
+    );
+    if (habitatFee) {
+      needsLicense.push(`${habitatFee.name} ($${habitatFee.amount})`);
+    }
+    if (needsLicense.length > 0) {
+      lines.push("");
+      lines.push("LICENSE REMINDER:");
+      lines.push(`Before applying, make sure you've purchased: ${needsLicense.join(", ")}`);
+    }
+  }
+
+  // ── Portal link ─────────────────────────────────────────────────────────
+  const portalUrl = slot.url ?? state?.fgUrl;
+  if (portalUrl) {
+    lines.push("");
+    lines.push(`${stateAbbr} F&G Portal: ${portalUrl}`);
+  }
+
+  // ── Footer ──────────────────────────────────────────────────────────────
+  lines.push("");
+  lines.push("— Odyssey Outdoors Hunt Planner");
+
+  return lines.join("\n");
+}
+
+/** Human-readable tag type labels */
+function formatTagType(tagType: CalendarSlotData["tagType"]): string {
+  switch (tagType) {
+    case "draw":
+      return "Draw (limited entry)";
+    case "otc":
+      return "Over-the-Counter";
+    case "leftover":
+      return "Leftover tag";
+    case "points_only":
+      return "Preference Point Only";
+    case "n/a":
+      return "N/A";
+  }
+}
+
+// ── Grid-to-Events Conversion ───────────────────────────────────────────────
+
 /**
  * Convert a CalendarGrid (from Phase 3) into ICSEventInput array for the
  * subscription endpoint. Also collects unique timezone IDs from states.
@@ -189,6 +334,8 @@ export function buildCalendarEventsFromGrid(
     const tz = stateTimezones?.[row.stateId];
     if (tz) tzSet.add(tz);
 
+    const state = STATES_MAP[row.stateId] as State | undefined;
+
     for (const [month, slots] of row.months) {
       for (const slot of slots) {
         const startDate = new Date(year, month - 1, slot.day ?? 1);
@@ -200,14 +347,11 @@ export function buildCalendarEventsFromGrid(
           endDate = new Date(year, month - 1, slot.endDay);
         }
 
-        const costStr =
-          slot.estimatedCost > 0
-            ? `\nEstimated Cost: $${slot.estimatedCost.toLocaleString()}`
-            : "";
+        const description = buildRichDescription(slot, row.stateName, row.stateAbbr, state);
 
         events.push({
           title: `${row.stateAbbr}: ${slot.title}`,
-          description: `${slot.description}\n\nState: ${row.stateName}\nType: ${slot.tagType}${costStr}`,
+          description,
           startDate,
           endDate,
           isAllDay: true,

@@ -45,6 +45,8 @@ export interface CalendarSlotData {
   tagType: "draw" | "otc" | "leftover" | "points_only" | "n/a";
   urgency: UrgencyLevel;
   dueDate?: string; // ISO date for deadline proximity display
+  url?: string; // Direct link to F&G portal for this action
+  unitCode?: string; // Hunt unit code (e.g., "Unit 61" for CO elk)
 }
 
 export interface CalendarRow {
@@ -260,6 +262,8 @@ export function buildCalendarGrid(
       tagType: deriveTagType(action, state),
       urgency: getUrgencyLevel(action.dueDate),
       dueDate: action.dueDate,
+      url: action.url,
+      unitCode: action.unitCode,
     };
 
     const monthSlots = row.months.get(month) ?? [];
@@ -324,6 +328,7 @@ export function buildCalendarGrid(
       tagType: milestoneDeriveTagType(milestone),
       urgency: getUrgencyLevel(milestone.dueDate),
       dueDate: milestone.dueDate,
+      url: milestone.url,
     };
 
     const monthSlots = row.months.get(month) ?? [];
