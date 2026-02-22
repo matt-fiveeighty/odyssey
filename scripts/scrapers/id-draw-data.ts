@@ -35,6 +35,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL & API constants
@@ -327,8 +340,8 @@ export class IdahoScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} ID deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} ID deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "ID deadlines", this.log.bind(this));
   }
 
   async scrapeFees(): Promise<ScrapedFee[]> {
@@ -434,8 +447,8 @@ export class IdahoScraper extends BaseScraper {
       this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} ID fee entries total`);
-    return fees;
+    this.log(`Found ${fees.length} ID fee entries total (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "ID fees", this.log.bind(this));
   }
 
   async scrapeSeasons(): Promise<ScrapedSeason[]> {
@@ -464,8 +477,8 @@ export class IdahoScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} ID season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} ID season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "ID seasons", this.log.bind(this));
   }
 
   async scrapeRegulations(): Promise<ScrapedRegulation[]> {
@@ -563,8 +576,8 @@ export class IdahoScraper extends BaseScraper {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} ID leftover tags`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} ID leftover tags (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "ID leftover tags", this.log.bind(this));
   }
 
   private detectSpeciesFromContext(text: string): string[] {

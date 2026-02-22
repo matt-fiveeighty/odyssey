@@ -28,6 +28,18 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -323,8 +335,8 @@ export class KansasScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} KS deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} KS deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "KS deadlines", this.log.bind(this));
   }
 
   async scrapeFees(): Promise<ScrapedFee[]> {
@@ -415,8 +427,8 @@ export class KansasScraper extends BaseScraper {
       this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} KS fee entries total`);
-    return fees;
+    this.log(`Found ${fees.length} KS fee entries total (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "KS fees", this.log.bind(this));
   }
 
   async scrapeSeasons(): Promise<ScrapedSeason[]> {
@@ -455,8 +467,8 @@ export class KansasScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} KS season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} KS season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "KS seasons", this.log.bind(this));
   }
 
   async scrapeRegulations(): Promise<ScrapedRegulation[]> {
