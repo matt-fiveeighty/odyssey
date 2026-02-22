@@ -34,6 +34,45 @@ export interface BoardState {
 }
 
 // ============================================================================
+// Advisor Voice System (Phase 5)
+// ============================================================================
+
+/** Urgency calibration for advisor tone */
+export type AdvisorUrgency = "immediate" | "soon" | "informational" | "positive";
+
+/** Category of advisor insight for filtering and grouping */
+export type AdvisorInsightCategory =
+  | "deadline"
+  | "portfolio"
+  | "point_creep"
+  | "discipline"
+  | "milestone"
+  | "temporal"
+  | "calendar";
+
+/** CTA target -- where the user should go */
+export interface AdvisorCTA {
+  label: string;        // e.g., "Apply Now", "Review Deadlines"
+  href: string;         // internal path like "/deadlines" or external F&G URL
+  external?: boolean;   // true for F&G portal links
+}
+
+/** Extended insight with interpretation layer -- wraps a BoardSignal */
+export interface AdvisorInsight {
+  id: string;                          // Stable ID for dedup, e.g., "deadline-CO-elk"
+  signal: BoardSignal;                 // The underlying data signal
+  category: AdvisorInsightCategory;
+  urgency: AdvisorUrgency;
+  interpretation: string;              // "So what?" -- what this means for the user
+  recommendation: string;              // What to do about it
+  cta: AdvisorCTA;                     // Clickable action
+  portfolioContext?: string;           // User-specific: "Your 3 CO elk points..."
+  temporalContext?: string;            // "Since your last visit (12 days ago)..."
+  confidence?: "verified" | "estimated" | "stale" | "user_reported";  // Matches DataConfidence
+  expiresAt?: string;                  // ISO date -- insight only relevant until this date
+}
+
+// ============================================================================
 // Year Type & Move Tag System
 // ============================================================================
 
