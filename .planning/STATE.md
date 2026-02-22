@@ -5,22 +5,22 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 4 complete. Ready for Phase 5.
+**Current focus:** Phase 5 in progress -- Advisor Voice system.
 
 ## Current Position
 
-Phase: 4 of 10 (Calendar Subscription) -- COMPLETE
-Plan: 2 of 2 in current phase (all complete)
-Status: Phase Complete
-Last activity: 2026-02-22 -- Completed 04-02 (Calendar subscription API + Subscribe UI + enriched event descriptions)
+Phase: 5 of 10 (Advisor Voice)
+Plan: 1 of 4 in current phase
+Status: Plan 05-01 complete
+Last activity: 2026-02-22 -- Completed 05-01 (AdvisorInsight types + temporal context engine)
 
-Progress: [████░░░░░░] 22%
+Progress: [████░░░░░░] 24%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 11 min
+- Total plans completed: 10
+- Average duration: 10 min
 - Total execution time: 1.6 hours
 
 **By Phase:**
@@ -31,10 +31,11 @@ Progress: [████░░░░░░] 22%
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
+| 05-advisor-voice | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (44 min), 03-01 (4 min), 03-02 (8 min), 04-01 (12 min), 04-02 (18 min)
-- Trend: Phase 4 steady pace -- API endpoints + ICS generation + UI component + enrichment
+- Last 5 plans: 03-01 (4 min), 03-02 (8 min), 04-01 (12 min), 04-02 (18 min), 05-01 (2 min)
+- Trend: 05-01 was pure type/engine work -- fast execution, no UI or API complexity
 
 *Updated after each plan completion*
 
@@ -80,6 +81,9 @@ Recent decisions affecting current work:
 - [04-02]: Token regeneration creates new Redis entry; old tokens never invalidated (serve until 365d TTL expires)
 - [04-02]: Rich calendar descriptions: F&G portal links, cost breakdowns, unit codes, license reminders, step-by-step nav
 - [04-02]: SubscribeCalendar uses popover-style absolute positioning to avoid breaking action bar flex layout
+- [05-01]: Inline literal union for AdvisorInsight.confidence instead of importing DataConfidence (avoids types->engine circular dep)
+- [05-01]: recordVisit() same-day guard prevents overwriting lastVisitAt on page reloads
+- [05-01]: No persist key bump for lastVisitAt -- nullable field is backwards-compatible with Zustand persist merge
 
 ### Pending Todos
 
@@ -93,5 +97,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed Phase 04 (Calendar Subscription) -- all 8 requirements verified, enrichment added
+Stopped at: Completed 05-01-PLAN.md (AdvisorInsight types + temporal context engine)
 Resume file: None
