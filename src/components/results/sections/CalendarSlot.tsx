@@ -56,7 +56,7 @@ export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
   return (
     <div
       className={`flex items-center gap-1 px-1 py-0.5 rounded border-l-2 overflow-hidden ${urgencyClasses}`}
-      title={slot.description}
+      title={slot.advisorNote || slot.description}
     >
       {/* Species avatar */}
       <SpeciesAvatar speciesId={slot.speciesId} size={16} className="shrink-0" />

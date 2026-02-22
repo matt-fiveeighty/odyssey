@@ -190,6 +190,12 @@ function buildRichDescription(
   const lines: string[] = [];
   const speciesName = SPECIES_MAP[slot.speciesId]?.name ?? slot.speciesId;
 
+  // ── Advisor note (prepended when present) ─────────────────────────────
+  if (slot.advisorNote) {
+    lines.push(`Advisor: ${slot.advisorNote}`);
+    lines.push("");
+  }
+
   // ── Action summary ──────────────────────────────────────────────────────
   lines.push(slot.description);
   lines.push("");
