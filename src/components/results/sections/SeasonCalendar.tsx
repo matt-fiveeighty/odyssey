@@ -8,6 +8,8 @@ import {
   type CalendarRow,
   type CalendarSlotData,
 } from "@/lib/engine/calendar-grid";
+import { generateCalendarAdvisorNotes } from "@/lib/engine/advisor-calendar";
+import { useAppStore } from "@/lib/store";
 import { CalendarSlot } from "./CalendarSlot";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
@@ -45,6 +47,8 @@ interface SeasonCalendarProps {
 // ── Component ──────────────────────────────────────────────────────────────
 
 export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
+  const userPoints = useAppStore((s) => s.userPoints);
+
   // Default to current year if within roadmap range, else first available year
   const initialYear = useMemo(() => {
     const available = assessment.roadmap.map((r) => r.year).sort();
@@ -55,11 +59,20 @@ export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
 
   const [selectedYear, setSelectedYear] = useState(initialYear);
 
-  // Build the grid from assessment data
-  const grid: CalendarGrid = useMemo(
-    () => buildCalendarGrid(assessment, selectedYear),
-    [assessment, selectedYear],
-  );
+  // Build the grid from assessment data, then enrich with advisor notes
+  const grid: CalendarGrid = useMemo(() => {
+    const baseGrid = buildCalendarGrid(assessment, selectedYear);
+
+    // Enrich each row's slots with advisor notes (post-build pattern per 05-04)
+    for (const row of baseGrid.rows) {
+      for (const [month, slots] of row.months) {
+        const enriched = generateCalendarAdvisorNotes(slots, assessment, userPoints);
+        row.months.set(month, enriched);
+      }
+    }
+
+    return baseGrid;
+  }, [assessment, selectedYear, userPoints]);
 
   // Current month for highlighting (only when viewing current year)
   const currentMonth = new Date().getMonth(); // 0-indexed

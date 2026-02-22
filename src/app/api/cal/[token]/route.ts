@@ -3,6 +3,7 @@ import { cacheGet, isCacheAvailable } from "@/lib/redis";
 import { buildICS, buildCalendarEventsFromGrid } from "@/lib/calendar/ics-builder";
 import type { ICSEventInput } from "@/lib/calendar/ics-builder";
 import { buildCalendarGrid } from "@/lib/engine/calendar-grid";
+import { generateCalendarAdvisorNotes } from "@/lib/engine/advisor-calendar";
 import { STATES_MAP } from "@/lib/constants/states";
 import type { StrategicAssessment } from "@/lib/types";
 
@@ -50,6 +51,15 @@ export async function GET(
   const availableYears = assessment.roadmap.map((ry) => ry.year);
   for (const year of availableYears) {
     const grid = buildCalendarGrid(assessment, year);
+
+    // Enrich grid slots with advisor notes before generating ICS events
+    for (const row of grid.rows) {
+      for (const [month, slots] of row.months) {
+        const enriched = generateCalendarAdvisorNotes(slots, assessment, []);
+        row.months.set(month, enriched);
+      }
+    }
+
     const { events, timezones } = buildCalendarEventsFromGrid(
       grid,
       year,
