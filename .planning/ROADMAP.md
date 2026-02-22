@@ -70,15 +70,11 @@ Plans:
   3. Empty months are visually distinct, making it obvious where open slots are available for filling
   4. Calendar items are color-coded by urgency -- red for deadlines within 14 days, amber within 30, green on track
   5. Monthly cost totals appear in a summary row so the user can see spending cadence across the year
-**Plans**: 6 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Calendar data model and auto-fill integration (leveraging existing auto-fill.ts)
-- [ ] 03-02: SeasonCalendar swimlane component (state rows x month columns)
-- [ ] 03-03: CalendarSlot component with species, cost, tag type, and purpose display
-- [ ] 03-04: Urgency color-coding system (red/amber/green deadline proximity)
-- [ ] 03-05: Empty month indicators and monthly cost summary row
-- [ ] 03-06: Calendar integration as zoom level inside Timeline tab (year-to-month view)
+- [ ] 03-01-PLAN.md — Shared urgency utility + calendar grid data model (buildCalendarGrid pure function)
+- [ ] 03-02-PLAN.md — CalendarSlot chip, SeasonCalendar swimlane, and TimelineRoadmap zoom toggle integration
 
 ### Phase 4: Calendar Subscription
 **Goal**: Users can subscribe to their hunt calendar in Google Calendar or Apple Calendar and receive automatic updates as their plan evolves -- the advisor speaks through their calendar
@@ -235,7 +231,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 0/3 | Not started | - |
 | 2. Shareable Plan Links | 0/2 | Not started | - |
-| 3. Season Calendar | 0/6 | Not started | - |
+| 3. Season Calendar | 0/2 | Not started | - |
 | 4. Calendar Subscription | 0/6 | Not started | - |
 | 5. Advisor Voice | 0/6 | Not started | - |
 | 6. API Integrations | 0/7 | Not started | - |
