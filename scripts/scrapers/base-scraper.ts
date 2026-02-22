@@ -17,6 +17,7 @@ import "dotenv/config";
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
 import * as cheerio from "cheerio";
 import { PDFParse } from "pdf-parse";
+import { guardAgainstDataLoss } from "../../src/lib/scrapers/plausibility";
 
 // ---------------------------------------------------------------------------
 // Shared types
@@ -487,7 +488,12 @@ export abstract class BaseScraper {
       const units = await this.scrapeUnits();
       this.log(`  Found ${units.length} units`);
 
-      if (units.length > 0) {
+      if (units.length === 0) {
+        const guard = await guardAgainstDataLoss("ref_units", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`units: ${guard.reason}`);
+        }
+      } else if (units.length > 0) {
         const rows = units.map((u) => ({
           state_id: u.stateId,
           species_id: u.speciesId,
@@ -533,7 +539,11 @@ export abstract class BaseScraper {
       const history = await this.scrapeDrawHistory();
       this.log(`  Found ${history.length} draw history rows`);
 
-      if (history.length > 0) {
+      if (history.length === 0) {
+        // Note: ref_unit_draw_history has no state_id column (uses unit_id FK).
+        // Data-loss guard skipped here; per-row unit lookup already prevents orphan inserts.
+        this.log("  No draw history rows returned — skipping upsert");
+      } else if (history.length > 0) {
         for (const h of history) {
           const [stateId, speciesId, unitCode] = h.unitId.split(":");
 
@@ -590,7 +600,12 @@ export abstract class BaseScraper {
     try {
       this.log("Scraping deadlines...");
       const deadlines = await this.scrapeDeadlines();
-      if (deadlines.length > 0) {
+      if (deadlines.length === 0) {
+        const guard = await guardAgainstDataLoss("scraped_deadlines", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`deadlines: ${guard.reason}`);
+        }
+      } else if (deadlines.length > 0) {
         this.log(`  Found ${deadlines.length} deadlines`);
         const rows = deadlines.map((d) => ({
           state_id: d.stateId,
@@ -625,7 +640,12 @@ export abstract class BaseScraper {
     try {
       this.log("Scraping fees...");
       scrapedFees = await this.scrapeFees();
-      if (scrapedFees.length > 0) {
+      if (scrapedFees.length === 0) {
+        const guard = await guardAgainstDataLoss("scraped_fees", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`fees: ${guard.reason}`);
+        }
+      } else if (scrapedFees.length > 0) {
         this.log(`  Found ${scrapedFees.length} fee entries`);
         const rows = scrapedFees.map((f) => ({
           state_id: f.stateId,
@@ -669,7 +689,12 @@ export abstract class BaseScraper {
     try {
       this.log("Scraping seasons...");
       const seasons = await this.scrapeSeasons();
-      if (seasons.length > 0) {
+      if (seasons.length === 0) {
+        const guard = await guardAgainstDataLoss("scraped_seasons", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`seasons: ${guard.reason}`);
+        }
+      } else if (seasons.length > 0) {
         this.log(`  Found ${seasons.length} season entries`);
         const rows = seasons.map((s) => ({
           state_id: s.stateId,
@@ -705,7 +730,12 @@ export abstract class BaseScraper {
     try {
       this.log("Scraping regulations...");
       const regs = await this.scrapeRegulations();
-      if (regs.length > 0) {
+      if (regs.length === 0) {
+        const guard = await guardAgainstDataLoss("scraped_regulations", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`regulations: ${guard.reason}`);
+        }
+      } else if (regs.length > 0) {
         this.log(`  Found ${regs.length} regulation entries`);
         const rows = regs.map((r) => ({
           state_id: r.stateId,
@@ -738,7 +768,12 @@ export abstract class BaseScraper {
     try {
       this.log("Scraping leftover tags...");
       const leftovers = await this.scrapeLeftoverTags();
-      if (leftovers.length > 0) {
+      if (leftovers.length === 0) {
+        const guard = await guardAgainstDataLoss("scraped_leftover_tags", this.stateId, 0, this.supabase, this.log.bind(this));
+        if (!guard.safe) {
+          errors.push(`leftover tags: ${guard.reason}`);
+        }
+      } else if (leftovers.length > 0) {
         this.log(`  Found ${leftovers.length} leftover tag entries`);
         const rows = leftovers.map((l) => ({
           state_id: l.stateId,
