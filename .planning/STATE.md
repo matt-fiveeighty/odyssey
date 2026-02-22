@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 2 complete. Ready for Phase 3.
+**Current focus:** Phase 3 complete. Ready for Phase 4.
 
 ## Current Position
 
-Phase: 2 of 10 (Shareable Plan Links) -- COMPLETE
+Phase: 3 of 10 (Season Calendar) -- COMPLETE
 Plan: 2 of 2 in current phase (all complete)
 Status: Phase Complete
-Last activity: 2026-02-22 -- Completed 02-02 (Shared Plan Page + ShareButton Integration)
+Last activity: 2026-02-22 -- Completed 03-02 (SeasonCalendar swimlane + TimelineRoadmap integration)
 
-Progress: [██░░░░░░░░] 12%
+Progress: [███░░░░░░░] 17%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 11 min
-- Total execution time: 0.9 hours
+- Total plans completed: 7
+- Average duration: 10 min
+- Total execution time: 1.1 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [██░░░░░░░░] 12%
 |-------|-------|-------|----------|
 | 01-data-foundation | 3 | 7 min | 2 min |
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
+| 03-season-calendar | 2 | 12 min | 6 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2 min), 01-03 (3 min), 02-01 (3 min), 02-02 (44 min)
-- Trend: 02-02 longer due to human verification checkpoint
+- Last 5 plans: 01-03 (3 min), 02-01 (3 min), 02-02 (44 min), 03-01 (4 min), 03-02 (8 min)
+- Trend: Phase 3 fast execution -- pure UI work on well-researched data model
 
 *Updated after each plan completion*
 
@@ -62,6 +63,12 @@ Recent decisions affecting current work:
 - [02-02]: Friendly in-page expired message instead of notFound() for better share link UX
 - [02-02]: globalThis-attached Map for dev cache fallback (Turbopack workers don't share module-level state)
 - [02-02]: Exclude /api/share and /shared/ from auth middleware (public endpoints)
+- [03-01]: Canonical urgency thresholds: red <=14d, amber <=30d, green >30d (per CAL-06, replaces 3 divergent implementations)
+- [03-01]: Tag type defaults to "draw" -- OTC/leftover detection deferred to Phase 7 scraper data
+- [03-01]: Milestone deduplication by stateId + speciesId + type + month prevents duplicate calendar entries
+- [03-02]: Calendar is a zoom level inside Timeline tab (not a new tab) per CAL-08
+- [03-02]: Mobile renders vertical month list below md breakpoint (matching MilestoneCalendar pattern)
+- [03-02]: +N more overflow for cells with >3 items (prevents overcrowding from multi-species states)
 
 ### Pending Todos
 
@@ -76,5 +83,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 02-02-PLAN.md (Shared Plan Page + ShareButton Integration) -- Phase 02 complete
+Stopped at: Completed 03-02-PLAN.md (SeasonCalendar + TimelineRoadmap Integration) -- Phase 03 complete
 Resume file: None
