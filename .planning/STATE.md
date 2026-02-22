@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 5 of 10 (Advisor Voice)
-Plan: 1 of 4 in current phase
-Status: Plan 05-01 complete
-Last activity: 2026-02-22 -- Completed 05-01 (AdvisorInsight types + temporal context engine)
+Plan: 2 of 4 in current phase
+Status: Plan 05-02 complete
+Last activity: 2026-02-22 -- Completed 05-02 (Advisor insight generator engine)
 
-Progress: [████░░░░░░] 24%
+Progress: [█████░░░░░] 27%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 10 min
-- Total execution time: 1.6 hours
+- Total plans completed: 11
+- Average duration: 9 min
+- Total execution time: 1.65 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [████░░░░░░] 24%
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
-| 05-advisor-voice | 1 | 2 min | 2 min |
+| 05-advisor-voice | 2 | 5 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (4 min), 03-02 (8 min), 04-01 (12 min), 04-02 (18 min), 05-01 (2 min)
-- Trend: 05-01 was pure type/engine work -- fast execution, no UI or API complexity
+- Last 5 plans: 03-02 (8 min), 04-01 (12 min), 04-02 (18 min), 05-01 (2 min), 05-02 (3 min)
+- Trend: 05-01 and 05-02 are pure engine work -- fast execution, no UI or API complexity
 
 *Updated after each plan completion*
 
@@ -84,6 +84,10 @@ Recent decisions affecting current work:
 - [05-01]: Inline literal union for AdvisorInsight.confidence instead of importing DataConfidence (avoids types->engine circular dep)
 - [05-01]: recordVisit() same-day guard prevents overwriting lastVisitAt on page reloads
 - [05-01]: No persist key bump for lastVisitAt -- nullable field is backwards-compatible with Zustand persist merge
+- [05-02]: Point creep detection uses estimateCreepRate(trophyRating) from point-creep.ts -- leverages existing tier-based model
+- [05-02]: inferSpeciesFromUnit parses unit codes in STATE-SPECIES-UNIT format with fallback to state's first available species
+- [05-02]: Concentration risk insight fires at >70% threshold, matching StrategyMetrics.portfolioConcentrationPercentage
+- [05-02]: Temporal insights suppressed entirely for non-returning users (daysSinceLastVisit < 1)
 
 ### Pending Todos
 
@@ -97,5 +101,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 05-01-PLAN.md (AdvisorInsight types + temporal context engine)
+Stopped at: Completed 05-02-PLAN.md (Advisor insight generator engine)
 Resume file: None
