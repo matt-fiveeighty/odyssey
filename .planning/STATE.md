@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 6 complete -- API Integrations (Amadeus flights + BLS inflation). Ready for Phase 7.
+**Current focus:** Phase 7 in progress -- Scraper Enrichment & Data Freshness.
 
 ## Current Position
 
-Phase: 6 of 10 (API Integrations) — COMPLETE
-Plan: 3 of 3 complete
-Status: Phase 06 complete -- all API clients, routes, crons, and UI consumers wired
-Last activity: 2026-02-22 -- Plan 06-03 complete (UI consumer integration)
+Phase: 7 of 10 (Scraper Enrichment & Data Freshness)
+Plan: 1 of 5 complete
+Status: Plan 07-01 complete -- BaseScraper HTML/PDF parsing + plausibility schemas
+Last activity: 2026-02-22 -- Plan 07-01 complete (scraper foundation enrichment)
 
-Progress: [████████████░] 60%
+Progress: [████████████░░] 62%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 8 min
-- Total execution time: 1.88 hours
+- Total plans completed: 17
+- Average duration: 7 min
+- Total execution time: 1.95 hours
 
 **By Phase:**
 
@@ -33,10 +33,11 @@ Progress: [████████████░] 60%
 | 04-calendar-subscription | 2 | 30 min | 15 min |
 | 05-advisor-voice | 4 | 11 min | 3 min |
 | 06-api-integrations | 3 | 8 min | 3 min |
+| 07-scraper-enrichment-data-freshness | 1 | 4 min | 4 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-02 (3 min), 05-04 (3 min), 06-01 (2 min), 06-02 (3 min), 06-03 (3 min)
-- Trend: Pure library/route/integration plans execute fast (2-3 min)
+- Last 5 plans: 05-04 (3 min), 06-01 (2 min), 06-02 (3 min), 06-03 (3 min), 07-01 (4 min)
+- Trend: Scraper foundation plan slightly longer due to dependency install + API adaptation
 
 *Updated after each plan completion*
 
@@ -106,6 +107,9 @@ Recent decisions affecting current work:
 - [06-03]: Self-contained fetch in each component (no shared hook) -- keeps PortfolioOverview and HeroSummary independent
 - [06-03]: useState(0.035) default ensures identical pre-fetch rendering to old hardcoded behavior (zero-flash pattern)
 - [06-03]: Subtle BLS source indicator in text only when inflationSource is verified (not a badge, just context)
+- [07-01]: Used PDFParse class API (pdf-parse v2) instead of default export (v1 pattern)
+- [07-01]: Named base method extractPdfText to avoid collision with existing UT/KS parsePdfText methods
+- [07-01]: Plausibility schema pattern: base schema for structure, Plausible*Schema for domain guards -- callers choose which to pass to validateBatch()
 
 ### Pending Todos
 
@@ -119,5 +123,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 06-03-PLAN.md (UI consumer integration) -- Phase 06 complete, ready for Phase 07
+Stopped at: Completed 07-01-PLAN.md (scraper foundation -- cheerio + pdf-parse + plausibility schemas)
 Resume file: None
