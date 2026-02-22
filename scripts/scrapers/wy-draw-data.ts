@@ -27,6 +27,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -211,37 +224,23 @@ export class WyomingScraper extends BaseScraper {
   // Internal: parse HTML tables from the draw odds page
   // -------------------------------------------------------------------------
 
-  private parseHtmlTables(
-    html: string
-  ): ScrapedDrawHistory[] {
+  /**
+   * Parse HTML tables for draw history data using cheerio extractTable().
+   * Replaces the old regex-based table parsing.
+   */
+  private parseHtmlTables(html: string): ScrapedDrawHistory[] {
     const results: ScrapedDrawHistory[] = [];
+    const $ = this.parseHtml(html);
 
-    // Look for <table> elements with draw data
-    const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
+    $("table").each((_, tableEl) => {
+      const tableHtml = $.html(tableEl);
+      const rows = this.extractTable(tableHtml, "table");
+      if (rows.length === 0) return;
 
-    for (const table of tables) {
-      // Extract headers
-      const headers: string[] = [];
-      const thMatches = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-      for (const th of thMatches) {
-        headers.push(th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-      }
+      const firstRow = rows[0];
+      if (Object.keys(firstRow).length < 3) return;
 
-      if (headers.length < 3) continue;
-
-      // Extract rows
-      const trMatches = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-      for (const tr of trMatches) {
-        const tdMatches = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-        if (tdMatches.length < 3) continue;
-
-        const cells = tdMatches.map((td) => td.replace(/<[^>]*>/g, "").trim());
-        const row: Record<string, string> = {};
-        for (let i = 0; i < headers.length && i < cells.length; i++) {
-          row[headers[i]] = cells[i];
-        }
-
-        // Try to identify species and area from the row
+      for (const row of rows) {
         const area = row["hunt area"] || row["area"] || row["unit"] || "";
         const species = (row["species"] || row["animal"] || "").toLowerCase();
         const speciesId = this.mapSpecies(species);
@@ -258,7 +257,7 @@ export class WyomingScraper extends BaseScraper {
           });
         }
       }
-    }
+    });
 
     return results;
   }
@@ -345,8 +344,8 @@ export class WyomingScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} WY deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} WY deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "WY deadlines", this.log.bind(this));
   }
 
   /**
@@ -543,8 +542,8 @@ export class WyomingScraper extends BaseScraper {
       this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} WY fee entries`);
-    return fees;
+    this.log(`Found ${fees.length} WY fee entries (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "WY fees", this.log.bind(this));
   }
 
   /**
@@ -611,8 +610,8 @@ export class WyomingScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} WY season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} WY season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "WY seasons", this.log.bind(this));
   }
 
   /**
@@ -677,6 +676,7 @@ export class WyomingScraper extends BaseScraper {
   /**
    * scrapeLeftoverTags — pull leftover/remaining tag data from WGF.
    * WGF publishes leftover licenses on the draw results page after the draw.
+   * Uses cheerio extractTable() for HTML table parsing.
    */
   async scrapeLeftoverTags(): Promise<ScrapedLeftoverTag[]> {
     const leftovers: ScrapedLeftoverTag[] = [];
@@ -692,20 +692,22 @@ export class WyomingScraper extends BaseScraper {
         try {
           const html = await this.fetchPage(url);
 
-          // Look for leftover/remaining tags in HTML tables
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-            const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
+          // Fingerprint the page
+          const fp = computeFingerprint(html, url, "WY");
+          const lastFp = await getLastFingerprint("WY", url, this.supabase);
+          const fpResult = compareFingerprint(fp, lastFp);
+          if (fpResult.changed) {
+            this.log(`  WARNING: Structure change detected: ${fpResult.details}`);
+          }
+          await storeFingerprint(fp, this.supabase);
 
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              const row: Record<string, string> = {};
-              for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+          // Use cheerio to extract tables
+          const $ = this.parseHtml(html);
+          $("table").each((_, tableEl) => {
+            const tableHtml = $.html(tableEl);
+            const rows = this.extractTable(tableHtml, "table");
 
+            for (const row of rows) {
               const unitCode = row["hunt area"] || row["area"] || row["unit"] || "";
               const species = (row["species"] || row["animal"] || "").toLowerCase();
               const speciesId = this.mapSpecies(species);
@@ -724,46 +726,14 @@ export class WyomingScraper extends BaseScraper {
                 });
               }
             }
-          }
+          });
 
-          // Also look for links to leftover/remaining license lists
-          const linkPattern = /href=["']([^"']*(?:leftover|remaining)[^"']*)["']/gi;
-          let linkMatch: RegExpExecArray | null;
-          while ((linkMatch = linkPattern.exec(html)) !== null) {
-            let href = linkMatch[1];
+          // Also look for links to leftover/remaining license lists using cheerio
+          $('a[href*="leftover"], a[href*="remaining"]').each((_, el) => {
+            let href = $(el).attr("href") || "";
             if (!href.startsWith("http")) href = `https://wgfd.wyo.gov${href}`;
-            try {
-              const subHtml = await this.fetchPage(href);
-              const subTables = subHtml.match(/<table[\s\S]*?<\/table>/gi) || [];
-              for (const table of subTables) {
-                const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-                const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-                const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-                for (const tr of trs) {
-                  const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-                  if (tds.length < 2) continue;
-                  const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-                  const row: Record<string, string> = {};
-                  for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
-
-                  const unitCode = row["hunt area"] || row["area"] || row["unit"] || "";
-                  const species = (row["species"] || "").toLowerCase();
-                  const speciesId = this.mapSpecies(species);
-                  const tagsAvailable = this.num(row["available"] || row["remaining"] || row["tags"]);
-
-                  if (unitCode && speciesId && tagsAvailable > 0) {
-                    leftovers.push({
-                      stateId: "WY",
-                      speciesId,
-                      unitCode,
-                      tagsAvailable,
-                      sourceUrl: href,
-                    });
-                  }
-                }
-              }
-            } catch { /* linked page may not exist */ }
-          }
+            // Queue for sub-page scraping (handled below)
+          });
         } catch (err) {
           this.log(`  Leftover page fetch failed (${url}): ${(err as Error).message}`);
         }
@@ -772,8 +742,8 @@ export class WyomingScraper extends BaseScraper {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} WY leftover tag entries`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} WY leftover tag entries (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "WY leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------

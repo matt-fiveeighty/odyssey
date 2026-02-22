@@ -26,6 +26,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -351,8 +364,8 @@ export class ArizonaScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} AZ deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} AZ deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "AZ deadlines", this.log.bind(this));
   }
 
   /**
@@ -559,8 +572,8 @@ export class ArizonaScraper extends BaseScraper {
       this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} AZ fee entries`);
-    return fees;
+    this.log(`Found ${fees.length} AZ fee entries (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "AZ fees", this.log.bind(this));
   }
 
   /**
@@ -641,8 +654,8 @@ export class ArizonaScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} AZ season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} AZ season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "AZ seasons", this.log.bind(this));
   }
 
   /**
@@ -859,8 +872,8 @@ export class ArizonaScraper extends BaseScraper {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} AZ leftover tag entries`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} AZ leftover tag entries (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "AZ leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------

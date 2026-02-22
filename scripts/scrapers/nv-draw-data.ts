@@ -28,6 +28,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -373,8 +386,8 @@ export class NevadaScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} NV deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} NV deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "NV deadlines", this.log.bind(this));
   }
 
   /**
@@ -559,8 +572,8 @@ export class NevadaScraper extends BaseScraper {
       this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} NV fee entries`);
-    return fees;
+    this.log(`Found ${fees.length} NV fee entries (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "NV fees", this.log.bind(this));
   }
 
   /**
@@ -627,8 +640,8 @@ export class NevadaScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} NV season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} NV season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "NV seasons", this.log.bind(this));
   }
 
   /**
@@ -792,8 +805,8 @@ export class NevadaScraper extends BaseScraper {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} NV leftover tag entries`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} NV leftover tag entries (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "NV leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------

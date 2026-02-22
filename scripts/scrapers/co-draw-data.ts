@@ -27,6 +27,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants — UPDATE THESE EACH YEAR when CPW publishes new data
@@ -277,13 +290,12 @@ export class ColoradoScraper extends BaseScraper {
     for (const [, config] of Object.entries(CPW_SPECIES_STATS)) {
       try {
         const html = await this.fetchPage(config.url);
-        const csvPattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
-        let match: RegExpExecArray | null;
-        while ((match = csvPattern.exec(html)) !== null) {
-          let href = match[1];
+        const $ = this.parseHtml(html);
+        $('a[href$=".csv"]').each((_, el) => {
+          let href = $(el).attr("href") || "";
           if (!href.startsWith("http")) href = `https://cpw.state.co.us${href}`;
           links.push({ url: href, speciesId: config.speciesId });
-        }
+        });
       } catch (err) {
         this.log(`Stats page scrape failed for ${config.speciesId}: ${(err as Error).message}`);
       }
@@ -348,8 +360,8 @@ export class ColoradoScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} CO deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} CO deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "CO deadlines", this.log.bind(this));
   }
 
   /**
@@ -505,8 +517,8 @@ export class ColoradoScraper extends BaseScraper {
       this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} CO fee entries`);
-    return fees;
+    this.log(`Found ${fees.length} CO fee entries (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "CO fees", this.log.bind(this));
   }
 
   private detectSingleSpecies(text: string): string | null {
@@ -557,8 +569,8 @@ export class ColoradoScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} CO season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} CO season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "CO seasons", this.log.bind(this));
   }
 
   /**
@@ -610,13 +622,13 @@ export class ColoradoScraper extends BaseScraper {
 
   /**
    * scrapeLeftoverTags — pull leftover/secondary draw tag data from CPW.
+   * Uses cheerio extractTable() for HTML table parsing.
    */
   async scrapeLeftoverTags(): Promise<ScrapedLeftoverTag[]> {
     const leftovers: ScrapedLeftoverTag[] = [];
 
     try {
       this.log("Checking CPW for leftover tag data...");
-      // CPW publishes a secondary/leftover draw page
       const urls = [
         "https://cpw.state.co.us/hunting/big-game/leftover-licenses",
         "https://cpw.state.co.us/hunting/big-game/secondary-draw",
@@ -626,20 +638,22 @@ export class ColoradoScraper extends BaseScraper {
         try {
           const html = await this.fetchPage(url);
 
-          // Look for unit + species + tags available patterns in tables
-          const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-          for (const table of tables) {
-            const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-            const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
+          // Fingerprint the leftover page
+          const fp = computeFingerprint(html, url, "CO");
+          const lastFp = await getLastFingerprint("CO", url, this.supabase);
+          const fpResult = compareFingerprint(fp, lastFp);
+          if (fpResult.changed) {
+            this.log(`  WARNING: Structure change detected on leftover page: ${fpResult.details}`);
+          }
+          await storeFingerprint(fp, this.supabase);
 
-            const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-            for (const tr of trs) {
-              const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-              if (tds.length < 2) continue;
-              const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-              const row: Record<string, string> = {};
-              for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+          // Use cheerio to extract tables
+          const $ = this.parseHtml(html);
+          $("table").each((_, tableEl) => {
+            const tableHtml = $.html(tableEl);
+            const rows = this.extractTable(tableHtml, "table");
 
+            for (const row of rows) {
               const unitCode = row["gmu"] || row["unit"] || row["hunt code"] || "";
               const species = (row["species"] || "elk").toLowerCase();
               const tagsAvailable = this.num(row["available"] || row["remaining"] || row["tags"]);
@@ -659,15 +673,15 @@ export class ColoradoScraper extends BaseScraper {
                 });
               }
             }
-          }
+          });
         } catch { /* URL may not exist outside leftover season */ }
       }
     } catch (err) {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} CO leftover tag entries`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} CO leftover tag entries (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "CO leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------

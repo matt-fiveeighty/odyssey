@@ -27,6 +27,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -455,8 +468,8 @@ export class MontanaScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} MT deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} MT deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "MT deadlines", this.log.bind(this));
   }
 
   /**
@@ -649,8 +662,8 @@ export class MontanaScraper extends BaseScraper {
       this.log(`Live fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} MT fee entries`);
-    return fees;
+    this.log(`Found ${fees.length} MT fee entries (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "MT fees", this.log.bind(this));
   }
 
   /**
@@ -717,8 +730,8 @@ export class MontanaScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} MT season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} MT season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "MT seasons", this.log.bind(this));
   }
 
   /**
@@ -883,8 +896,8 @@ export class MontanaScraper extends BaseScraper {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} MT leftover tag entries`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} MT leftover tag entries (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "MT leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------
