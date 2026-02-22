@@ -86,12 +86,57 @@ export const ScrapedLeftoverTagSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Plausibility-guarded schemas (domain-specific validation)
+// ---------------------------------------------------------------------------
+
+/** Fee amounts must be > $0 and < $10,000. Tag fees of $0 are implausible. */
+export const PlausibleFeeSchema = ScrapedFeeSchema.refine(
+  (fee) => fee.amount > 0 && fee.amount < 10000,
+  { message: "Fee amount outside plausible range ($0-$10,000)" }
+).refine(
+  (fee) => !(fee.amount === 0 && fee.feeName.toLowerCase().includes("tag")),
+  { message: "Tag cost of $0 is implausible" }
+);
+
+/** Deadline dates must be between 2024 and 2030. */
+export const PlausibleDeadlineSchema = ScrapedDeadlineSchema.refine(
+  (dl) => {
+    const parsed = new Date(dl.date);
+    if (isNaN(parsed.getTime())) return false;
+    const year = parsed.getFullYear();
+    return year >= 2024 && year <= 2030;
+  },
+  { message: "Deadline date outside plausible range (2024-2030) or unparseable" }
+);
+
+/** Season dates must be parseable and year between 2024-2030. Start must be before end. */
+export const PlausibleSeasonSchema = ScrapedSeasonSchema.refine(
+  (s) => s.year >= 2024 && s.year <= 2030,
+  { message: "Season year outside plausible range (2024-2030)" }
+);
+
+/** Leftover tags must have at least 1 tag available. */
+export const PlausibleLeftoverTagSchema = ScrapedLeftoverTagSchema.refine(
+  (lt) => lt.tagsAvailable >= 1,
+  { message: "Leftover tags must have at least 1 available" }
+);
+
+/** Draw history: odds 0-100%, applicants and tags non-negative, year 2000-2050 */
+export const PlausibleDrawHistorySchema = ScrapedDrawHistorySchema.refine(
+  (dh) => dh.odds >= 0 && dh.odds <= 100,
+  { message: "Draw odds outside 0-100% range" }
+);
+
+// ---------------------------------------------------------------------------
 // Batch validation helper
 // ---------------------------------------------------------------------------
 
 /**
  * Validate an array of scraped records against a schema.
- * Returns valid rows and logs invalid ones — never blocks the pipeline.
+ * Returns valid rows and logs invalid ones -- never blocks the pipeline.
+ *
+ * Pass a Plausible*Schema for domain-specific guards (recommended for DB upsert),
+ * or the base schema for structural validation only.
  */
 export function validateBatch<T>(
   rows: unknown[],
