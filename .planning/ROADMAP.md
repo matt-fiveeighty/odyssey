@@ -53,14 +53,11 @@ Plans:
   3. The shared plan is an immutable snapshot -- if the creator changes their plan afterward, the shared link still shows the original version
   4. Share links expire after 90 days and the shared page clearly shows the expiration date
   5. The shared page includes a "Create your own plan" CTA that starts the consultation wizard
-**Plans**: 5 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: POST /api/share endpoint with Redis storage and token generation
-- [ ] 02-02: GET /shared/[token] server component rendering read-only results
-- [ ] 02-03: SharedResultsShell component (read-only ResultsShell without Zustand)
-- [ ] 02-04: Share button integration in existing results UI
-- [ ] 02-05: Rate limiting, expiration display, and "Create your own plan" CTA
+- [ ] 02-01-PLAN.md — POST /api/share endpoint + SharedResultsShell read-only component (no Zustand)
+- [ ] 02-02-PLAN.md — GET /shared/[token] page, ShareButton component, and ResultsShell integration
 
 ### Phase 3: Season Calendar
 **Goal**: Users can see all their hunt-related activities for a single year laid out month-by-month, so they can professionalize their scheduling and see open slots
@@ -237,7 +234,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Foundation | 0/3 | Not started | - |
-| 2. Shareable Plan Links | 0/5 | Not started | - |
+| 2. Shareable Plan Links | 0/2 | Not started | - |
 | 3. Season Calendar | 0/6 | Not started | - |
 | 4. Calendar Subscription | 0/6 | Not started | - |
 | 5. Advisor Voice | 0/6 | Not started | - |
