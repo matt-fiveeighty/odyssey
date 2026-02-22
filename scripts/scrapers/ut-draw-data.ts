@@ -15,6 +15,10 @@
  *     bonus points for limited-entry and once-in-a-lifetime
  *   - Apply per unit
  *   - Moose, goat, bison are OIAL (once-in-a-lifetime)
+ *
+ * Parsing: All HTML table extraction uses cheerio via BaseScraper.extractTable()
+ * and parseHtml(). PDF extraction uses fetchPdfBuffer() + extractPdfText().
+ * Zero regex HTML patterns remain.
  */
 
 import {
@@ -27,6 +31,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -109,16 +126,22 @@ export class UtahScraper extends BaseScraper {
       this.log("Scraping DWR draw odds page...");
       const html = await this.fetchPage(DWR_ODDS_PAGE);
 
-      // Extract PDF report links
+      // Fingerprint the draw odds page
+      const fp = computeFingerprint(html, DWR_ODDS_PAGE, "UT");
+      const lastFp = await getLastFingerprint("UT", DWR_ODDS_PAGE, this.supabase);
+      const fpResult = compareFingerprint(fp, lastFp);
+      if (fpResult.changed) {
+        this.log(`  WARNING: Structure change detected on draw odds page: ${fpResult.details}`);
+      }
+      await storeFingerprint(fp, this.supabase);
+
+      // Extract PDF report links using cheerio
       const pdfLinks = this.extractPdfLinks(html);
       this.log(`  Found ${pdfLinks.length} PDF report links`);
 
-      // Also check for any CSV/data links
-      const csvPattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
-      let match: RegExpExecArray | null;
-      while ((match = csvPattern.exec(html)) !== null) {
-        let href = match[1];
-        if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
+      // Also check for any CSV/data links using cheerio
+      const csvLinks = this.extractCsvLinks(html);
+      for (const href of csvLinks) {
         try {
           const rows = await this.fetchCsv(href);
           if (rows.length > 1) {
@@ -142,6 +165,7 @@ export class UtahScraper extends BaseScraper {
 
       // Extract unit numbers from page text
       const unitPattern = /Unit\s+(\d+[A-Z]?)/gi;
+      let match: RegExpExecArray | null;
       while ((match = unitPattern.exec(html)) !== null) {
         const code = match[1];
         for (const speciesId of ["elk", "mule_deer", "moose"]) {
@@ -176,46 +200,50 @@ export class UtahScraper extends BaseScraper {
   async scrapeDrawHistory(): Promise<ScrapedDrawHistory[]> {
     const results: ScrapedDrawHistory[] = [];
 
-    // Try to download PDF reports
+    // Download PDF reports using binary fetch + pdf-parse extraction
     for (const report of DWR_PDF_REPORTS) {
       try {
         this.log(`Fetching ${report.label}: ${report.url}`);
-        const text = await this.fetchPage(report.url);
+        const buffer = await this.fetchPdfBuffer(report.url);
+        const text = await this.extractPdfText(buffer);
 
-        // Try to parse any text content from the PDF response
-        const parsed = this.parsePdfText(text, report.speciesIds);
+        // Parse extracted text for draw data
+        const parsed = this.parsePdfDrawData(text, report.speciesIds);
         if (parsed.length > 0) {
           results.push(...parsed);
           this.log(`  Parsed ${parsed.length} rows from ${report.label}`);
         } else {
-          this.log(`  No parseable data from ${report.label} (PDF needs binary parser)`);
+          this.log(`  No parseable data from ${report.label}`);
         }
       } catch (err) {
         this.log(`  ${report.label} fetch failed: ${(err as Error).message}`);
       }
     }
 
-    // Try scraping the draw odds page for any embedded HTML tables
+    // Try scraping the draw odds page for any embedded HTML tables using cheerio
     try {
       this.log("Scraping DWR pages for HTML table data...");
       for (const url of [DWR_ODDS_PAGE, DWR_DRAW_ODDS_TOOL]) {
         const html = await this.fetchPage(url);
+
+        // Fingerprint the page
+        const fp = computeFingerprint(html, url, "UT");
+        const lastFp = await getLastFingerprint("UT", url, this.supabase);
+        const fpResult = compareFingerprint(fp, lastFp);
+        if (fpResult.changed) {
+          this.log(`  WARNING: Structure change detected: ${fpResult.details}`);
+        }
+        await storeFingerprint(fp, this.supabase);
+
         const tableData = this.parseHtmlTables(html);
         results.push(...tableData);
       }
     } catch { /* skip */ }
 
-    // Try to find CSV download links
+    // Try to find CSV download links using cheerio
     try {
       const html = await this.fetchPage(DWR_ODDS_PAGE);
-      const csvLinks: string[] = [];
-      const pattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
-      let match: RegExpExecArray | null;
-      while ((match = pattern.exec(html)) !== null) {
-        let href = match[1];
-        if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
-        csvLinks.push(href);
-      }
+      const csvLinks = this.extractCsvLinks(html);
 
       for (const csvUrl of csvLinks) {
         try {
@@ -237,22 +265,48 @@ export class UtahScraper extends BaseScraper {
   }
 
   // -------------------------------------------------------------------------
-  // Internal helpers
+  // Internal helpers — all HTML parsing via cheerio (zero regex patterns)
   // -------------------------------------------------------------------------
 
+  /**
+   * Extract PDF links from HTML using cheerio.
+   * Resolves relative URLs against wildlife.utah.gov.
+   */
   private extractPdfLinks(html: string): string[] {
+    const $ = this.parseHtml(html);
     const links: string[] = [];
-    const pattern = /href=["']([^"']*\.pdf[^"']*)["']/gi;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(html)) !== null) {
-      let href = match[1];
+
+    $('a[href$=".pdf"]').each((_, el) => {
+      let href = $(el).attr("href") || "";
       if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
       links.push(href);
-    }
+    });
+
     return links;
   }
 
-  private parsePdfText(text: string, speciesIds: string[]): ScrapedDrawHistory[] {
+  /**
+   * Extract CSV links from HTML using cheerio.
+   * Resolves relative URLs against wildlife.utah.gov.
+   */
+  private extractCsvLinks(html: string): string[] {
+    const $ = this.parseHtml(html);
+    const links: string[] = [];
+
+    $('a[href$=".csv"]').each((_, el) => {
+      let href = $(el).attr("href") || "";
+      if (!href.startsWith("http")) href = `https://wildlife.utah.gov${href}`;
+      links.push(href);
+    });
+
+    return links;
+  }
+
+  /**
+   * Parse PDF text for draw data (renamed from parsePdfText to avoid
+   * collision with inherited BaseScraper.extractPdfText).
+   */
+  private parsePdfDrawData(text: string, speciesIds: string[]): ScrapedDrawHistory[] {
     const results: ScrapedDrawHistory[] = [];
     const lines = text.split("\n");
     const defaultSpecies = speciesIds[0] || "elk";
@@ -288,26 +342,29 @@ export class UtahScraper extends BaseScraper {
     return results;
   }
 
+  /**
+   * Parse HTML tables for draw history data using cheerio extractTable().
+   * Replaces the old regex-based table parsing.
+   */
   private parseHtmlTables(html: string): ScrapedDrawHistory[] {
     const results: ScrapedDrawHistory[] = [];
-    const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-    for (const table of tables) {
-      const headers: string[] = [];
-      const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-      for (const th of ths) headers.push(th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-      if (headers.length < 3) continue;
+    const $ = this.parseHtml(html);
 
-      const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-      for (const tr of trs) {
-        const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-        if (tds.length < 3) continue;
-        const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-        const row: Record<string, string> = {};
-        for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+    $("table").each((_, tableEl) => {
+      const tableHtml = $.html(tableEl);
+      const rows = this.extractTable(tableHtml, "table");
+      if (rows.length === 0) return;
+
+      // Check that table has enough columns to be useful
+      const firstRow = rows[0];
+      if (Object.keys(firstRow).length < 3) return;
+
+      for (const row of rows) {
         const parsed = this.parseUtRow(row);
         if (parsed) results.push(parsed);
       }
-    }
+    });
+
     return results;
   }
 
@@ -398,8 +455,8 @@ export class UtahScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} UT deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} UT deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "UT deadlines", this.log.bind(this));
   }
 
   async scrapeFees(): Promise<ScrapedFee[]> {
@@ -506,8 +563,8 @@ export class UtahScraper extends BaseScraper {
       this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} UT fee entries total`);
-    return fees;
+    this.log(`Found ${fees.length} UT fee entries total (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "UT fees", this.log.bind(this));
   }
 
   async scrapeSeasons(): Promise<ScrapedSeason[]> {
@@ -536,8 +593,8 @@ export class UtahScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} UT season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} UT season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "UT seasons", this.log.bind(this));
   }
 
   async scrapeRegulations(): Promise<ScrapedRegulation[]> {
@@ -553,12 +610,12 @@ export class UtahScraper extends BaseScraper {
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
-          const newsPattern = /<(?:h[2-4]|a)[^>]*>([\s\S]*?)<\/(?:h[2-4]|a)>/gi;
-          let match: RegExpExecArray | null;
+          // Use cheerio for heading/link extraction instead of regex
+          const $ = this.parseHtml(html);
 
-          while ((match = newsPattern.exec(html)) !== null) {
-            const text = match[1].replace(/<[^>]*>/g, "").trim();
-            if (text.length < 10 || text.length > 300) continue;
+          $("h2, h3, h4, a").each((_, el) => {
+            const text = $(el).text().trim();
+            if (text.length < 10 || text.length > 300) return;
 
             const lower = text.toLowerCase();
             if (
@@ -581,7 +638,7 @@ export class UtahScraper extends BaseScraper {
                 category,
               });
             }
-          }
+          });
         } catch (err) {
           this.log(`  Regulation page fetch failed (${url}): ${(err as Error).message}`);
         }
@@ -600,45 +657,38 @@ export class UtahScraper extends BaseScraper {
     try {
       this.log("Checking Utah DWR for leftover tag data...");
       const html = await this.fetchPage("https://wildlife.utah.gov/hunting/drawing-odds.html");
+      const $ = this.parseHtml(html);
 
-      const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-      for (const table of tables) {
-        const lower = table.toLowerCase();
-        if (!lower.includes("leftover") && !lower.includes("remaining") && !lower.includes("available")) continue;
+      $("table").each((_, tableEl) => {
+        const tableText = $(tableEl).text().toLowerCase();
+        if (!tableText.includes("leftover") && !tableText.includes("remaining") && !tableText.includes("available")) return;
 
-        const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-        const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-        const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+        const tableHtml = $.html(tableEl);
+        const rows = this.extractTable(tableHtml, "table");
 
-        for (const tr of trs) {
-          const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-          if (tds.length < 2) continue;
-          const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-          const row: Record<string, string> = {};
-          for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
-
-          const unitCode = row["unit"] || row["hunt"] || row["area"] || cells[0] || "";
-          const available = parseInt((row["available"] || row["remaining"] || row["permits"] || cells[cells.length - 1] || "0").replace(/,/g, ""), 10);
-          const species = (row["species"] || "").toLowerCase();
-          const speciesId = this.detectSingleSpecies(species) || "elk";
+        for (const row of rows) {
+          const unitCode = row["unit"] || row["hunt"] || row["area"] || Object.values(row)[0] || "";
+          const availableStr = row["available"] || row["remaining"] || row["permits"] || Object.values(row).pop() || "0";
+          const available = parseInt(availableStr.replace(/,/g, ""), 10);
 
           if (unitCode && available > 0) {
+            const species = (row["species"] || "").toLowerCase();
             leftovers.push({
               stateId: "UT",
-              speciesId,
+              speciesId: this.detectSingleSpecies(species) || "elk",
               unitCode,
               tagsAvailable: available,
               sourceUrl: "https://wildlife.utah.gov/hunting/drawing-odds.html",
             });
           }
         }
-      }
+      });
     } catch (err) {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} UT leftover tags`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} UT leftover tags (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "UT leftover tags", this.log.bind(this));
   }
 
   // -------------------------------------------------------------------------
