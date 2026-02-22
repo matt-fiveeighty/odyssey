@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 6 next -- API Integrations (Amadeus flights + BLS inflation).
+**Current focus:** Phase 6 in progress -- API Integrations (Amadeus flights + BLS inflation).
 
 ## Current Position
 
-Phase: 5 of 10 (Advisor Voice) — COMPLETE
-Plan: Proceeding to Phase 6
-Status: Phase 5 verified (5/5 success criteria + gap fix committed)
-Last activity: 2026-02-22 -- Phase 5 complete, gap fix for advisor calendar wiring
+Phase: 6 of 10 (API Integrations) — IN PROGRESS
+Plan: 1 of 3 complete, proceeding to Plan 2
+Status: 06-01 complete -- Amadeus + BLS API client modules built
+Last activity: 2026-02-22 -- Plan 06-01 complete (API client modules)
 
-Progress: [█████████░] 50%
+Progress: [██████████░] 55%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 8 min
-- Total execution time: 1.75 hours
+- Total execution time: 1.78 hours
 
 **By Phase:**
 
@@ -32,10 +32,11 @@ Progress: [█████████░] 50%
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
 | 05-advisor-voice | 4 | 11 min | 3 min |
+| 06-api-integrations | 1 | 2 min | 2 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (12 min), 04-02 (18 min), 05-01 (2 min), 05-02 (3 min), 05-04 (3 min)
-- Trend: 05-series plans are pure engine + light UI work -- fast execution
+- Last 5 plans: 04-02 (18 min), 05-01 (2 min), 05-02 (3 min), 05-04 (3 min), 06-01 (2 min)
+- Trend: Pure library code plans execute fast (2-3 min)
 
 *Updated after each plan completion*
 
@@ -94,6 +95,10 @@ Recent decisions affecting current work:
 - [05-04]: Post-build enrichment pattern: advisor notes generated AFTER buildCalendarGrid, not inside it (keeps calendar-grid.ts pure)
 - [05-04]: Native title attribute for tooltips instead of custom tooltip component (simplest approach, no new dependency)
 - [05-04]: Advisor note prepended to ICS DESCRIPTION (not appended) so it appears first in calendar app event details
+- [06-01]: Direct fetch over amadeus npm SDK (CJS-only, bundling risk in Next.js 16)
+- [06-01]: Soft quota limit at 1800/2000 monthly Amadeus calls with Redis INCR + auto-expire TTL
+- [06-01]: BLS API key optional -- graceful fallback to v1 rate limits when omitted
+- [06-01]: 3.5% FALLBACK_INFLATION_RATE exported as shared constant for downstream consumers
 
 ### Pending Todos
 
@@ -102,10 +107,10 @@ None yet.
 ### Blockers/Concerns
 
 - pdf-parse v2 table extraction quality is unvalidated against actual state draw PDFs (affects Phase 7)
-- Amadeus SDK v11 compatibility with Next.js 16 server components is unverified (affects Phase 6)
+- ~~Amadeus SDK v11 compatibility with Next.js 16 server components is unverified~~ RESOLVED: Used direct fetch instead of SDK (06-01)
 
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Phase 5 complete, proceeding to Phase 6 planning
+Stopped at: Completed 06-01-PLAN.md (API client modules), proceeding to 06-02
 Resume file: None
