@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 6 in progress -- API Integrations (Amadeus flights + BLS inflation).
+**Current focus:** Phase 6 complete -- API Integrations (Amadeus flights + BLS inflation). Ready for Phase 7.
 
 ## Current Position
 
-Phase: 6 of 10 (API Integrations) — IN PROGRESS
-Plan: 2 of 3 complete, proceeding to Plan 3
-Status: 06-02 complete -- API route handlers + cron jobs built
-Last activity: 2026-02-22 -- Plan 06-02 complete (route handlers + crons)
+Phase: 6 of 10 (API Integrations) — COMPLETE
+Plan: 3 of 3 complete
+Status: Phase 06 complete -- all API clients, routes, crons, and UI consumers wired
+Last activity: 2026-02-22 -- Plan 06-03 complete (UI consumer integration)
 
-Progress: [██████████░] 55%
+Progress: [████████████░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
+- Total plans completed: 16
 - Average duration: 8 min
-- Total execution time: 1.83 hours
+- Total execution time: 1.88 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [██████████░] 55%
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
 | 05-advisor-voice | 4 | 11 min | 3 min |
-| 06-api-integrations | 2 | 5 min | 3 min |
+| 06-api-integrations | 3 | 8 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (2 min), 05-02 (3 min), 05-04 (3 min), 06-01 (2 min), 06-02 (3 min)
-- Trend: Pure library/route code plans execute fast (2-3 min)
+- Last 5 plans: 05-02 (3 min), 05-04 (3 min), 06-01 (2 min), 06-02 (3 min), 06-03 (3 min)
+- Trend: Pure library/route/integration plans execute fast (2-3 min)
 
 *Updated after each plan completion*
 
@@ -103,6 +103,9 @@ Recent decisions affecting current work:
 - [06-02]: warm-flights uses batch processing (10 pairs/group, 1s delay) with per-batch quota checks
 - [06-02]: Search date targets Oct 1 off-season, 6 weeks out during Sep-Nov hunting season
 - [06-02]: Cron auth uses simplified CRON_SECRET-only check (Vercel-triggered only, no admin fallback needed)
+- [06-03]: Self-contained fetch in each component (no shared hook) -- keeps PortfolioOverview and HeroSummary independent
+- [06-03]: useState(0.035) default ensures identical pre-fetch rendering to old hardcoded behavior (zero-flash pattern)
+- [06-03]: Subtle BLS source indicator in text only when inflationSource is verified (not a badge, just context)
 
 ### Pending Todos
 
@@ -116,5 +119,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 06-02-PLAN.md (API route handlers + crons), proceeding to 06-03
+Stopped at: Completed 06-03-PLAN.md (UI consumer integration) -- Phase 06 complete, ready for Phase 07
 Resume file: None
