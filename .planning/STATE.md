@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 5 of 10 (Advisor Voice)
-Plan: 2 of 4 in current phase
-Status: Plan 05-02 complete
-Last activity: 2026-02-22 -- Completed 05-02 (Advisor insight generator engine)
+Plan: 4 of 4 in current phase
+Status: Plan 05-04 complete (phase complete)
+Last activity: 2026-02-22 -- Completed 05-04 (Calendar advisor notes)
 
-Progress: [█████░░░░░] 27%
+Progress: [██████░░░░] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
+- Total plans completed: 12
 - Average duration: 9 min
-- Total execution time: 1.65 hours
+- Total execution time: 1.70 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [█████░░░░░] 27%
 | 02-shareable-plan-links | 2 | 47 min | 24 min |
 | 03-season-calendar | 2 | 12 min | 6 min |
 | 04-calendar-subscription | 2 | 30 min | 15 min |
-| 05-advisor-voice | 2 | 5 min | 3 min |
+| 05-advisor-voice | 3 | 8 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (8 min), 04-01 (12 min), 04-02 (18 min), 05-01 (2 min), 05-02 (3 min)
-- Trend: 05-01 and 05-02 are pure engine work -- fast execution, no UI or API complexity
+- Last 5 plans: 04-01 (12 min), 04-02 (18 min), 05-01 (2 min), 05-02 (3 min), 05-04 (3 min)
+- Trend: 05-series plans are pure engine + light UI work -- fast execution
 
 *Updated after each plan completion*
 
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [05-02]: inferSpeciesFromUnit parses unit codes in STATE-SPECIES-UNIT format with fallback to state's first available species
 - [05-02]: Concentration risk insight fires at >70% threshold, matching StrategyMetrics.portfolioConcentrationPercentage
 - [05-02]: Temporal insights suppressed entirely for non-returning users (daysSinceLastVisit < 1)
+- [05-04]: Post-build enrichment pattern: advisor notes generated AFTER buildCalendarGrid, not inside it (keeps calendar-grid.ts pure)
+- [05-04]: Native title attribute for tooltips instead of custom tooltip component (simplest approach, no new dependency)
+- [05-04]: Advisor note prepended to ICS DESCRIPTION (not appended) so it appears first in calendar app event details
 
 ### Pending Todos
 
@@ -101,5 +104,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 05-02-PLAN.md (Advisor insight generator engine)
+Stopped at: Completed 05-04-PLAN.md (Calendar advisor notes -- Phase 5 plan 4 of 4)
 Resume file: None
