@@ -14,8 +14,9 @@ export const config = {
      * - favicon.ico (favicon file)
      * - static assets (svg, png, jpg, etc.)
      * - /api/share (public share link creation)
+     * - /api/cal (public calendar subscription endpoints)
      * - /shared/ (public shared plan viewing)
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/share|shared/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/share|api/cal|shared/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

@@ -8,6 +8,7 @@ import { useWizardStore, useAppStore } from "@/lib/store";
 import { HeroSummary } from "./sections/HeroSummary";
 import { YearOneActionPlan } from "./sections/YearOneActionPlan";
 import { PlanExport } from "@/components/shared/PlanExport";
+import { SubscribeCalendar } from "./SubscribeCalendar";
 import { ShareButton } from "./ShareButton";
 import { Button } from "@/components/ui/button";
 import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows, Pencil } from "lucide-react";
@@ -137,6 +138,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
         </div>
         <div className="flex items-center gap-2">
           <PlanExport assessment={assessment} milestones={assessment.milestones} />
+          <SubscribeCalendar assessment={assessment} />
           <ShareButton assessment={assessment} />
           <Button onClick={handleConfirmPlan} className="gap-1.5">
             <Check className="w-4 h-4" /> Confirm &amp; Start Tracking
