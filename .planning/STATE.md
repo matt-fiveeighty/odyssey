@@ -5,34 +5,34 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 2: Shareable Plan Links
+**Current focus:** Phase 2 complete. Ready for Phase 3.
 
 ## Current Position
 
-Phase: 2 of 10 (Shareable Plan Links)
-Plan: 1 of 2 in current phase
-Status: Executing
-Last activity: 2026-02-22 -- Completed 02-01 (Share API + Read-Only Shell)
+Phase: 2 of 10 (Shareable Plan Links) -- COMPLETE
+Plan: 2 of 2 in current phase (all complete)
+Status: Phase Complete
+Last activity: 2026-02-22 -- Completed 02-02 (Shared Plan Page + ShareButton Integration)
 
-Progress: [██░░░░░░░░] 8%
+Progress: [██░░░░░░░░] 12%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 2 min
-- Total execution time: 0.17 hours
+- Total plans completed: 5
+- Average duration: 11 min
+- Total execution time: 0.9 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-data-foundation | 3 | 7 min | 2 min |
-| 02-shareable-plan-links | 1 | 3 min | 3 min |
+| 02-shareable-plan-links | 2 | 47 min | 24 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (2 min), 01-03 (3 min), 02-01 (3 min)
-- Trend: stable
+- Last 5 plans: 01-02 (2 min), 01-03 (3 min), 02-01 (3 min), 02-02 (44 min)
+- Trend: 02-02 longer due to human verification checkpoint
 
 *Updated after each plan completion*
 
@@ -58,6 +58,10 @@ Recent decisions affecting current work:
 - [02-01]: Forked ResultsShell into SharedResultsShell rather than adding readOnly prop (Zustand isolation)
 - [02-01]: Rendered all sections inline in SharedResultsShell (existing section components depend on Zustand)
 - [02-01]: Explicit 503 failure for share endpoint when Redis unavailable (vs graceful degradation for cache)
+- [02-02]: Store { assessment, createdAt } wrapper in Redis for expiration calculation from creation time
+- [02-02]: Friendly in-page expired message instead of notFound() for better share link UX
+- [02-02]: globalThis-attached Map for dev cache fallback (Turbopack workers don't share module-level state)
+- [02-02]: Exclude /api/share and /shared/ from auth middleware (public endpoints)
 
 ### Pending Todos
 
@@ -72,5 +76,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 02-01-PLAN.md (Share API + Read-Only Shell)
+Stopped at: Completed 02-02-PLAN.md (Shared Plan Page + ShareButton Integration) -- Phase 02 complete
 Resume file: None
