@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Season Calendar** - Month-by-month swimlane calendar showing all hunt activities within a single year
 - [x] **Phase 4: Calendar Subscription** - Isomorphic .ics builder and webcal:// subscription endpoint
 - [x] **Phase 5: Advisor Voice** - Opinionated interpretation layer across dashboard, calendar, and board state
-- [ ] **Phase 6: API Integrations** - Amadeus flight pricing and BLS inflation data with cache-first patterns
+- [x] **Phase 6: API Integrations** - Amadeus flight pricing and BLS inflation data with cache-first patterns (completed 2026-02-22)
 - [ ] **Phase 7: Scraper Enrichment & Data Freshness** - Enhanced scrapers (deadlines, fees, seasons, leftovers) plus freshness badges and provenance tooltips
 - [ ] **Phase 8: Savings & Budget Tracker** - Goal-based hunt fund savings with progress rings, projections, and advisor integration
 - [ ] **Phase 9: Diff View** - Structured "since your last visit" diff engine replacing the Welcome Back card
@@ -224,7 +224,7 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 3. Season Calendar | 2/2 | Complete | 2026-02-21 |
 | 4. Calendar Subscription | 2/2 | Complete | 2026-02-22 |
 | 5. Advisor Voice | 4/4 | Complete | 2026-02-22 |
-| 6. API Integrations | 0/3 | Not started | - |
+| 6. API Integrations | 0/3 | Complete    | 2026-02-22 |
 | 7. Scraper Enrichment & Data Freshness | 0/8 | Not started | - |
 | 8. Savings & Budget Tracker | 0/6 | Not started | - |
 | 9. Diff View | 0/5 | Not started | - |
