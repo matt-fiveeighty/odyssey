@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [05-02]: inferSpeciesFromUnit parses unit codes in STATE-SPECIES-UNIT format with fallback to state's first available species
 - [05-02]: Concentration risk insight fires at >70% threshold, matching StrategyMetrics.portfolioConcentrationPercentage
 - [05-02]: Temporal insights suppressed entirely for non-returning users (daysSinceLastVisit < 1)
+- [05-03]: Removed Check/X icons from dashboard imports -- only used in now-removed Welcome Back section
+- [05-03]: Added Compass icon for advisor section header (visually distinct from RefreshCw used by old Welcome Back)
+- [05-03]: Board state computed via computeBoardState in useMemo fed into generateAdvisorInsights pipeline
 - [05-04]: Post-build enrichment pattern: advisor notes generated AFTER buildCalendarGrid, not inside it (keeps calendar-grid.ts pure)
 - [05-04]: Native title attribute for tooltips instead of custom tooltip component (simplest approach, no new dependency)
 - [05-04]: Advisor note prepended to ICS DESCRIPTION (not appended) so it appears first in calendar app event details
@@ -104,5 +107,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 05-04-PLAN.md (Calendar advisor notes -- Phase 5 plan 4 of 4)
+Stopped at: Completed 05-03-PLAN.md (Advisor Cards + Dashboard Integration)
 Resume file: None
