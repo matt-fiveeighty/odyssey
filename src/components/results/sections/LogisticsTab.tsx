@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import type { StrategicAssessment, PointOnlyGuideEntry } from "@/lib/types";
+import type { VerifiedDatum } from "@/lib/engine/verified-datum";
 import { CollapsibleSection } from "../shared/CollapsibleSection";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
@@ -11,6 +13,12 @@ import { formatSpeciesName, formatDate } from "@/lib/utils";
 
 interface LogisticsTabProps {
   assessment: StrategicAssessment;
+}
+
+/** Fetched flight price with provenance */
+interface FlightPrice {
+  price: number;
+  isVerified: boolean; // true = Amadeus cached, false = static fallback
 }
 
 function PointOnlyRow({ entry, dimmed }: { entry: PointOnlyGuideEntry; dimmed?: boolean }) {
@@ -48,6 +56,57 @@ function PointOnlyRow({ entry, dimmed }: { entry: PointOnlyGuideEntry; dimmed?: 
 
 export function LogisticsTab({ assessment }: LogisticsTabProps) {
   const { travelLogistics, seasonCalendar, pointOnlyGuide, dreamHuntRecommendations } = assessment;
+
+  // Fetch real flight prices from /api/flights/quote (cache-first, Amadeus-backed)
+  const [flightPrices, setFlightPrices] = useState<Record<string, FlightPrice>>({});
+
+  useEffect(() => {
+    if (!travelLogistics) return;
+    const origin = travelLogistics.homeAirport;
+    if (!origin) return;
+
+    // Fetch prices for each unique destination
+    const destinations = travelLogistics.stateRoutes.map((r) => r.airport);
+    const unique = [...new Set(destinations)];
+
+    Promise.allSettled(
+      unique.map(async (dest) => {
+        const res = await fetch(`/api/flights/quote?origin=${origin}&destination=${dest}`);
+        if (!res.ok) return null;
+        const json = await res.json() as {
+          data: VerifiedDatum<number>;
+          meta: { source: string };
+        };
+        return {
+          dest,
+          price: json.data.value,
+          isVerified: json.data.confidence === "verified",
+        };
+      }),
+    ).then((results) => {
+      const prices: Record<string, FlightPrice> = {};
+      for (const result of results) {
+        if (result.status === "fulfilled" && result.value) {
+          const { dest, price, isVerified } = result.value;
+          prices[dest] = { price, isVerified };
+        }
+      }
+      if (Object.keys(prices).length > 0) {
+        setFlightPrices(prices);
+      }
+    });
+  }, [travelLogistics]);
+
+  /** Get the effective flight cost for a route — real Amadeus price or static fallback */
+  function getFlightCost(route: { airport: string; flightCost: number }) {
+    const real = flightPrices[route.airport];
+    return real ? real.price : route.flightCost;
+  }
+
+  /** Whether the flight cost is backed by real Amadeus data */
+  function isFlightVerified(route: { airport: string }) {
+    return flightPrices[route.airport]?.isVerified ?? false;
+  }
 
   return (
     <div className="space-y-4">
@@ -88,7 +147,10 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
 
                     {/* Flight cost + type */}
                     <div>
-                      <p className="text-xs font-bold text-primary">${route.flightCost}</p>
+                      <p className="text-xs font-bold text-primary">
+                        ${getFlightCost(route)}
+                        {isFlightVerified(route) && <span className="text-[8px] text-chart-2 ml-0.5">(Amadeus)</span>}
+                      </p>
                       <p className="text-[10px] text-muted-foreground">{route.direct ? "Direct" : "Connecting"}</p>
                     </div>
 
@@ -128,7 +190,10 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                         <p className="text-sm font-semibold">{state.name}</p>
                         <p className="text-[10px] text-muted-foreground">{route.airport}</p>
                       </div>
-                      <span className="text-xs font-bold text-primary ml-auto">${route.flightCost} RT</span>
+                      <span className="text-xs font-bold text-primary ml-auto">
+                        ${getFlightCost(route)} RT
+                        {isFlightVerified(route) && <span className="text-[8px] text-chart-2 ml-0.5">(Amadeus)</span>}
+                      </span>
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -162,11 +227,12 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                 {travelLogistics.stateRoutes.map((route) => {
                   const state = STATES_MAP[route.stateId];
                   const rentalEst = 500; // estimated rental per trip
-                  const totalForState = route.flightCost + rentalEst;
+                  const cost = getFlightCost(route);
+                  const totalForState = cost + rentalEst;
                   return (
                     <div key={route.stateId} className="grid grid-cols-[1fr_80px_80px_80px] gap-2 text-xs items-center">
                       <span className="text-muted-foreground">{state?.name ?? route.stateId}</span>
-                      <span className="text-right font-mono text-muted-foreground">${route.flightCost}</span>
+                      <span className="text-right font-mono text-muted-foreground">${cost}</span>
                       <span className="text-right font-mono text-muted-foreground">~$500</span>
                       <span className="text-right font-mono font-semibold">${totalForState.toLocaleString()}</span>
                     </div>
@@ -183,7 +249,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                 <div className="grid grid-cols-[1fr_80px_80px_80px] gap-2 text-sm items-center pt-1 border-t border-border/30">
                   <span className="font-semibold">Total</span>
                   <span className="text-right font-mono text-muted-foreground">
-                    ${travelLogistics.stateRoutes.reduce((s, r) => s + r.flightCost, 0).toLocaleString()}
+                    ${travelLogistics.stateRoutes.reduce((s, r) => s + getFlightCost(r), 0).toLocaleString()}
                   </span>
                   <span className="text-right font-mono text-muted-foreground">
                     ~${(travelLogistics.stateRoutes.length * 500).toLocaleString()}
