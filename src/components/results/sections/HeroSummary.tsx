@@ -1,13 +1,11 @@
 "use client";
 
-import { useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { StrategicAssessment } from "@/lib/types";
 import { useAppStore } from "@/lib/store";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
 import { getDataStatus } from "@/lib/engine/data-loader";
 import { Sparkles } from "lucide-react";
-
-const INFLATION_RATE = 0.035; // 3.5% annual fee inflation — same as PortfolioOverview
 
 interface HeroSummaryProps {
   assessment: StrategicAssessment;
@@ -18,6 +16,23 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
   const dataStatus = getDataStatus();
   const milestones = useAppStore((s) => s.milestones);
 
+  const [inflationRate, setInflationRate] = useState(0.035);
+  const [inflationSource, setInflationSource] = useState<"loading" | "verified" | "estimated">("loading");
+
+  useEffect(() => {
+    fetch("/api/inflation/cpi")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data?.value != null) {
+          setInflationRate(json.data.value);
+          setInflationSource(json.data.confidence === "verified" ? "verified" : "estimated");
+        } else {
+          setInflationSource("estimated");
+        }
+      })
+      .catch(() => setInflationSource("estimated"));
+  }, []);
+
   // Compute inflation-adjusted 10-year total using the same logic as PortfolioOverview
   const inflatedTenYearTotal = useMemo(() => {
     const projection = budgetBreakdown.tenYearProjection;
@@ -25,9 +40,9 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
     const baseYear = projection[0].year;
     return projection.reduce((sum, yr) => {
       const yearsOut = yr.year - baseYear;
-      return sum + Math.round(yr.cost * Math.pow(1 + INFLATION_RATE, yearsOut));
+      return sum + Math.round(yr.cost * Math.pow(1 + inflationRate, yearsOut));
     }, 0);
-  }, [budgetBreakdown.tenYearProjection, financialSummary.tenYearTotal]);
+  }, [inflationRate, budgetBreakdown.tenYearProjection, financialSummary.tenYearTotal]);
 
   const inflationDelta = inflatedTenYearTotal - financialSummary.tenYearTotal;
 
@@ -121,7 +136,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
       <p className="text-xs text-muted-foreground/70 mt-4 italic">{assessment.strategyOverview}</p>
       <p className="text-[9px] text-muted-foreground/50 mt-2">
         Costs in 2026 dollars. State fees typically rise 2-5% annually
-        {inflationDelta > 100 && <> — expect ~${inflationDelta.toLocaleString()} additional over 10 years at {(INFLATION_RATE * 100).toFixed(1)}% inflation</>}.
+        {inflationDelta > 100 && <> — expect ~${inflationDelta.toLocaleString()} additional over 10 years at {(inflationRate * 100).toFixed(1)}% inflation{inflationSource === "verified" ? " (BLS)" : ""}</>}.
       </p>
       {dataStatus.isUsingConstants && (
         <p className="text-[9px] text-muted-foreground/40 mt-1">

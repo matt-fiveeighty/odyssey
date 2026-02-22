@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import type { StrategicAssessment } from "@/lib/types";
 import { CollapsibleSection } from "../shared/CollapsibleSection";
 import { STATES_MAP } from "@/lib/constants/states";
@@ -9,8 +9,6 @@ import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
 import { DollarSign, TrendingUp, Lightbulb, PieChart, AlertTriangle } from "lucide-react";
 import { WhatIfModeler } from "./WhatIfModeler";
-
-const INFLATION_RATE = 0.035; // 3.5% annual fee inflation
 
 interface PortfolioOverviewProps {
   assessment: StrategicAssessment;
@@ -23,17 +21,33 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
   const userSpecies = useWizardStore((s) => s.species);
   const huntDaysPerYear = useWizardStore((s) => s.huntDaysPerYear);
   const [inflationOn, setInflationOn] = useState(false);
+  const [inflationRate, setInflationRate] = useState(0.035);
+  const [inflationSource, setInflationSource] = useState<"loading" | "verified" | "estimated">("loading");
+
+  useEffect(() => {
+    fetch("/api/inflation/cpi")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data?.value != null) {
+          setInflationRate(json.data.value);
+          setInflationSource(json.data.confidence === "verified" ? "verified" : "estimated");
+        } else {
+          setInflationSource("estimated");
+        }
+      })
+      .catch(() => setInflationSource("estimated"));
+  }, []);
 
   const inflatedProjection = useMemo(() => {
     if (!inflationOn) return null;
     const baseYear = budgetBreakdown.tenYearProjection[0]?.year ?? new Date().getFullYear();
     const items = budgetBreakdown.tenYearProjection.map((yr) => {
       const yearsOut = yr.year - baseYear;
-      const multiplier = Math.pow(1 + INFLATION_RATE, yearsOut);
+      const multiplier = Math.pow(1 + inflationRate, yearsOut);
       return { ...yr, cost: Math.round(yr.cost * multiplier) };
     });
     return { items, total: items.reduce((s, yr) => s + yr.cost, 0) };
-  }, [inflationOn, budgetBreakdown.tenYearProjection]);
+  }, [inflationOn, inflationRate, budgetBreakdown.tenYearProjection]);
 
   return (
     <div className="space-y-4">
@@ -78,7 +92,7 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           {/* Inflation toggle */}
           <div className="flex items-center justify-between mb-1">
             <span className="text-[10px] text-muted-foreground">
-              {inflationOn ? `Inflation-adjusted (${(INFLATION_RATE * 100).toFixed(1)}%/yr)` : "Constant 2026 dollars"}
+              {inflationOn ? `Inflation-adjusted (${(inflationRate * 100).toFixed(1)}%/yr${inflationSource === "verified" ? " BLS" : ""})` : "Constant 2026 dollars"}
             </span>
             <button
               onClick={() => setInflationOn(!inflationOn)}
@@ -118,12 +132,12 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           </div>
           {inflationOn && (
             <p className="text-[10px] text-chart-4/80 mt-1 leading-relaxed">
-              +${((inflatedProjection?.total ?? 0) - assessment.financialSummary.tenYearTotal).toLocaleString()} over constant-dollar projection ({(INFLATION_RATE * 100).toFixed(1)}% annual fee inflation applied).
+              +${((inflatedProjection?.total ?? 0) - assessment.financialSummary.tenYearTotal).toLocaleString()} over constant-dollar projection ({(inflationRate * 100).toFixed(1)}% annual fee inflation applied).
             </p>
           )}
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
             {inflationOn
-              ? "Projections include estimated 3.5% annual fee inflation. Actual state fee adjustments vary by year and may differ."
+              ? `Projections include ${(inflationRate * 100).toFixed(1)}% annual fee inflation${inflationSource === "verified" ? " (BLS CPI data)" : ""}. Actual state fee adjustments vary by year and may differ.`
               : "All costs shown in 2026 dollars. Actual fees may increase over time due to state fee adjustments and inflation. Expect 2-5% annual increases on license and application fees."}
           </p>
         </div>
