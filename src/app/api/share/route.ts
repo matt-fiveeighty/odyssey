@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cacheSet, getRedis, CACHE_TTLS } from "@/lib/redis";
+import { cacheSet, isCacheAvailable, CACHE_TTLS } from "@/lib/redis";
 import { limiters, checkRateLimit } from "@/lib/rate-limit";
 import type { StrategicAssessment } from "@/lib/types";
 
@@ -28,9 +28,8 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 2. Redis availability check -- explicit failure per SHARE-02
-  const redis = getRedis();
-  if (!redis) {
+  // 2. Cache availability check -- explicit failure per SHARE-02
+  if (!isCacheAvailable()) {
     return NextResponse.json(
       { error: "Share service temporarily unavailable" },
       { status: 503 }

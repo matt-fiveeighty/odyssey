@@ -13,7 +13,9 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - static assets (svg, png, jpg, etc.)
+     * - /api/share (public share link creation)
+     * - /shared/ (public shared plan viewing)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/share|shared/|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
