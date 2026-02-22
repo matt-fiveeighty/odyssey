@@ -141,17 +141,14 @@ Plans:
   3. Structural fingerprinting detects when a state website has changed format and flags the scrape as "structure changed" rather than silently misparsing
   4. Schema validation at ingest rejects implausible values (e.g., $0 tag costs, dates in 1970) and never overwrites good data with failed scrape results
   5. FreshnessBadge component displays verified/estimated/stale confidence on any displayed number, with a provenance tooltip showing source URL and scrape date on hover
-**Plans**: 8 plans
+**Plans**: 5 plans
 
 Plans:
-- [ ] 07-01: BaseScraper enhancement with cheerio HTML parsing (fetchAndParse)
-- [ ] 07-02: BaseScraper enhancement with pdf-parse PDF extraction (fetchPdf)
-- [ ] 07-03: Oregon CSV + Utah REST proof-of-concept scrapers (deadlines, fees, seasons)
-- [ ] 07-04: scrapeDeadlines() and scrapeFees() implementation for remaining active states
-- [ ] 07-05: scrapeSeasons() and scrapeLeftoverTags() implementation
-- [ ] 07-06: Structural fingerprinting and schema validation at ingest
-- [ ] 07-07: FreshnessBadge component and provenance tooltip
-- [ ] 07-08: Dashboard "Data last updated" timestamp and stale data visual flagging
+- [ ] 07-01-PLAN.md -- BaseScraper enhancement with cheerio HTML parsing + pdf-parse PDF extraction + plausibility schemas
+- [ ] 07-02-PLAN.md -- Oregon + Utah proof-of-concept scrapers (cheerio/pdf-parse upgrade) + structural fingerprinting + data-loss guard
+- [ ] 07-03-PLAN.md -- Remaining 9 active-state scrapers: deadlines, fees, seasons, leftover tags
+- [ ] 07-04-PLAN.md -- FreshnessBadge component + provenance tooltip + data-loader fee/season merging
+- [ ] 07-05-PLAN.md -- UI wiring (FreshnessBadge in results) + dashboard timestamps + BaseScraper data-loss integration
 
 ### Phase 8: Savings & Budget Tracker
 **Goal**: Users can set up goal-based savings for each hunt in their plan and see whether they are on track, behind, or ahead -- with the advisor telling them exactly what to adjust
