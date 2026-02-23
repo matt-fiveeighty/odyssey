@@ -30,17 +30,15 @@ const plans = [
     icon: Compass,
     featured: false,
     features: [
-      { name: "Species and state explorer", included: true },
-      { name: "Single strategy engine run", included: true },
-      { name: "Summary roadmap (3 year preview)", included: true },
-      { name: "Basic budget estimate", included: true },
-      { name: "Deadline calendar (view only)", included: true },
-      { name: "Unit recommendations", included: false },
-      { name: "Point portfolio tracking", included: false },
-      { name: "Data export", included: false },
+      { name: "Browse all 18 species and 15 states", included: true },
+      { name: "One full strategy engine run", included: true },
+      { name: "3-year roadmap with cost estimates", included: true },
+      { name: "See what you will spend in year one", included: true },
+      { name: "View application deadlines by state", included: true },
+      { name: "Unit-level recommendations", included: false },
+      { name: "Track your points across states", included: false },
+      { name: "Export your plan", included: false },
     ],
-    cta: "Get Started Free",
-    href: "/auth/sign-up",
     kpis: [
       { label: "Strategy Runs", value: "1" },
       { label: "Roadmap Horizon", value: "3 yr" },
@@ -50,25 +48,24 @@ const plans = [
     name: "Scout",
     monthly: "$9.99",
     annual: "$79.99",
+    monthlyEquiv: "$6.67",
     annualSavings: "Save 33%",
     period: "/year",
     badge: "Coming Soon",
     description:
-      "Unlock the full strategy engine with unlimited runs, complete roadmaps, and detailed cost breakdowns.",
+      "Run unlimited strategies, get full 25-year roadmaps, and never miss a deadline with email reminders.",
     icon: Binoculars,
     featured: false,
     features: [
       { name: "Everything in Basecamp", included: true },
       { name: "Unlimited strategy engine runs", included: true },
-      { name: "Full roadmap (10 to 25 years)", included: true },
-      { name: "Detailed budget projections", included: true },
-      { name: "Goal tracking and point portfolio", included: true },
-      { name: "Deadline email reminders", included: true },
-      { name: "Data export", included: true },
-      { name: "Advanced analytics", included: false },
+      { name: "Full 25-year roadmap with phased plan", included: true },
+      { name: "Year-by-year budget projections", included: true },
+      { name: "Track points and goals across every state", included: true },
+      { name: "Email reminders before deadlines", included: true },
+      { name: "Export your plan as PDF or CSV", included: true },
+      { name: "Advanced analytics dashboard", included: false },
     ],
-    cta: "Join Waitlist",
-    href: "/auth/sign-up",
     kpis: [
       { label: "Strategy Runs", value: "Unlimited" },
       { label: "Roadmap Horizon", value: "25 yr" },
@@ -78,24 +75,23 @@ const plans = [
     name: "Outfitter",
     monthly: "$14.99",
     annual: "$129.99",
-    annualSavings: "Save 28%",
+    monthlyEquiv: "$10.83",
+    annualSavings: "Save $50/yr vs. monthly",
     period: "/year",
     description:
-      "The complete platform. Advanced analytics, unit scoring, historical trends, collaboration, and priority support.",
+      "The full platform. Unit scoring, draw odds analysis, point creep trends, group planning, and priority support.",
     icon: Crown,
     featured: true,
     features: [
       { name: "Everything in Scout", included: true },
-      { name: "Unit level scoring and recommendations", included: true },
-      { name: "Draw odds deep dives", included: true },
-      { name: "Historical point creep data", included: true },
-      { name: "Advanced analytics dashboard", included: true },
-      { name: "Group application planning", included: true },
-      { name: "Data export (JSON/CSV)", included: true },
-      { name: "Priority support", included: true },
+      { name: "See which units match your profile best", included: true },
+      { name: "Draw odds breakdowns by unit and species", included: true },
+      { name: "See how point requirements change over time", included: true },
+      { name: "Full analytics: trends, projections, what-ifs", included: true },
+      { name: "Plan group applications with hunting partners", included: true },
+      { name: "Export everything as JSON or CSV", included: true },
+      { name: "Priority support from real hunters", included: true },
     ],
-    cta: "Sign Up Now",
-    href: "/auth/sign-up",
     kpis: [
       { label: "Strategy Runs", value: "Unlimited" },
       { label: "Roadmap Horizon", value: "25 yr" },
@@ -196,8 +192,13 @@ export default function PricingPage() {
                   )}
                 </div>
                 {"annualSavings" in plan && plan.annualSavings && (
-                  <p className="text-xs text-primary font-medium mb-4">
-                    {plan.annualSavings} vs. monthly
+                  <p className="text-xs text-primary font-medium">
+                    {plan.annualSavings}
+                  </p>
+                )}
+                {"monthlyEquiv" in plan && plan.monthlyEquiv && (
+                  <p className="text-[11px] text-muted-foreground mb-4">
+                    Just {plan.monthlyEquiv}/mo billed annually
                   </p>
                 )}
                 {!("annualSavings" in plan && plan.annualSavings) && (
@@ -228,7 +229,7 @@ export default function PricingPage() {
                   {plan.description}
                 </p>
 
-                <ul className="space-y-3 mb-8 flex-1">
+                <ul className="space-y-3 flex-1">
                   {plan.features.map((feature) => (
                     <li
                       key={feature.name}
@@ -257,18 +258,6 @@ export default function PricingPage() {
                     </li>
                   ))}
                 </ul>
-
-                <Link href={plan.href}>
-                  <Button
-                    className={`w-full gap-2 ${
-                      plan.featured ? "glow-pulse" : ""
-                    }`}
-                    variant={plan.featured ? "default" : "outline"}
-                  >
-                    {plan.cta}
-                    <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
               </div>
             ))}
           </div>
@@ -300,7 +289,7 @@ export default function PricingPage() {
           <div className="mt-16 text-center">
             <Link href="/auth/sign-up">
               <Button size="lg" className="gap-2 text-base px-8 glow-pulse">
-                Sign Up Now <ArrowRight className="w-4 h-4" />
+                Get Started Now <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
