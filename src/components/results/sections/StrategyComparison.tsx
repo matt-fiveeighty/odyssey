@@ -145,8 +145,8 @@ export function StrategyComparison({ assessment }: StrategyComparisonProps) {
     { label: "States", key: "stateCount" as const, suffix: "" },
     { label: "First Hunt", key: "firstHuntYear" as const, suffix: "" },
     { label: `${horizon}-Yr Hunts`, key: "totalHunts10yr" as const, suffix: "" },
-    { label: `${horizon}-Year Cost`, key: "tenYearCost" as const, suffix: "", format: (v: number) => `$${v.toLocaleString()}` },
-    { label: "Annual Avg", key: "annualAvg" as const, suffix: "/yr", format: (v: number) => `$${v.toLocaleString()}` },
+    { label: `${horizon}-Year Cost`, key: "tenYearCost" as const, suffix: "", format: (v: number) => `$${Math.round(v).toLocaleString()}` },
+    { label: "Annual Avg", key: "annualAvg" as const, suffix: "/yr", format: (v: number) => `$${Math.round(v).toLocaleString()}` },
     { label: "Risk Level", key: "riskLevel" as const, suffix: "" },
   ];
 

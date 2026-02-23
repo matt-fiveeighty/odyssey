@@ -55,9 +55,9 @@ export function getUrgencyLevel(
 export function urgencyColorClass(level: UrgencyLevel): string {
   switch (level) {
     case "red":
-      return "text-red-400 border-red-500/30 bg-red-500/10";
+      return "text-destructive border-destructive/30 bg-destructive/10";
     case "amber":
-      return "text-amber-400 border-amber-500/30 bg-amber-500/10";
+      return "text-warning border-warning/30 bg-warning/10";
     case "green":
       return "text-chart-2 border-chart-2/30 bg-chart-2/10";
     case "overdue":

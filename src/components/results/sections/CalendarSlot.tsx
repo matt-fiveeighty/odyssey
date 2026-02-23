@@ -51,7 +51,7 @@ interface CalendarSlotProps {
 export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
   const isScouting = !!slot.scoutingTarget;
   const urgencyClasses = isScouting
-    ? "border-violet-500/30 bg-violet-500/5"
+    ? "border-premium/30 bg-premium/5"
     : urgencyColorClass(slot.urgency);
   const Icon = ITEM_TYPE_ICONS[slot.itemType];
   const tagConfig = TAG_TYPE_CONFIG[slot.tagType];
@@ -86,7 +86,7 @@ export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
         {/* Bottom line: tag badge + scout badge + cost */}
         <div className="flex items-center gap-1">
           {isScouting && (
-            <span className="text-[7px] px-1 rounded uppercase font-medium leading-tight bg-violet-500/15 text-violet-400">
+            <span className="text-[7px] px-1 rounded uppercase font-medium leading-tight bg-premium/15 text-premium">
               SCOUT HUNT
             </span>
           )}
@@ -98,7 +98,7 @@ export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
             </span>
           )}
           <span className="text-[8px] text-muted-foreground font-mono truncate">
-            ${slot.estimatedCost.toLocaleString()}
+            ${Math.round(slot.estimatedCost).toLocaleString()}
           </span>
         </div>
       </div>

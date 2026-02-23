@@ -324,11 +324,11 @@ const ScoutingMoveCard = memo(function ScoutingMoveCard({ opp }: { opp: Scouting
   const targetState = STATES_MAP[opp.targetUnit.stateId];
 
   return (
-    <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+    <div className="rounded-xl border border-premium/20 bg-premium/5 p-4">
       {/* Header badge */}
       <div className="flex items-center gap-2 mb-2">
-        <Binoculars className="w-4 h-4 text-violet-400" />
-        <span className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+        <Binoculars className="w-4 h-4 text-premium" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-premium">
           Scouting Move
         </span>
         {opp.distanceMiles != null && (
@@ -353,7 +353,7 @@ const ScoutingMoveCard = memo(function ScoutingMoveCard({ opp }: { opp: Scouting
       </p>
 
       {/* Target unit reference */}
-      <div className="mt-2 flex items-center gap-1 text-xs text-violet-400/80">
+      <div className="mt-2 flex items-center gap-1 text-xs text-premium/80">
         <Target className="w-3 h-3" />
         <span>
           Scouting for {targetState?.abbreviation ?? opp.targetUnit.stateId} Unit {opp.targetUnit.unitCode} ({opp.targetYearsAway}yr build)
@@ -363,11 +363,11 @@ const ScoutingMoveCard = memo(function ScoutingMoveCard({ opp }: { opp: Scouting
       {/* Score pills */}
       <div className="flex flex-wrap gap-1 mt-2">
         {opp.terrainOverlap.length > 0 && (
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-premium/10 text-premium">
             {opp.terrainOverlap.join(" · ")}
           </span>
         )}
-        <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300">
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-premium/10 text-premium">
           Score: {opp.totalScore}/100
         </span>
       </div>
@@ -419,8 +419,8 @@ export function StatePortfolio({ assessment }: StatePortfolioProps) {
       {scoutingOpps.length > 0 && (
         <div className="mt-6 space-y-3">
           <div className="flex items-center gap-2">
-            <Binoculars className="w-4 h-4 text-violet-400" />
-            <h3 className="text-sm font-semibold text-violet-400 uppercase tracking-wider">
+            <Binoculars className="w-4 h-4 text-premium" />
+            <h3 className="text-sm font-semibold text-premium uppercase tracking-wider">
               Scouting Opportunities
             </h3>
           </div>

@@ -147,7 +147,7 @@ export function PlanManager() {
                       {savedPlans.length > 1 && (
                         <button
                           onClick={() => deletePlan(plan.id)}
-                          className="p-1 text-muted-foreground/50 hover:text-red-400 rounded transition-colors cursor-pointer"
+                          className="p-1 text-muted-foreground/50 hover:text-destructive rounded transition-colors cursor-pointer"
                           title="Delete plan"
                         >
                           <Trash2 className="w-3 h-3" />

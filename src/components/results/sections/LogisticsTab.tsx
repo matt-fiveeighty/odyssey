@@ -248,7 +248,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                       <span className="text-muted-foreground">{state?.name ?? route.stateId}</span>
                       <span className="text-right font-mono text-muted-foreground">${cost}</span>
                       <span className="text-right font-mono text-muted-foreground">~$500</span>
-                      <span className="text-right font-mono font-semibold">${totalForState.toLocaleString()}</span>
+                      <span className="text-right font-mono font-semibold">${Math.round(totalForState).toLocaleString()}</span>
                     </div>
                   );
                 })}
@@ -263,13 +263,13 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                 <div className="grid grid-cols-[1fr_80px_80px_80px] gap-2 text-sm items-center pt-1 border-t border-border/30">
                   <span className="font-semibold">Total</span>
                   <span className="text-right font-mono text-muted-foreground">
-                    ${travelLogistics.stateRoutes.reduce((s, r) => s + getFlightCost(r), 0).toLocaleString()}
+                    ${Math.round(travelLogistics.stateRoutes.reduce((s, r) => s + getFlightCost(r), 0)).toLocaleString()}
                   </span>
                   <span className="text-right font-mono text-muted-foreground">
-                    ~${(travelLogistics.stateRoutes.length * 500).toLocaleString()}
+                    ~${Math.round(travelLogistics.stateRoutes.length * 500).toLocaleString()}
                   </span>
                   <span className="text-right font-mono font-bold text-primary inline-flex items-center gap-0.5 justify-end">
-                    ${travelLogistics.totalTravelBudget.toLocaleString()}
+                    ${Math.round(travelLogistics.totalTravelBudget).toLocaleString()}
                     <FreshnessBadge datum={estimated(travelLogistics.totalTravelBudget, "Travel cost estimate")} showLabel={false} />
                   </span>
                 </div>
@@ -389,7 +389,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                 <span className="text-sm font-semibold">Your Plan Total</span>
                 <span />
                 <span className="text-right text-sm font-bold text-primary">
-                  ${inPlanGuide.reduce((s, e) => s + e.annualCost, 0).toLocaleString()}
+                  ${Math.round(inPlanGuide.reduce((s, e) => s + e.annualCost, 0)).toLocaleString()}
                 </span>
                 <span />
               </div>
@@ -398,7 +398,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
                   <span className="text-xs text-muted-foreground">+ All states if tracking</span>
                   <span />
                   <span className="text-right text-xs font-mono text-muted-foreground">
-                    ${pointOnlyGuide.reduce((s, e) => s + e.annualCost, 0).toLocaleString()}
+                    ${Math.round(pointOnlyGuide.reduce((s, e) => s + e.annualCost, 0)).toLocaleString()}
                   </span>
                   <span />
                 </div>
@@ -447,7 +447,7 @@ export function LogisticsTab({ assessment }: LogisticsTabProps) {
               <div className="flex justify-between px-1 pt-2 border-t border-border/30">
                 <span className="text-xs font-semibold">Annual Long-Term Investment</span>
                 <span className="text-xs font-bold text-chart-4">
-                  ${dreamHuntRecommendations.reduce((s, d) => s + (d.annualPointCost ?? 0), 0).toLocaleString()}/yr
+                  ${Math.round(dreamHuntRecommendations.reduce((s, d) => s + (d.annualPointCost ?? 0), 0)).toLocaleString()}/yr
                 </span>
               </div>
             )}

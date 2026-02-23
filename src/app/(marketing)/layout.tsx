@@ -70,7 +70,7 @@ export default function MarketingLayout({
               &copy; {new Date().getFullYear()} Odyssey Outdoors. All rights reserved.
             </p>
             <p className="text-[10px] text-muted-foreground/50">
-              Not affiliated with any state fish &amp; game agency.
+              Not affiliated with any state Fish &amp; Game agency.
             </p>
           </div>
         </div>

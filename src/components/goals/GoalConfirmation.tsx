@@ -89,7 +89,7 @@ export function GoalConfirmation({
                 <span className="text-[10px] text-muted-foreground font-medium">Total Investment</span>
               </div>
               <p className="text-sm font-bold">
-                ${totalCost.toLocaleString()}
+                ${Math.round(totalCost).toLocaleString()}
                 {yearsOfBuilding > 0 && (
                   <span className="text-[10px] text-muted-foreground font-normal ml-1">
                     over {yearsOfBuilding + huntMilestones} yr{yearsOfBuilding + huntMilestones !== 1 ? "s" : ""}

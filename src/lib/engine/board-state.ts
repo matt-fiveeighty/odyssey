@@ -179,14 +179,14 @@ export const BOARD_STATUS_LABELS: Record<BoardStatus, string> = {
   off_track: "Off Track",
 };
 
-/** Color tokens for board status badges */
+/** Color tokens for board status badges (uses semantic tokens from phase-colors) */
 export const BOARD_STATUS_COLORS: Record<BoardStatus, { bg: string; text: string; border: string }> = {
-  position_strong: { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30" },
-  on_track: { bg: "bg-green-500/15", text: "text-green-400", border: "border-green-500/30" },
-  overexposed: { bg: "bg-orange-500/15", text: "text-orange-400", border: "border-orange-500/30" },
-  plateau_detected: { bg: "bg-amber-500/15", text: "text-amber-400", border: "border-amber-500/30" },
-  conversion_approaching: { bg: "bg-blue-500/15", text: "text-blue-400", border: "border-blue-500/30" },
+  position_strong: { bg: "bg-chart-5/15", text: "text-chart-5", border: "border-chart-5/30" },
+  on_track: { bg: "bg-success/15", text: "text-success", border: "border-success/30" },
+  overexposed: { bg: "bg-chart-4/15", text: "text-chart-4", border: "border-chart-4/30" },
+  plateau_detected: { bg: "bg-warning/15", text: "text-warning", border: "border-warning/30" },
+  conversion_approaching: { bg: "bg-info/15", text: "text-info", border: "border-info/30" },
   conversion_ready: { bg: "bg-primary/15", text: "text-primary", border: "border-primary/30" },
-  conversion_executed: { bg: "bg-emerald-500/15", text: "text-emerald-400", border: "border-emerald-500/30" },
-  off_track: { bg: "bg-red-500/15", text: "text-red-400", border: "border-red-500/30" },
+  conversion_executed: { bg: "bg-chart-5/15", text: "text-chart-5", border: "border-chart-5/30" },
+  off_track: { bg: "bg-destructive/15", text: "text-destructive", border: "border-destructive/30" },
 };

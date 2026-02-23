@@ -15,11 +15,14 @@ export function BoardStateHeader({ boardState }: BoardStateHeaderProps) {
       <CardContent className="p-4 space-y-4">
         {/* Top row: status badge + primary focus */}
         <div className="flex items-center justify-between flex-wrap gap-3">
-          <StatusBadge status={boardState.status} />
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Crosshair className="w-3.5 h-3.5" />
-            <span>{boardState.primaryFocus}</span>
+          <div className="flex items-center gap-3">
+            <StatusBadge status={boardState.status} />
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>{boardState.primaryFocus}</span>
+            </div>
           </div>
+          <p className="text-[10px] text-muted-foreground/60">Portfolio overview for your active strategy</p>
         </div>
 
         {/* Stats row */}
@@ -27,21 +30,25 @@ export function BoardStateHeader({ boardState }: BoardStateHeaderProps) {
           <StatCell
             icon={<TrendingUp className="w-4 h-4 text-primary" />}
             label="Cadence"
+            sublabel="Build vs. burn rhythm"
             value={boardState.cadence}
           />
           <StatCell
-            icon={<DollarSign className="w-4 h-4 text-green-400" />}
+            icon={<DollarSign className="w-4 h-4 text-success" />}
             label="Capital"
-            value={`$${boardState.capitalDeployed.toLocaleString()} / $${boardState.capitalBudgeted.toLocaleString()}`}
+            sublabel="Deployed vs. budgeted"
+            value={`$${Math.round(boardState.capitalDeployed).toLocaleString()} / $${Math.round(boardState.capitalBudgeted).toLocaleString()}`}
           />
           <StatCell
-            icon={<MapPin className="w-4 h-4 text-blue-400" />}
-            label="States"
+            icon={<MapPin className="w-4 h-4 text-info" />}
+            label="Active States"
+            sublabel="States in your portfolio"
             value={String(boardState.statesActive)}
           />
           <StatCell
-            icon={<Crosshair className="w-4 h-4 text-amber-400" />}
-            label="Species"
+            icon={<Crosshair className="w-4 h-4 text-warning" />}
+            label="Active Species"
+            sublabel="Species you are pursuing"
             value={String(boardState.speciesActive)}
           />
         </div>
@@ -54,10 +61,10 @@ export function BoardStateHeader({ boardState }: BoardStateHeaderProps) {
                 key={i}
                 className={`text-[11px] px-2 py-0.5 rounded-full ${
                   signal.type === "critical"
-                    ? "bg-red-500/10 text-red-400"
+                    ? "bg-destructive/10 text-destructive"
                     : signal.type === "warning"
-                      ? "bg-amber-500/10 text-amber-400"
-                      : "bg-green-500/10 text-green-400"
+                      ? "bg-warning/10 text-warning"
+                      : "bg-success/10 text-success"
                 }`}
               >
                 {signal.message}
@@ -73,10 +80,12 @@ export function BoardStateHeader({ boardState }: BoardStateHeaderProps) {
 function StatCell({
   icon,
   label,
+  sublabel,
   value,
 }: {
   icon: React.ReactNode;
   label: string;
+  sublabel: string;
   value: string;
 }) {
   return (
@@ -84,7 +93,8 @@ function StatCell({
       {icon}
       <div>
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{label}</p>
-        <p className="text-xs font-medium">{value}</p>
+        <p className="text-sm font-semibold">{value}</p>
+        <p className="text-[9px] text-muted-foreground/50 mt-0.5">{sublabel}</p>
       </div>
     </div>
   );

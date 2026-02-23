@@ -11,7 +11,7 @@ const pageTitles: Record<string, string> = {
   "/roadmap": "Roadmap",
   "/portfolio": "Portfolio",
   "/rebalance": "Rebalance",
-  "/this-year": "This Year",
+  "/this-year": "Planner",
   "/deadlines": "Deadlines",
   "/points": "Points",
   "/budget": "Budget",

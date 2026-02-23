@@ -26,9 +26,9 @@ function getFreshnessLevel(lastScrapedAt?: string): FreshnessLevel {
 }
 
 const FRESHNESS_DOT: Record<FreshnessLevel, string> = {
-  fresh: "bg-emerald-500",
-  approaching: "bg-amber-500",
-  stale: "bg-red-500",
+  fresh: "bg-success",
+  approaching: "bg-warning",
+  stale: "bg-destructive",
   unverified: "bg-muted-foreground/40",
 };
 

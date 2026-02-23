@@ -12,19 +12,19 @@ interface DisciplineAlertsProps {
 
 const SEVERITY_STYLES = {
   critical: {
-    border: "border-l-red-500",
-    icon: <AlertTriangle className="w-4 h-4 text-red-400 shrink-0" />,
-    label: "text-red-400",
+    border: "border-l-destructive",
+    icon: <AlertTriangle className="w-4 h-4 text-destructive shrink-0" />,
+    label: "text-destructive",
   },
   warning: {
-    border: "border-l-amber-500",
-    icon: <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />,
-    label: "text-amber-400",
+    border: "border-l-warning",
+    icon: <AlertTriangle className="w-4 h-4 text-warning shrink-0" />,
+    label: "text-warning",
   },
   info: {
-    border: "border-l-blue-500",
-    icon: <Info className="w-4 h-4 text-blue-400 shrink-0" />,
-    label: "text-blue-400",
+    border: "border-l-info",
+    icon: <Info className="w-4 h-4 text-info shrink-0" />,
+    label: "text-info",
   },
 };
 

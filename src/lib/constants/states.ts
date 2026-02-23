@@ -74,11 +74,11 @@ export const STATES: State[] = [
       { tier: "Archery", dates: "Sep 2-30", notes: "Elk bugling season. Backcountry hunters thrive. Warm days, cold nights at 8,000+ ft.", bestFor: "backpack" },
       { tier: "Muzzleloader", dates: "Sep 12-22", notes: "Transition period. Elk still vocal but harder to pattern. Lower pressure than archery.", bestFor: "any" },
       { tier: "1st Rifle", dates: "Oct 14-18", notes: "5-day season. Heavy opening-morning pressure. Best for well-scouted locals and dedicated NR hunters.", bestFor: "any" },
-      { tier: "2nd Rifle", dates: "Oct 22-30", notes: "Sweet spot for truck-camp hunters. Less pressure, elk transitioning to lower elevations. 9 days to hunt.", bestFor: "truck_camp" },
+      { tier: "2nd Rifle", dates: "Oct 22-30", notes: "Sweet spot for truck campers. Less pressure, elk transitioning to lower elevations. 9 days to hunt.", bestFor: "truck_camp" },
       { tier: "3rd Rifle", dates: "Nov 5-13", notes: "Mule deer rut begins. Cold weather pushes elk to winter range. Prime for glassing sage-to-timber transitions.", bestFor: "truck_camp" },
       { tier: "4th Rifle", dates: "Nov 17-21", notes: "Late season. Deep snow possible. Migration corridors are key. Dress warm, glass far.", bestFor: "truck_camp" },
     ],
-    statePersonality: "Colorado is the workhorse of your portfolio. The preference point system is the most predictable in the West — you know exactly when you'll draw. The second-choice tactic is your secret weapon: build a point AND hunt every year. NW Colorado units (3, 4, 11, 211) are truck-friendly with high road density and strong public land access. OTC backup tags mean you can always go hunting even if you don't draw. At ~$151/year for elk points, it's one of the most capital-efficient investments in western hunting.",
+    statePersonality: "Colorado is the workhorse of your portfolio. The preference point system is the most predictable in the West — you know exactly when you'll draw. The second choice tactic is your secret weapon: build a point AND hunt every year. NW Colorado units (3, 4, 11, 211) are great for truck hunters with high road density and strong public land access. OTC backup tags mean you can always go hunting even if you don't draw. At ~$151/year for elk points, it's one of the most efficient investments in western hunting.",
   },
   {
     id: "WY",
@@ -153,7 +153,7 @@ export const STATES: State[] = [
       { tier: "General Rifle", dates: "Oct 1-31", notes: "Month-long season in most areas. Mix of pressure levels depending on area access.", bestFor: "any" },
       { tier: "Late Season", dates: "Nov 1-15", notes: "Cold weather hunts. Migration corridors key. Desert elk units peak in November.", bestFor: "truck_camp" },
     ],
-    statePersonality: "Wyoming is your quality play. The 75/25 hybrid system rewards patience with a clear preference path, but still gives you a random-pool shot every year. Desert elk hunts (Area 100) are legendary — 80-90% success on mature bulls in sagebrush country, perfect for truck-camp glassers. The Bighorns offer classic timber elk with no grizzly pressure. Mule deer in the Wyoming Range are world-class during the late rut. WY requires longer drives and more logistical planning, but the payoff in animal quality per dollar is hard to beat.",
+    statePersonality: "Wyoming is your quality play. The 75/25 hybrid system rewards patience with a clear preference path, but still gives you a random pool shot every year. Desert elk hunts (Area 100) are legendary — 80-90% success on mature bulls in sagebrush country, perfect for glassing from a truck camp. The Bighorns offer classic timber elk with no grizzly pressure. Mule deer in the Wyoming Range are exceptional during the late rut. WY requires longer drives and more logistical planning, but the payoff in animal quality per dollar is hard to beat.",
   },
   {
     id: "MT",
@@ -299,7 +299,7 @@ export const STATES: State[] = [
       { tier: "Early Rifle", dates: "Sep 10-25", notes: "Warm weather, elk still in summer patterns. Higher elevations.", bestFor: "backpack" },
       { tier: "Late Rifle", dates: "Oct 10 - Nov 15", notes: "Cooler temps. Mule deer rut. Animals moving to winter range. Prime glassing conditions.", bestFor: "truck_camp" },
     ],
-    statePersonality: "Nevada is your long-term trophy investment. The bonus-squared system means your odds improve exponentially — 5 points gives you 36x the chances of a first-time applicant. Nevada produces some of the largest mule deer and elk in the West, but tags are extremely limited. This is a patience play: invest $157/year (license + app fee) and let the math compound. When you finally draw, expect a hunt of a lifetime with near-trophy-class animals. NV is remote, harsh, and wild — exactly what makes it special.",
+    statePersonality: "Nevada is your trophy investment, built over years. The bonus squared system means your odds improve exponentially — 5 points gives you 36x the chances of a new applicant. Nevada produces some of the largest mule deer and elk in the West, but tags are extremely limited. This is a patience play: invest $157/year (license + app fee) and let the math compound. When you finally draw, expect the hunt of a lifetime with animals approaching trophy class. NV is remote, harsh, and wild — exactly what makes it special.",
   },
   {
     id: "AZ",
@@ -369,7 +369,7 @@ export const STATES: State[] = [
       { tier: "Late Rifle", dates: "Nov 14-27", notes: "Rut season for elk. Cold mornings at elevation. Trophy bulls active.", bestFor: "truck_camp" },
       { tier: "Muzzleloader", dates: "Oct 3-16", notes: "Transition season. Good for patient hunters. Lower pressure.", bestFor: "any" },
     ],
-    statePersonality: "Arizona is the sleeper trophy state. AZ bulls average larger body and antler size than nearly any other western state, and the limited tag allocation means low hunting pressure. The linear bonus point system is slower to compound than Nevada's squared system, but the hunt quality when you draw is exceptional. Kaibab (Unit 1) is legendary for both elk and mule deer. The Mogollon Rim offers accessible hunting with stunning scenery. AZ is worth the long-term point investment for the hunter who wants a genuine trophy experience.",
+    statePersonality: "Arizona is the sleeper trophy state. AZ bulls average larger body and antler size than nearly any other western state, and the limited tag allocation means low hunting pressure. The linear bonus point system is slower to compound than Nevada's squared system, but the hunt quality when you draw is exceptional. Kaibab (Unit 1) is legendary for both elk and mule deer. The Mogollon Rim offers accessible hunting with stunning scenery. AZ is worth investing points over years if you want a genuine trophy experience.",
   },
   {
     id: "UT",
@@ -441,7 +441,7 @@ export const STATES: State[] = [
       { tier: "Any Weapon (General)", dates: "Oct 7-15", notes: "General season any-bull. High pressure on public land. Get deep or hunt smart.", bestFor: "any" },
       { tier: "Limited Entry Rifle", dates: "Oct 7-20", notes: "Trophy units. Low tag numbers = low pressure. Premium experience.", bestFor: "any" },
     ],
-    statePersonality: "Utah is a dual-track state. General season elk is accessible but competitive — high pressure on public land means you need to hike deeper than others or scout better. The real value is in limited-entry units where preference and bonus points create a clear path to trophy-quality hunts. The early archery opener (mid-August) is unique and gives you a head start on the season. SLC airport makes logistics easy, and the state's diverse terrain — from Wasatch alpine to southern desert canyons — offers something for every hunting style. At $165/year (license + app fee), UT is a solid addition to any portfolio.",
+    statePersonality: "Utah runs two separate systems. General season elk is accessible but competitive — high pressure on public land means you need to hike deeper than others or scout better. The real value is in limited entry units where preference and bonus points create a clear path to trophy hunts. The early archery opener (mid August) is unique and gives you a head start on the season. SLC airport makes logistics easy, and the state's diverse terrain — from Wasatch alpine to southern desert canyons — offers something for every hunting style. At $165/year (license + app fee), UT is a solid addition to any portfolio.",
   },
   {
     id: "NM",
@@ -481,8 +481,8 @@ export const STATES: State[] = [
     applicationApproachDescription: "Apply per unit. Pure random lottery — no points, everyone has equal odds. Apply every year for a chance.",
     applicationTips: [
       "No points system — pure lottery. Apply every single year, it costs almost nothing.",
-      "NM is the great equalizer. A first-time applicant has the same odds as a 10-year veteran.",
-      "Some of the best elk hunting in the West. Quality units like 34 (Valles Caldera) are world-class.",
+      "NM is the great equalizer. A brand new applicant has the same odds as a 10 year veteran.",
+      "Some of the best elk hunting in the West. Quality units like 34 (Valles Caldera) are exceptional.",
       "Just $13/species to apply. NR game-hunting license ($65) and HMAV ($4) required if drawn.",
     ],
     availableSpecies: ["elk", "mule_deer", "coues_deer", "black_bear", "pronghorn", "bighorn_sheep", "mountain_lion"],
@@ -505,10 +505,10 @@ export const STATES: State[] = [
       { tier: "Archery", dates: "Sep 1-24", notes: "Bugling season in high country. Pine/aspen forests. Cool mornings.", bestFor: "backpack" },
       { tier: "Muzzleloader", dates: "Oct 1-9", notes: "Transition season. Elk less vocal but still patternable.", bestFor: "any" },
       { tier: "1st Rifle", dates: "Oct 15-19", notes: "5-day season. High success in quality units.", bestFor: "any" },
-      { tier: "2nd Rifle", dates: "Nov 1-5", notes: "Elk moving to lower elevations. Good for truck-camp glassing.", bestFor: "truck_camp" },
+      { tier: "2nd Rifle", dates: "Nov 1-5", notes: "Elk moving to lower elevations. Good for glassing from truck camp.", bestFor: "truck_camp" },
       { tier: "3rd Rifle (Youth/Mobility)", dates: "Nov 22-26", notes: "Late season. Limited entry. Great for Thanksgiving trip hunts.", bestFor: "truck_camp" },
     ],
-    statePersonality: "New Mexico is your wild card lottery ticket. No points, no waiting — just $13 and pure luck. Apply every single year because it costs almost nothing and the quality is world-class. Units like 34 (Valles Caldera) and 6 (Sangre de Cristos) produce bulls rivaling anywhere in the West. NM also has some of the earliest draw results, so if you draw here, you can adjust your other state plans accordingly. The terrain ranges from high desert to alpine meadows, and the Southwestern hunting culture is unique. NM is the ultimate bonus opportunity in any portfolio.",
+    statePersonality: "New Mexico is your wild card lottery ticket. No points, no waiting — just $13 and pure luck. Apply every single year because it costs almost nothing and the quality is outstanding. Units like 34 (Valles Caldera) and 6 (Sangre de Cristos) produce bulls rivaling anywhere in the West. NM also has some of the earliest draw results, so if you draw here, you can adjust your other state plans accordingly. The terrain ranges from high desert to alpine meadows, and the Southwestern hunting culture is unique. NM is the ultimate bonus opportunity in any portfolio.",
   },
   {
     id: "OR",
@@ -816,7 +816,7 @@ export const STATES: State[] = [
     applicationApproach: "per_unit",
     applicationApproachDescription: "Apply per unit. True preference system — highest point holders draw first. Limited NR elk tags make this a long-term play.",
     applicationTips: [
-      "Nebraska elk tags are extremely limited for NR — often single-digit quotas. It's a long-term point build.",
+      "Nebraska elk tags are extremely limited for NR — often single digit quotas. Plan on building points for years.",
       "Mule deer in the Pine Ridge and Wildcat Hills are excellent. Draws with 1-3 preference points.",
       "Pronghorn is relatively easy to draw and offers great hunting in the Sandhills.",
       "No qualifying license needed to buy preference points.",
@@ -883,7 +883,7 @@ export const STATES: State[] = [
     applicationApproach: "per_unit",
     applicationApproachDescription: "Apply per unit. True preference point system with second draw random. Build points for premium Black Hills units.",
     applicationTips: [
-      "Black Hills elk is the crown jewel — extremely limited NR tags but world-class quality.",
+      "Black Hills elk is the crown jewel — extremely limited NR tags but exceptional quality.",
       "Prairie pronghorn is easy to draw and offers great DIY spot-and-stalk hunting.",
       "Mule deer in the badlands are an underrated trophy opportunity.",
       "SD also offers mountain goat and bighorn sheep permits — rare but attainable with patience.",

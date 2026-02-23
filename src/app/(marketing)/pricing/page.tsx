@@ -10,12 +10,13 @@ import {
   Compass,
   Binoculars,
   Crown,
+  TrendingUp,
 } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Pricing | Odyssey Outdoors",
   description:
-    "Simple, transparent pricing for western big game hunt planning. Start free with the full strategy engine.",
+    "Simple, transparent pricing for western big game hunt planning. Start free, upgrade when you are ready.",
 };
 
 const plans = [
@@ -25,21 +26,25 @@ const plans = [
     annual: "Free",
     period: "forever",
     description:
-      "The full strategy engine. All 11 states, unlimited runs, personalized multi-year roadmaps (10–25 years).",
+      "Get started with your first strategy. Explore species, see how the engine works, and plan your next move.",
     icon: Compass,
-    featured: true,
+    featured: false,
     features: [
-      { name: "Species & state explorer", included: true },
-      { name: "All 11 states scored & ranked", included: true },
-      { name: "Unlimited strategy engine runs", included: true },
-      { name: "Full multi-year roadmap (10–25 years)", included: true },
-      { name: "Budget projections & cost breakdowns", included: true },
-      { name: "Goal tracking & point portfolio", included: true },
-      { name: "Deadline calendar", included: true },
-      { name: "Data export", included: true },
+      { name: "Species and state explorer", included: true },
+      { name: "Single strategy engine run", included: true },
+      { name: "Summary roadmap (3 year preview)", included: true },
+      { name: "Basic budget estimate", included: true },
+      { name: "Deadline calendar (view only)", included: true },
+      { name: "Unit recommendations", included: false },
+      { name: "Point portfolio tracking", included: false },
+      { name: "Data export", included: false },
     ],
     cta: "Get Started Free",
     href: "/auth/sign-up",
+    kpis: [
+      { label: "Strategy Runs", value: "1" },
+      { label: "Roadmap Horizon", value: "3 yr" },
+    ],
   },
   {
     name: "Scout",
@@ -49,21 +54,25 @@ const plans = [
     period: "/year",
     badge: "Coming Soon",
     description:
-      "Enhanced analytics, unit-level recommendations, and deadline alerts. Launching soon.",
+      "Unlock the full strategy engine with unlimited runs, complete roadmaps, and detailed cost breakdowns.",
     icon: Binoculars,
     featured: false,
     features: [
       { name: "Everything in Basecamp", included: true },
-      { name: "Unit-level scoring & recommendations", included: true },
+      { name: "Unlimited strategy engine runs", included: true },
+      { name: "Full roadmap (10 to 25 years)", included: true },
+      { name: "Detailed budget projections", included: true },
+      { name: "Goal tracking and point portfolio", included: true },
       { name: "Deadline email reminders", included: true },
-      { name: "Draw odds deep dives", included: true },
-      { name: "Historical point creep data", included: true },
-      { name: "Auto-fill applications helper", included: true },
-      { name: "Priority support", included: false },
+      { name: "Data export", included: true },
       { name: "Advanced analytics", included: false },
     ],
     cta: "Join Waitlist",
     href: "/auth/sign-up",
+    kpis: [
+      { label: "Strategy Runs", value: "Unlimited" },
+      { label: "Roadmap Horizon", value: "25 yr" },
+    ],
   },
   {
     name: "Outfitter",
@@ -71,22 +80,27 @@ const plans = [
     annual: "$129.99",
     annualSavings: "Save 28%",
     period: "/year",
-    badge: "Coming Soon",
     description:
-      "For the serious multi-state hunter. Advanced analytics, historical trends, and collaboration tools.",
+      "The complete platform. Advanced analytics, unit scoring, historical trends, collaboration, and priority support.",
     icon: Crown,
-    featured: false,
+    featured: true,
     features: [
       { name: "Everything in Scout", included: true },
-      { name: "Historical draw trends", included: true },
-      { name: "Multi-year comparison", included: true },
+      { name: "Unit level scoring and recommendations", included: true },
+      { name: "Draw odds deep dives", included: true },
+      { name: "Historical point creep data", included: true },
       { name: "Advanced analytics dashboard", included: true },
       { name: "Group application planning", included: true },
       { name: "Data export (JSON/CSV)", included: true },
       { name: "Priority support", included: true },
     ],
-    cta: "Join Waitlist",
+    cta: "Sign Up Now",
     href: "/auth/sign-up",
+    kpis: [
+      { label: "Strategy Runs", value: "Unlimited" },
+      { label: "Roadmap Horizon", value: "25 yr" },
+      { label: "Analytics", value: "Full" },
+    ],
   },
 ];
 
@@ -122,8 +136,8 @@ export default function PricingPage() {
             <span className="text-primary">Hunt Better</span>
           </h1>
           <p className="mt-5 text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed">
-            Start free with a snapshot. Upgrade for the full strategy engine,
-            draw odds, and multi-year planning.
+            Start free and explore. Upgrade when you are ready for the full
+            strategy engine, deep analytics, and collaboration tools.
           </p>
         </div>
       </section>
@@ -144,11 +158,11 @@ export default function PricingPage() {
                 {plan.featured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider">
-                      Full Access
+                      Most Popular
                     </span>
                   </div>
                 )}
-                {!plan.featured && "badge" in plan && plan.badge && (
+                {"badge" in plan && plan.badge && !plan.featured && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <span className="px-3 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] font-bold uppercase tracking-wider border border-border">
                       {plan.badge}
@@ -181,12 +195,34 @@ export default function PricingPage() {
                     </span>
                   )}
                 </div>
-                {plan.annualSavings && (
+                {"annualSavings" in plan && plan.annualSavings && (
                   <p className="text-xs text-primary font-medium mb-4">
                     {plan.annualSavings} vs. monthly
                   </p>
                 )}
-                {!plan.annualSavings && <div className="mb-4" />}
+                {!("annualSavings" in plan && plan.annualSavings) && (
+                  <div className="mb-4" />
+                )}
+
+                {/* KPI badges */}
+                {"kpis" in plan && plan.kpis && (
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    {plan.kpis.map((kpi: { label: string; value: string }) => (
+                      <div
+                        key={kpi.label}
+                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wider ${
+                          plan.featured
+                            ? "bg-primary/10 text-primary border border-primary/20"
+                            : "bg-secondary text-muted-foreground border border-border"
+                        }`}
+                      >
+                        <TrendingUp className="w-3 h-3" />
+                        <span>{kpi.label}:</span>
+                        <span className="font-bold">{kpi.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 <p className="text-sm text-muted-foreground leading-relaxed mb-6">
                   {plan.description}
@@ -249,28 +285,39 @@ export default function PricingPage() {
             <div>
               <p className="text-sm font-semibold mb-1">Your data is yours</p>
               <p className="text-xs text-muted-foreground">
-                Export anytime. Delete anytime. 30-day deletion guarantee.
+                Export anytime. Delete anytime. 30 day deletion guarantee.
               </p>
             </div>
             <div>
               <p className="text-sm font-semibold mb-1">Cancel anytime</p>
               <p className="text-xs text-muted-foreground">
-                No contracts. No hidden fees. One-click cancel in settings.
+                No contracts. No hidden fees. One click cancel in settings.
               </p>
             </div>
+          </div>
+
+          {/* CTA */}
+          <div className="mt-16 text-center">
+            <Link href="/auth/sign-up">
+              <Button size="lg" className="gap-2 text-base px-8 glow-pulse">
+                Sign Up Now <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <p className="mt-3 text-sm text-muted-foreground">
+              Free forever. No credit card required.
+            </p>
           </div>
 
           {/* FAQ */}
           <div className="mt-16 max-w-2xl mx-auto text-center">
             <h3 className="text-lg font-bold mb-3">
-              Why is Odyssey free?
+              Why is Basecamp free?
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Every hunter deserves a real strategy &mdash; not a paywall. The full
-              engine, all 11 states, unlimited runs, and your complete multi-year
-              roadmap are free forever. When we launch Scout and Outfitter,
-              they&apos;ll add unit-level analytics, deadline alerts, and
-              advanced tools for hunters who want to go deeper.
+              Every hunter deserves a real strategy, not a paywall. Basecamp
+              gives you a taste of what Odyssey can do. When you are ready to
+              commit to the full engine with unlimited runs, deep analytics,
+              and collaboration, Scout and Outfitter are there for you.
             </p>
           </div>
         </div>

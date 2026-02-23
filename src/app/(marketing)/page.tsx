@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { GuestEntryButton } from "@/components/auth/GuestEntryButton";
 import { TestimonialCarousel } from "@/components/marketing/TestimonialCarousel";
-import { OutcomeComparison } from "@/components/marketing/OutcomeComparison";
+import { OutcomeSlider } from "@/components/marketing/OutcomeSlider";
 import { ParallaxImage } from "@/components/marketing/ParallaxImage";
 import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import { StateOutline } from "@/components/shared/StateOutline";
@@ -31,13 +31,13 @@ const problemBullets = [
   "Preference vs bonus vs hybrid.",
   "Rising fees and point creep.",
   "Deadlines scattered across agency sites.",
-  "No long-term visibility.",
+  "No visibility into the long game.",
 ];
 
 const isItems = [
-  "Long-term tag strategy",
-  "Multi-state planning",
-  "Budget-aware forecasting",
+  "A tag strategy that spans years, not seasons",
+  "Planning that works across every state you apply in",
+  "Forecasting that knows your budget",
   "Draw timeline projection",
   "Application discipline",
 ];
@@ -54,35 +54,35 @@ const features = [
     icon: Map,
     title: "State Scoring",
     description:
-      "Every western state scored against your specific profile. Not generic advice — strategy tuned to you.",
+      "Every western state scored against your specific profile. Not generic advice, strategy tuned to you.",
   },
   {
     icon: Calendar,
     title: "Timeline Planning",
     description:
-      "Phased roadmap with application deadlines, point-year vs hunt-year scheduling, and milestone tracking.",
+      "Phased roadmap with application deadlines, point year vs. hunt year scheduling, and milestone tracking.",
   },
   {
     icon: Wallet,
     title: "Budget Intelligence",
     description:
-      "Year-one costs, long-term projections, application fees, guided hunt estimates — all calculated per state.",
+      "First year costs, projections over time, application fees, guided hunt estimates, all calculated per state.",
   },
   {
     icon: Shield,
     title: "Discipline Rules",
     description:
-      "Seven built-in rules surface when your portfolio drifts — budget concentration, build fatigue, point abandonment, and more.",
+      "Seven built-in rules surface when your portfolio drifts: budget concentration, build fatigue, point abandonment, and more.",
   },
   {
     icon: Target,
     title: "Point Strategy",
     description:
-      "Preference, bonus, hybrid — understand every state's draw system and build points where they matter most.",
+      "Preference, bonus, hybrid: understand every state's draw system and build points where they matter most.",
   },
   {
     icon: Compass,
-    title: "Unit Insights Aligned to Your Strategy",
+    title: "Unit Insights",
     description:
       "Browse units across every state with success rates, point requirements, and tactical hunt notes.",
   },
@@ -91,13 +91,13 @@ const features = [
 const showcaseSteps = [
   {
     step: "01",
-    title: "Answer 9 Questions",
+    title: "Tell Us About Yourself",
     description:
-      "Species, budget, experience, style — a quick consultation captures who you are as a hunter.",
+      "Species, budget, experience, style: a quick consultation captures who you are as a hunter.",
     highlights: [
       "Elk, Deer, Moose, Bear, and more",
-      "DIY Backpack to Guided trip styles",
-      "Budget-aware recommendations",
+      "DIY backpack to guided trip styles",
+      "Recommendations based on your budget",
     ],
     icon: Crosshair,
     label: "Strategy Builder",
@@ -108,9 +108,9 @@ const showcaseSteps = [
     step: "02",
     title: "Receive Your Strategy",
     description:
-      "A scored state portfolio with visible reasoning, unit recommendations, and a multi-year phased roadmap.",
+      "A scored state portfolio with visible reasoning, unit recommendations, and a phased roadmap spanning years.",
     highlights: [
-      "State-by-state scoring with visible reasoning",
+      "Every state scored with visible reasoning",
       "Best units matched to your profile",
       "Itemized cost breakdowns per year",
     ],
@@ -127,7 +127,7 @@ const showcaseSteps = [
     highlights: [
       "Points portfolio dashboard",
       "Application deadline tracking",
-      "Goal-to-milestone conversion",
+      "Goals that convert into milestones",
     ],
     icon: Target,
     label: "Dashboard & Tracking",
@@ -155,16 +155,16 @@ export default function LandingPage() {
           priority
         />
         <div className="absolute inset-0 bg-gradient-to-b from-background/25 via-background/50 to-background pointer-events-none" />
-        <div className="relative max-w-5xl mx-auto px-6 py-24 md:py-32 text-left">
-          <h1 className="hero-stagger-1 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight max-w-[680px]">
+        <div className="relative max-w-5xl mx-auto px-6 py-24 md:py-32 text-center">
+          <h1 className="hero-stagger-1 text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight leading-tight max-w-[680px] mx-auto">
             Stop Applying Blind.
           </h1>
 
-          <h2 className="hero-stagger-2 mt-4 text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground/90 max-w-[680px]">
+          <h2 className="hero-stagger-2 mt-4 text-2xl md:text-3xl lg:text-4xl font-semibold tracking-tight text-foreground/90 max-w-[680px] mx-auto">
             The Strategic Planning Engine for Western Big Game.
           </h2>
 
-          <p className="hero-stagger-3 mt-5 text-lg md:text-xl text-muted-foreground max-w-[680px] leading-relaxed font-light">
+          <p className="hero-stagger-3 mt-5 text-lg md:text-xl text-muted-foreground max-w-[680px] mx-auto leading-relaxed font-light">
             Plan across 15 states. See your draw timelines. Map every point and
             dollar. Execute with discipline.
           </p>
@@ -184,12 +184,12 @@ export default function LandingPage() {
           </div>
 
           {/* State badges */}
-          <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-12">
+          <div className="hero-stagger-5 grid grid-cols-5 sm:grid-cols-5 md:grid-cols-5 gap-2 mt-12 max-w-md mx-auto">
             {["CO", "WY", "MT", "AK", "NV", "AZ", "UT", "NM", "OR", "ID", "KS", "WA", "NE", "SD", "ND"].map(
               (state) => (
                 <span
                   key={state}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-primary/30 text-xs font-semibold text-muted-foreground badge-shimmer shadow-[0_0_8px_hsl(var(--primary)/0.25),0_0_20px_hsl(var(--primary)/0.1)]"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-primary/30 text-xs font-semibold text-muted-foreground badge-shimmer shadow-[0_0_8px_hsl(var(--primary)/0.25),0_0_20px_hsl(var(--primary)/0.1)]"
                 >
                   <StateOutline
                     stateId={state}
@@ -206,7 +206,7 @@ export default function LandingPage() {
           </div>
 
           {/* Species badges */}
-          <div className="hero-stagger-5 flex flex-wrap items-center justify-center gap-2 mt-3">
+          <div className="hero-stagger-5 grid grid-cols-3 sm:grid-cols-6 gap-2 mt-3 max-w-xl mx-auto">
             {[
               "Elk",
               "Mule Deer",
@@ -229,7 +229,7 @@ export default function LandingPage() {
             ].map((species) => (
               <span
                 key={species}
-                className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer"
+                className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer text-center"
               >
                 {species}
               </span>
@@ -242,14 +242,14 @@ export default function LandingPage() {
       {/* PROBLEM — "The System Is Designed to Confuse You."               */}
       {/* ================================================================ */}
       <section className="border-t border-border bg-card/30">
-        <div className="max-w-3xl mx-auto px-6 py-16">
+        <div className="max-w-3xl mx-auto px-6 py-16 text-center">
           <ScrollReveal animation="blur-in" once={false}>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               The System Is Designed to Confuse You.
             </h2>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up" stagger={80} once={false} className="mt-8 space-y-3">
+          <ScrollReveal animation="fade-up" stagger={80} once={false} className="mt-8 space-y-3 inline-flex flex-col items-start">
             {problemBullets.map((bullet) => (
               <div key={bullet} className="flex items-center gap-3">
                 <AlertTriangle className="w-4 h-4 text-muted-foreground/60 shrink-0" />
@@ -269,11 +269,18 @@ export default function LandingPage() {
       {/* ================================================================ */}
       {/* WHAT IT IS / ISN'T                                               */}
       {/* ================================================================ */}
-      <section className="border-t border-border">
-        <div className="max-w-4xl mx-auto px-6 py-16">
+      <section className="border-t border-border relative overflow-hidden">
+        <ParallaxImage
+          src="/images/species/elk.jpg"
+          alt=""
+          className="opacity-20 pointer-events-none"
+          speed={0.15}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/60 via-background/80 to-background pointer-events-none" />
+        <div className="relative max-w-4xl mx-auto px-6 py-16">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-10">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-              What Odyssey Is (and Isn&apos;t)
+              Strategy First. Everything Else Second.
             </h2>
           </ScrollReveal>
 
@@ -322,7 +329,7 @@ export default function LandingPage() {
           </ScrollReveal>
 
           <ScrollReveal animation="scale-in" once={false}>
-            <OutcomeComparison />
+            <OutcomeSlider />
           </ScrollReveal>
         </div>
       </section>
@@ -337,7 +344,7 @@ export default function LandingPage() {
               How It Works
             </h2>
             <p className="text-muted-foreground mt-3 max-w-lg mx-auto text-balance">
-              From consultation to execution — here&apos;s what your experience looks like.
+              From consultation to execution, here&apos;s what your experience looks like.
             </p>
           </ScrollReveal>
 
@@ -350,7 +357,7 @@ export default function LandingPage() {
                 } gap-8 md:gap-12 items-center`}
               >
                 {/* Text side */}
-                <div className="flex-1 space-y-4">
+                <div className="flex-1 space-y-4 text-center md:text-left">
                   <ScrollReveal animation="fade-up" delay={0} once={false}>
                     <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
                       Step {item.step}
@@ -364,7 +371,7 @@ export default function LandingPage() {
                       {item.description}
                     </p>
                   </ScrollReveal>
-                  <ScrollReveal animation="fade-up" stagger={120} delay={240} once={false} className="space-y-2 pt-2">
+                  <ScrollReveal animation="fade-up" stagger={120} delay={240} once={false} className="space-y-2 pt-2 inline-flex flex-col items-start mx-auto md:mx-0">
                     {item.highlights.map((h) => (
                       <li
                         key={h}
@@ -409,8 +416,15 @@ export default function LandingPage() {
       {/* ================================================================ */}
       {/* FEATURES — "Built for the Long Game"                             */}
       {/* ================================================================ */}
-      <section id="features" className="border-t border-border scroll-mt-20">
-        <div className="max-w-5xl mx-auto px-6 py-20">
+      <section id="features" className="border-t border-border scroll-mt-20 relative overflow-hidden">
+        <ParallaxImage
+          src="/images/species/mule-deer.jpg"
+          alt=""
+          className="opacity-15 pointer-events-none"
+          speed={0.15}
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/85 to-background pointer-events-none" />
+        <div className="relative max-w-5xl mx-auto px-6 py-20">
           <ScrollReveal animation="blur-in" once={false} className="text-center mb-14">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
               Built for the Long Game
@@ -484,7 +498,7 @@ export default function LandingPage() {
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 mb-6">
               <Compass className="w-3.5 h-3.5 text-primary" />
               <span className="text-xs font-medium text-primary">
-                Free forever — no credit card needed
+                Free forever, no credit card needed
               </span>
             </div>
           </ScrollReveal>

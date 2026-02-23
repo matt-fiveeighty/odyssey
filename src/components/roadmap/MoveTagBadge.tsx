@@ -7,9 +7,9 @@ import { cn } from "@/lib/utils";
 
 const MOVE_TAG_COLORS: Record<MoveTag, string> = {
   primary_play: "bg-primary/15 text-primary border-primary/30",
-  opportunity_play: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+  opportunity_play: "bg-info/15 text-info border-info/30",
   hold_preserve: "bg-muted text-muted-foreground border-border",
-  locked_anchor: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  locked_anchor: "bg-warning/15 text-warning border-warning/30",
 };
 
 interface MoveTagBadgeProps {

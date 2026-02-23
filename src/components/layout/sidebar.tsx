@@ -34,7 +34,7 @@ const navSections = [
   {
     label: "Execution",
     items: [
-      { href: "/this-year", label: "This Year", icon: Compass },
+      { href: "/this-year", label: "Planner", icon: Compass },
       { href: "/deadlines", label: "Deadlines", icon: Calendar },
     ],
   },

@@ -363,7 +363,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="text-lg font-semibold mb-3">11. Third-Party Services</h2>
           <p className="text-sm text-muted-foreground leading-relaxed">
-            Odyssey Outdoors may contain links to external state fish and game
+            Odyssey Outdoors may contain links to external state Fish & Game
             agency websites. We are not responsible for the privacy practices of
             these third-party sites. We encourage you to review their privacy
             policies independently.

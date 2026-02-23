@@ -23,18 +23,18 @@ const URGENCY_STYLES: Record<
   { text: string; dot: string; border: string; bg: string; hoverBg: string }
 > = {
   immediate: {
-    text: "text-red-400",
-    dot: "bg-red-400",
-    border: "border-red-500/20",
-    bg: "bg-red-500/5",
-    hoverBg: "hover:bg-red-500/10",
+    text: "text-destructive",
+    dot: "bg-destructive",
+    border: "border-destructive/20",
+    bg: "bg-destructive/5",
+    hoverBg: "hover:bg-destructive/10",
   },
   soon: {
-    text: "text-amber-400",
-    dot: "bg-amber-400",
-    border: "border-amber-500/20",
-    bg: "bg-amber-500/5",
-    hoverBg: "hover:bg-amber-500/10",
+    text: "text-warning",
+    dot: "bg-warning",
+    border: "border-warning/20",
+    bg: "bg-warning/5",
+    hoverBg: "hover:bg-warning/10",
   },
   informational: {
     text: "text-chart-2",

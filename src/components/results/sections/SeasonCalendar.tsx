@@ -15,26 +15,14 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const MONTH_LABELS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-
-const MONTH_FULL = [
+const MONTH_NAMES = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December",
 ];
 
-const PHASE_COLORS: Record<string, { bg: string; text: string }> = {
-  building: { bg: "bg-primary/10", text: "text-primary" },
-  build: { bg: "bg-primary/10", text: "text-primary" },
-  positioning: { bg: "bg-info/10", text: "text-info" },
-  burn: { bg: "bg-chart-2/10", text: "text-chart-2" },
-  gap: { bg: "bg-secondary/30", text: "text-muted-foreground" },
-  recovery: { bg: "bg-secondary/30", text: "text-muted-foreground" },
-  trophy: { bg: "bg-chart-3/10", text: "text-chart-3" },
-  youth_window: { bg: "bg-premium/10", text: "text-premium" },
-};
+import { LEGACY_PHASE_COLORS } from "@/lib/constants/phase-colors";
+
+const PHASE_COLORS = LEGACY_PHASE_COLORS;
 
 const MAX_VISIBLE_SLOTS = 3;
 
@@ -138,7 +126,7 @@ export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
         <div className="text-[10px] text-muted-foreground">
           {grid.rows.length} state{grid.rows.length !== 1 ? "s" : ""} ·{" "}
           <span className="font-mono font-bold text-foreground">
-            ${grid.totalCost.toLocaleString()}
+            ${Math.round(grid.totalCost).toLocaleString()}
           </span>{" "}
           annual
         </div>
@@ -157,7 +145,7 @@ export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
           <div className="hidden md:grid grid-cols-[100px_repeat(12,1fr)] gap-px bg-border/20 rounded-xl overflow-hidden">
             {/* Header row */}
             <div className="bg-background p-1.5" /> {/* Empty corner */}
-            {MONTH_LABELS.map((label, i) => (
+            {MONTH_NAMES.map((label, i) => (
               <div
                 key={label}
                 className={`bg-background p-1.5 text-center text-[9px] font-medium uppercase tracking-wider ${
@@ -200,7 +188,7 @@ export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
                       : "text-muted-foreground/40"
                   }`}
                 >
-                  {cost > 0 ? `$${cost.toLocaleString()}` : "–"}
+                  {cost > 0 ? `$${Math.round(cost).toLocaleString()}` : "–"}
                 </span>
               </div>
             ))}
@@ -347,11 +335,11 @@ function MobileCalendar({
           {/* Month heading */}
           <div className="flex items-center justify-between px-3 py-2 bg-secondary/20">
             <span className="text-xs font-bold">
-              {MONTH_FULL[month - 1]} {selectedYear}
+              {MONTH_NAMES[month - 1]} {selectedYear}
             </span>
             {cost > 0 && (
               <span className="text-[10px] font-mono text-muted-foreground">
-                ${cost.toLocaleString()}
+                ${Math.round(cost).toLocaleString()}
               </span>
             )}
           </div>

@@ -12,6 +12,7 @@ import { estimated } from "@/lib/engine/verified-datum";
 import { formatSpeciesName } from "@/lib/utils";
 import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus, List, CalendarDays } from "lucide-react";
 import { SeasonCalendar } from "./SeasonCalendar";
+import { LEGACY_PHASE_COLORS, ACTION_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
 interface TimelineRoadmapProps {
   assessment: StrategicAssessment;
@@ -19,19 +20,8 @@ interface TimelineRoadmapProps {
   onEditedActionsChange: (edits: Record<number, EditableAction[]>) => void;
 }
 
-const PHASE_COLORS: Record<string, { bg: string; text: string; dot: string }> = {
-  building: { bg: "bg-primary/10", text: "text-primary", dot: "bg-primary" },
-  burn: { bg: "bg-chart-2/10", text: "text-chart-2", dot: "bg-chart-2" },
-  gap: { bg: "bg-secondary/30", text: "text-muted-foreground", dot: "bg-muted-foreground" },
-  trophy: { bg: "bg-chart-3/10", text: "text-chart-3", dot: "bg-chart-3" },
-};
-
-const ACTION_TYPE_LABELS: Record<string, { label: string; color: string }> = {
-  apply: { label: "Apply", color: "bg-info/15 text-info" },
-  buy_points: { label: "Buy Points", color: "bg-warning/15 text-warning" },
-  hunt: { label: "Hunt", color: "bg-success/15 text-success" },
-  scout: { label: "Scout", color: "bg-premium/15 text-premium" },
-};
+const PHASE_COLORS = LEGACY_PHASE_COLORS;
+const ACTION_TYPE_LABELS = ACTION_TYPE_COLORS;
 
 export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChange }: TimelineRoadmapProps) {
   const [viewMode, setViewMode] = useState<"years" | "months">("years");
@@ -127,7 +117,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <DollarSign className="w-3.5 h-3.5" />
             <span className="font-bold text-foreground">
-              ${assessment.roadmap.reduce((s, yr) => s + getYearCost(yr.year), 0).toLocaleString()}
+              ${Math.round(assessment.roadmap.reduce((s, yr) => s + getYearCost(yr.year), 0)).toLocaleString()}
             </span>
             <span>total</span>
           </div>
@@ -204,7 +194,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                 )}
               </div>
               <div className="flex items-center gap-3">
-                <span className="text-xs font-mono text-muted-foreground">${yearCost.toLocaleString()}</span>
+                <span className="text-xs font-mono text-muted-foreground">${Math.round(yearCost).toLocaleString()}</span>
                 <span className="text-[10px] text-muted-foreground">{actions.length} items</span>
                 <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isExpanded ? "rotate-180" : ""}`} />
               </div>
@@ -216,7 +206,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                 {/* Edit toggle */}
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
-                    {actions.length} action{actions.length !== 1 ? "s" : ""} · ${yearCost.toLocaleString()}
+                    {actions.length} action{actions.length !== 1 ? "s" : ""} · ${Math.round(yearCost).toLocaleString()}
                   </span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setEditingYear(isEditing ? null : yr.year); }}
@@ -309,7 +299,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                               {action.estimatedDrawOdds !== undefined && action.estimatedDrawOdds > 0 && (
                                 <span>{action.estimatedDrawOdds}% draw odds</span>
                               )}
-                              <span className="font-mono inline-flex items-center gap-0.5">${action.cost.toLocaleString()}<FreshnessBadge datum={estimated(action.cost, "State fee schedule")} showLabel={false} /></span>
+                              <span className="font-mono inline-flex items-center gap-0.5">${Math.round(action.cost).toLocaleString()}<FreshnessBadge datum={estimated(action.cost, "State fee schedule")} showLabel={false} /></span>
                               {action.dueDate && <span className="inline-flex items-center gap-0.5">Due: {action.dueDate}<FreshnessBadge datum={estimated(action.dueDate, "State deadline schedule")} showLabel={false} /></span>}
                               {action.stateId && <DataSourceInline stateId={action.stateId} />}
                             </div>
@@ -348,7 +338,7 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                     <span>{actions.filter((a: EditableAction) => a.type === "apply").length} applications</span>
                     <span>{actions.filter((a: EditableAction) => a.type === "hunt").length} hunts</span>
                   </div>
-                  <span className="font-bold">${yearCost.toLocaleString()}</span>
+                  <span className="font-bold">${Math.round(yearCost).toLocaleString()}</span>
                 </div>
               </div>
             </div>

@@ -81,7 +81,7 @@ function DeltaDisplay({
   return (
     <div className="text-center p-3 rounded-lg bg-secondary/30">
       <p className="text-lg font-bold">
-        {isCost ? `$${current.toLocaleString()}` : current}
+        {isCost ? `$${Math.round(current).toLocaleString()}` : current}
       </p>
       <p className="text-[9px] text-muted-foreground">{label}</p>
       {delta !== 0 && (
@@ -350,9 +350,9 @@ export function WhatIfModeler({ assessment }: WhatIfModelerProps) {
                       }
                     >
                       $
-                      {Math.abs(
+                      {Math.round(Math.abs(
                         baseMetrics.tenYearCost - currentMetrics.tenYearCost,
-                      ).toLocaleString()}{" "}
+                      )).toLocaleString()}{" "}
                       {currentMetrics.tenYearCost < baseMetrics.tenYearCost
                         ? "saved"
                         : "added"}

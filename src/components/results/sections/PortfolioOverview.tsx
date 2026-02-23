@@ -123,7 +123,7 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
                   />
                 </div>
                 <span className={`text-xs font-mono w-16 text-right ${yr.isHuntYear ? "text-chart-2 font-bold" : "text-muted-foreground"}`}>
-                  ${yr.cost.toLocaleString()}
+                  ${Math.round(yr.cost).toLocaleString()}
                 </span>
                 {yr.isHuntYear && <span className="text-[9px] px-1.5 py-0.5 rounded bg-chart-2/15 text-chart-2 font-medium">Hunt</span>}
               </div>
@@ -132,13 +132,13 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           <div className="flex justify-between pt-2 border-t border-border">
             <span className="text-sm font-semibold">10-Year Total</span>
             <span className="text-sm font-bold text-primary inline-flex items-center gap-1">
-              ${(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal).toLocaleString()}
+              ${Math.round(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal).toLocaleString()}
               <FreshnessBadge datum={estimated(inflatedProjection?.total ?? assessment.financialSummary.tenYearTotal, "Cost calculator estimate")} showLabel={false} />
             </span>
           </div>
           {inflationOn && (
             <p className="text-[10px] text-chart-4/80 mt-1 leading-relaxed">
-              +${((inflatedProjection?.total ?? 0) - assessment.financialSummary.tenYearTotal).toLocaleString()} over constant-dollar projection ({(inflationRate * 100).toFixed(1)}% annual fee inflation applied).
+              +${Math.round((inflatedProjection?.total ?? 0) - assessment.financialSummary.tenYearTotal).toLocaleString()} over constant-dollar projection ({(inflationRate * 100).toFixed(1)}% annual fee inflation applied).
             </p>
           )}
           <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed">
@@ -196,7 +196,7 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Point Year</p>
             <p className="text-lg font-bold text-primary inline-flex items-center gap-1">
-              ${budgetBreakdown.pointYearCost.toLocaleString()}
+              ${Math.round(budgetBreakdown.pointYearCost).toLocaleString()}
               <FreshnessBadge datum={estimated(budgetBreakdown.pointYearCost, "State fee schedule")} showLabel={false} />
             </p>
             <div className="space-y-1 mt-2">
@@ -211,7 +211,7 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
           <div className="p-3 rounded-xl bg-secondary/30 border border-border/50">
             <p className="text-xs text-muted-foreground uppercase tracking-wider mb-2">Hunt Year</p>
             <p className="text-lg font-bold text-chart-2 inline-flex items-center gap-1">
-              ${budgetBreakdown.huntYearCost.toLocaleString()}
+              ${Math.round(budgetBreakdown.huntYearCost).toLocaleString()}
               <FreshnessBadge datum={estimated(budgetBreakdown.huntYearCost, "State fee schedule")} showLabel={false} />
             </p>
             <div className="space-y-1 mt-2">

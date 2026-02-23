@@ -94,7 +94,7 @@ export function OpportunityCards({ selectedYear, existingStateIds }: Opportunity
                   </span>
                   {opp.estimatedCost > 0 && (
                     <span className="text-[10px] font-bold text-chart-2 shrink-0 ml-2">
-                      ~${opp.estimatedCost.toLocaleString()}
+                      ~${Math.round(opp.estimatedCost).toLocaleString()}
                     </span>
                   )}
                 </div>

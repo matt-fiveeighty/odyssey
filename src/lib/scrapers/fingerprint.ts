@@ -160,7 +160,7 @@ export async function storeFingerprint(
   );
 
   if (error) {
-    console.log(
+    console.error(
       `[fingerprint] Store error for ${fingerprint.stateId} ${fingerprint.url}: ${error.message}`
     );
   }

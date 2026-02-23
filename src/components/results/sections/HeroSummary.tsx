@@ -85,7 +85,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Annual Cost</p>
           {hasSpendingData && (
             <p className="text-[9px] text-chart-2/70 mt-0.5">
-              ${ytdSpent.toLocaleString()} spent YTD
+              ${Math.round(ytdSpent).toLocaleString()} spent YTD
             </p>
           )}
         </div>
@@ -102,7 +102,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
           <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">10-Year Total</p>
           {inflationDelta > 100 && (
             <p className="text-[9px] text-chart-4/70 mt-0.5">
-              ~${inflatedTenYearTotal.toLocaleString()} w/ inflation
+              ~${Math.round(inflatedTenYearTotal).toLocaleString()} w/ inflation
             </p>
           )}
         </div>
@@ -114,8 +114,8 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
           <div className="flex items-center justify-between mb-1.5">
             <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Year 1 Spending</span>
             <span className="text-[10px] font-medium">
-              <span className="text-chart-2">${ytdSpent.toLocaleString()}</span>
-              <span className="text-muted-foreground"> / ${year1Budget.toLocaleString()}</span>
+              <span className="text-chart-2">${Math.round(ytdSpent).toLocaleString()}</span>
+              <span className="text-muted-foreground"> / ${Math.round(year1Budget).toLocaleString()}</span>
               <span className="text-muted-foreground/60 ml-1">({spendPct}%)</span>
             </span>
           </div>
@@ -127,7 +127,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
           </div>
           {spendPct > 100 && (
             <p className="text-[9px] text-chart-4 mt-1">
-              ${(ytdSpent - year1Budget).toLocaleString()} over budget
+              ${Math.round(ytdSpent - year1Budget).toLocaleString()} over budget
             </p>
           )}
         </div>
@@ -136,7 +136,7 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
       <p className="text-xs text-muted-foreground/70 mt-4 italic">{assessment.strategyOverview}</p>
       <p className="text-[9px] text-muted-foreground/50 mt-2">
         Costs in 2026 dollars. State fees typically rise 2-5% annually
-        {inflationDelta > 100 && <> — expect ~${inflationDelta.toLocaleString()} additional over 10 years at {(inflationRate * 100).toFixed(1)}% inflation{inflationSource === "verified" ? " (BLS)" : ""}</>}.
+        {inflationDelta > 100 && <> — expect ~${Math.round(inflationDelta).toLocaleString()} additional over 10 years at {(inflationRate * 100).toFixed(1)}% inflation{inflationSource === "verified" ? " (BLS)" : ""}</>}.
       </p>
       {dataStatus.isUsingConstants && (
         <p className="text-[9px] text-muted-foreground/40 mt-1">

@@ -157,7 +157,7 @@ export default function PointsPage() {
               <div>
                 <p className="text-xs text-muted-foreground">Total Invested</p>
                 <p className="text-2xl font-bold">
-                  ${totalInvested.toLocaleString()}
+                  ${Math.round(totalInvested).toLocaleString()}
                 </p>
               </div>
             </div>
@@ -333,11 +333,11 @@ export default function PointsPage() {
                       $
                       {(() => {
                         const fees = resolveFees(state, homeState);
-                        return points
+                        return Math.round(points
                           .reduce((sum, pt) => {
                             const cost = fees.pointCost[pt.speciesId] ?? 0;
                             return sum + cost + fees.appFee;
-                          }, fees.qualifyingLicense)
+                          }, fees.qualifyingLicense))
                           .toLocaleString();
                       })()}
                       /yr
@@ -381,7 +381,7 @@ export default function PointsPage() {
               <div className="text-right">
                 <p className="text-3xl font-bold text-primary">
                   $
-                  {Object.entries(pointsByState)
+                  {Math.round(Object.entries(pointsByState)
                     .reduce((total, [stateId, points]) => {
                       const state = STATES_MAP[stateId];
                       if (!state) return total;
@@ -391,7 +391,7 @@ export default function PointsPage() {
                         return sum + cost + fees.appFee;
                       }, 0);
                       return total + speciesCost + fees.qualifyingLicense;
-                    }, 0)
+                    }, 0))
                     .toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">per year</p>

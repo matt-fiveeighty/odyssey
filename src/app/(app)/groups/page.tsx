@@ -464,7 +464,7 @@ export default function GroupsPage() {
                           ))}
                           {totalExpenses > 0 && (
                             <div className="flex items-center justify-between pt-2 border-t border-border/30 text-xs">
-                              <span className="text-muted-foreground">Total: <span className="font-bold text-foreground">${totalExpenses.toLocaleString()}</span></span>
+                              <span className="text-muted-foreground">Total: <span className="font-bold text-foreground">${Math.round(totalExpenses).toLocaleString()}</span></span>
                               {confirmedCount > 0 && (
                                 <span className="text-primary font-semibold">${perPerson}/person (split {confirmedCount} ways)</span>
                               )}

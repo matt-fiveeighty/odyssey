@@ -374,7 +374,7 @@ export default function DashboardPage() {
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{s.goal?.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      ${s.currentSaved.toLocaleString()} / ${s.targetCost.toLocaleString()}
+                      ${Math.round(s.currentSaved).toLocaleString()} / ${Math.round(s.targetCost).toLocaleString()}
                     </p>
                     <p className={`text-[10px] font-medium ${s.status === "green" ? "text-chart-2" : s.status === "amber" ? "text-chart-4" : "text-destructive"}`}>
                       {s.status === "green" ? "On track" : s.status === "amber" ? "Slightly behind" : "Behind"}

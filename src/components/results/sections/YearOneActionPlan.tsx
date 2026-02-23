@@ -167,7 +167,7 @@ export function YearOneActionPlan({ assessment }: YearOneActionPlanProps) {
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Actions</p>
         </div>
         <div className="p-2.5 rounded-lg bg-background/50 border border-border/50 text-center">
-          <p className="text-lg font-bold text-chart-2">${totalCost.toLocaleString()}</p>
+          <p className="text-lg font-bold text-chart-2">${Math.round(totalCost).toLocaleString()}</p>
           <p className="text-[9px] text-muted-foreground uppercase tracking-wider">Year 1 Cost</p>
         </div>
         <div className="p-2.5 rounded-lg bg-background/50 border border-border/50 text-center">
@@ -249,7 +249,7 @@ export function YearOneActionPlan({ assessment }: YearOneActionPlanProps) {
                 )}
                 <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                   <DollarSign className="w-3 h-3" />
-                  ${stateCost.toLocaleString()}
+                  ${Math.round(stateCost).toLocaleString()}
                 </div>
               </div>
             </div>

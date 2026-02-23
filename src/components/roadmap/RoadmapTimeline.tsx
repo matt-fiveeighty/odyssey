@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ChevronDown, ChevronUp, ExternalLink, Calendar, Download, Check, Trophy, X } from "lucide-react";
@@ -12,13 +12,7 @@ import { formatSpeciesName, cn } from "@/lib/utils";
 import { exportDeadline } from "@/lib/calendar-export";
 import { useAppStore } from "@/lib/store";
 
-const YEAR_TYPE_COLORS: Record<YearType, string> = {
-  build: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  positioning: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  burn: "bg-primary/15 text-primary border-primary/30",
-  recovery: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  youth_window: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-};
+import { YEAR_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
 /** Format YYYY-MM-DD → "April 7, 2026" (NAM) */
 function formatNAM(dateStr: string): string {
@@ -76,7 +70,17 @@ function ActionStatusBadge({ milestone }: { milestone: Milestone | undefined }) 
 export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
   const currentYear = new Date().getFullYear();
   const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
+  const expandedRef = useRef<HTMLDivElement>(null);
   const milestones = useAppStore((s) => s.milestones);
+
+  // Scroll expanded detail into view
+  useEffect(() => {
+    if (expandedYear && expandedRef.current) {
+      requestAnimationFrame(() => {
+        expandedRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      });
+    }
+  }, [expandedYear]);
 
   const totalCost = roadmap.reduce((s, y) => s + y.estimatedCost, 0);
 
@@ -103,7 +107,7 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
           {roadmap.length}-Year Roadmap
         </p>
         <p className="text-xs text-muted-foreground">
-          ${totalCost.toLocaleString()} total
+          ${Math.round(totalCost).toLocaleString()} total
         </p>
       </div>
 
@@ -160,19 +164,19 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
               <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
                 {huntCount > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-success" />
                     {huntCount}
                   </span>
                 )}
                 {applyCount > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-info" />
                     {applyCount}
                   </span>
                 )}
                 {pointsCount > 0 && (
                   <span className="flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    <span className="w-1.5 h-1.5 rounded-full bg-warning" />
                     {pointsCount}
                   </span>
                 )}
@@ -181,7 +185,7 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
               {/* Cost + completion */}
               <div className="flex items-center justify-between mt-1.5">
                 <p className="text-xs font-medium tabular-nums text-muted-foreground">
-                  ${year.estimatedCost.toLocaleString()}
+                  ${Math.round(year.estimatedCost).toLocaleString()}
                 </p>
                 {yearStats[year.year]?.completed > 0 && (
                   <span className="text-[9px] text-chart-2 font-medium">
@@ -206,15 +210,15 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
       {/* Legend for the dots */}
       <div className="flex flex-wrap gap-4 text-[10px] text-muted-foreground/70">
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
+          <span className="w-2 h-2 rounded-full bg-success" />
           <span>Hunts</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-orange-500" />
+          <span className="w-2 h-2 rounded-full bg-info" />
           <span>Draw Applications</span>
         </div>
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-blue-500" />
+          <span className="w-2 h-2 rounded-full bg-warning" />
           <span>Build Points</span>
         </div>
       </div>
@@ -236,7 +240,7 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
         }
 
         return (
-          <Card className="border-border/50 fade-in-up">
+          <Card ref={expandedRef} className="border-border/50 fade-in-up">
             <CardContent className="p-4">
               <div className="flex items-center gap-3 mb-4">
                 <span className="text-xl font-bold tabular-nums">{year.year}</span>
@@ -253,7 +257,7 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
                       )}
                     </span>
                   )}
-                  <span>{year.actions.length} moves &middot; ${year.estimatedCost.toLocaleString()}</span>
+                  <span>{year.actions.length} moves &middot; ${Math.round(year.estimatedCost).toLocaleString()}</span>
                 </span>
               </div>
 

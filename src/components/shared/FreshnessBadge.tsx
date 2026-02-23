@@ -8,10 +8,10 @@ import type { VerifiedDatum, DataConfidence } from "@/lib/engine/verified-datum"
 // ---------------------------------------------------------------------------
 
 const CONFIDENCE_COLORS: Record<DataConfidence, string> = {
-  verified: "bg-emerald-500",
-  user_reported: "bg-blue-500",
-  estimated: "bg-amber-500",
-  stale: "bg-red-500",
+  verified: "bg-success",
+  user_reported: "bg-info",
+  estimated: "bg-warning",
+  stale: "bg-destructive",
 };
 
 const CONFIDENCE_LABELS: Record<DataConfidence, string> = {

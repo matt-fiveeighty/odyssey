@@ -8,13 +8,7 @@ import type { RoadmapYear, YearType } from "@/lib/types";
 import { YEAR_TYPE_LABELS, migratePhaseToYearType } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
-const YEAR_TYPE_COLORS: Record<YearType, string> = {
-  build: "bg-blue-500/15 text-blue-400 border-blue-500/30",
-  positioning: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  burn: "bg-primary/15 text-primary border-primary/30",
-  recovery: "bg-purple-500/15 text-purple-400 border-purple-500/30",
-  youth_window: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-};
+import { YEAR_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
 interface YearCardProps {
   year: RoadmapYear;
@@ -62,7 +56,7 @@ export function YearCard({ year, defaultExpanded = false }: YearCardProps) {
 
           {/* Cost */}
           <span className="text-sm font-medium tabular-nums">
-            ${year.estimatedCost.toLocaleString()}
+            ${Math.round(year.estimatedCost).toLocaleString()}
           </span>
 
           {/* Expand */}

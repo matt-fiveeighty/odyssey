@@ -11,6 +11,7 @@ import {
   Check,
   ExternalLink,
   Home,
+  ChevronDown,
 } from "lucide-react";
 import { STATES } from "@/lib/constants/states";
 import { SPECIES } from "@/lib/constants/species";
@@ -23,9 +24,9 @@ import { useAppStore, useWizardStore } from "@/lib/store";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
-/** Format a number as $X.XX */
+/** Format as whole dollars — no cents per C1/F3 */
 function fmt(n: number): string {
-  return `$${n.toFixed(2)}`;
+  return `$${Math.round(n).toLocaleString()}`;
 }
 
 export default function CalculatorPage() {
@@ -34,6 +35,7 @@ export default function CalculatorPage() {
   const [selectedSpecies, setSelectedSpecies] = useState<string>("elk");
   const [currentPoints, setCurrentPoints] = useState(0);
   const [targetPoints, setTargetPoints] = useState(4);
+  const [showFeeSchedule, setShowFeeSchedule] = useState(false);
   const homeState = useWizardStore((s) => s.homeState);
 
   const state = STATES.find((s) => s.id === selectedState);
@@ -126,8 +128,8 @@ export default function CalculatorPage() {
       </div>
 
       <div className="grid md:grid-cols-3 gap-6">
-        {/* State Grid */}
-        <div className="md:col-span-2">
+        {/* State Grid + Point Inputs */}
+        <div className="md:col-span-2 order-2 md:order-1">
           <Card className="bg-card border-border">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">Select a State</CardTitle>
@@ -194,7 +196,7 @@ export default function CalculatorPage() {
             </CardContent>
           </Card>
 
-          {/* Point Inputs */}
+          {/* Point Inputs — +/- buttons + direct text entry */}
           {selectedState && (
             <Card className="bg-card border-border mt-4">
               <CardContent className="p-6">
@@ -209,17 +211,22 @@ export default function CalculatorPage() {
                         onClick={() =>
                           setCurrentPoints(Math.max(0, currentPoints - 1))
                         }
-                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="w-12 text-center text-2xl font-bold">
-                        {currentPoints}
-                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={currentPoints}
+                        onChange={(e) => setCurrentPoints(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-14 text-center text-2xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <button
                         aria-label="Increase current points"
                         onClick={() => setCurrentPoints(currentPoints + 1)}
-                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors cursor-pointer"
                       >
                         +
                       </button>
@@ -235,30 +242,51 @@ export default function CalculatorPage() {
                         onClick={() =>
                           setTargetPoints(Math.max(0, targetPoints - 1))
                         }
-                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors cursor-pointer"
                       >
                         -
                       </button>
-                      <span className="w-12 text-center text-2xl font-bold">
-                        {targetPoints}
-                      </span>
+                      <input
+                        type="number"
+                        min={0}
+                        max={99}
+                        value={targetPoints}
+                        onChange={(e) => setTargetPoints(Math.max(0, Number(e.target.value) || 0))}
+                        className="w-14 text-center text-2xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                      />
                       <button
                         aria-label="Increase target points"
                         onClick={() => setTargetPoints(targetPoints + 1)}
-                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+                        className="w-10 h-10 rounded-lg bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors cursor-pointer"
                       >
                         +
                       </button>
                     </div>
                   </div>
                 </div>
+                {/* Quick presets */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {[1, 3, 5, 8, 12, 15, 20].map((pts) => (
+                    <button
+                      key={pts}
+                      onClick={() => setTargetPoints(pts)}
+                      className={`text-[10px] px-2 py-1 rounded-full font-mono transition-colors cursor-pointer ${
+                        targetPoints === pts
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-secondary text-muted-foreground hover:bg-accent"
+                      }`}
+                    >
+                      {pts} pts
+                    </button>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           )}
         </div>
 
-        {/* Cost Estimate Panel */}
-        <div className="space-y-4">
+        {/* Cost Estimate Panel — appears first on mobile */}
+        <div className="space-y-4 order-1 md:order-2">
           <Card className="bg-gradient-to-br from-[#1a2332] to-[#0f1923] border-primary/20 overflow-hidden">
             <div className="h-1 bg-gradient-to-r from-primary to-chart-2" />
             <CardContent className="p-6 space-y-5">
@@ -309,65 +337,80 @@ export default function CalculatorPage() {
             </CardContent>
           </Card>
 
-          {/* Itemized Fee Schedule */}
+          {/* Itemized Fee Schedule — collapsible */}
           {state && fees && fees.feeSchedule.length > 0 && (
             <Card className="bg-card border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground flex items-center gap-2">
+              <button
+                className="w-full text-left p-4 flex items-center justify-between hover:bg-secondary/10 transition-colors"
+                onClick={() => setShowFeeSchedule(!showFeeSchedule)}
+              >
+                <div className="flex items-center gap-2 text-sm text-muted-foreground font-semibold">
                   {state.abbreviation} Fee Schedule
                   <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${fees.isResident ? "bg-success/15 text-success" : "bg-info/15 text-info"}`}>
                     <Home className="w-2.5 h-2.5 inline mr-0.5" />
                     {fees.label}
                   </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {fees.feeSchedule.map((fee, i) => (
-                  <div key={i} className="p-2 rounded-lg bg-secondary/30">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium ${fee.required ? "text-foreground" : "text-muted-foreground"}`}>
-                          {fee.name}
-                        </span>
-                        {fee.required && (
-                          <span className="text-[8px] px-1 py-0.5 rounded bg-destructive/10 text-destructive font-medium uppercase">Required</span>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <span className="text-sm font-bold">{fmt(fee.amount)}</span>
-                        <span className="text-[9px] text-muted-foreground ml-1">
-                          {fee.frequency === "annual" ? "/yr" : fee.frequency === "per_species" ? "/species" : "once"}
-                        </span>
-                      </div>
-                    </div>
-                    {fee.notes && (
-                      <p className="text-[10px] text-muted-foreground/70 mt-0.5">{fee.notes}</p>
-                    )}
-                  </div>
-                ))}
-                {/* Show tag cost in fee schedule */}
-                {tagCost > 0 && (
-                  <div className="p-2 rounded-lg bg-primary/5 border border-primary/10">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-primary">
-                        {SPECIES.find((sp) => sp.id === selectedSpecies)?.name ?? selectedSpecies} Tag
-                      </span>
-                      <div className="text-right">
-                        <span className="text-sm font-bold text-primary">{fmt(tagCost)}</span>
-                        <span className="text-[9px] text-muted-foreground ml-1">if drawn</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-                <Separator className="my-2" />
-                <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">
-                    <HuntingTerm term="annual subscription">Annual build cost</HuntingTerm>
-                  </span>
-                  <span className="font-bold text-chart-2">{fmt(buildYearCost)}/yr</span>
                 </div>
-                <DataSourceBadge stateId={state.id} dataType="Fee Schedule" className="mt-2" />
-              </CardContent>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showFeeSchedule ? "rotate-180" : ""}`} />
+              </button>
+              {showFeeSchedule && (
+                <CardContent className="pt-0 pb-4 space-y-2">
+                  {fees.feeSchedule.map((fee, i) => (
+                    <div key={i} className="p-2 rounded-lg bg-secondary/30">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-sm font-medium ${fee.required ? "text-foreground" : "text-muted-foreground"}`}>
+                            {fee.name}
+                          </span>
+                          {fee.required && (
+                            <span className="text-[8px] px-1 py-0.5 rounded bg-destructive/10 text-destructive font-medium uppercase">Required</span>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm font-bold">{fmt(fee.amount)}</span>
+                          <span className="text-[9px] text-muted-foreground ml-1">
+                            {fee.frequency === "annual" ? "/yr" : fee.frequency === "per_species" ? "/species" : "once"}
+                          </span>
+                        </div>
+                      </div>
+                      {fee.notes && (
+                        <p className="text-[10px] text-muted-foreground/70 mt-0.5">{fee.notes}</p>
+                      )}
+                    </div>
+                  ))}
+                  {/* Show tag cost in fee schedule */}
+                  {tagCost > 0 && (
+                    <div className="p-2 rounded-lg bg-primary/5 border border-primary/10">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-medium text-primary">
+                          {SPECIES.find((sp) => sp.id === selectedSpecies)?.name ?? selectedSpecies} Tag
+                        </span>
+                        <div className="text-right">
+                          <span className="text-sm font-bold text-primary">{fmt(tagCost)}</span>
+                          <span className="text-[9px] text-muted-foreground ml-1">if drawn</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <Separator className="my-2" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">
+                      <HuntingTerm term="annual subscription">Annual build cost</HuntingTerm>
+                    </span>
+                    <span className="font-bold text-chart-2">{fmt(buildYearCost)}/yr</span>
+                  </div>
+                  <DataSourceBadge stateId={state.id} dataType="Fee Schedule" className="mt-2" />
+                </CardContent>
+              )}
+              {/* Always show summary line below toggle */}
+              {!showFeeSchedule && (
+                <CardContent className="pt-0 pb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Annual build cost</span>
+                    <span className="font-bold text-chart-2">{fmt(buildYearCost)}/yr</span>
+                  </div>
+                </CardContent>
+              )}
             </Card>
           )}
 

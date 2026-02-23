@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { StateOutline } from "@/components/shared/StateOutline";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { DataSourceBadge } from "@/components/shared/DataSourceBadge";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
@@ -143,8 +144,16 @@ export function StateDetailModal({
   const toggleUnit = (unitId: string) => {
     setExpandedUnits((prev) => {
       const next = new Set(prev);
-      if (next.has(unitId)) next.delete(unitId);
-      else next.add(unitId);
+      if (next.has(unitId)) {
+        next.delete(unitId);
+      } else {
+        next.add(unitId);
+        // Scroll expanded unit into view after render
+        requestAnimationFrame(() => {
+          const el = document.getElementById(`unit-${unitId}`);
+          el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        });
+      }
       return next;
     });
   };
@@ -231,6 +240,42 @@ export function StateDetailModal({
             </section>
           )}
 
+          {/* Quick-jump pills — lets user skip to any section */}
+          <div className="flex flex-wrap gap-1.5">
+            {relevantUnits.length > 0 && (
+              <button
+                onClick={() => document.getElementById("section-units")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors cursor-pointer"
+              >
+                <MapPin className="w-3 h-3 inline mr-0.5" /> Units ({relevantUnits.length})
+              </button>
+            )}
+            {state.seasonTiers && state.seasonTiers.length > 0 && (
+              <button
+                onClick={() => document.getElementById("section-seasons")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors cursor-pointer"
+              >
+                Seasons
+              </button>
+            )}
+            {filteredDeadlines.length > 0 && (
+              <button
+                onClick={() => document.getElementById("section-deadlines")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors cursor-pointer"
+              >
+                Deadlines
+              </button>
+            )}
+            {filteredPointCosts.length > 0 && (
+              <button
+                onClick={() => document.getElementById("section-costs")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors cursor-pointer"
+              >
+                Costs & Fees
+              </button>
+            )}
+          </div>
+
           {/* ============================================================ */}
           {/* 3. Draw Overview — tag quotas / odds                         */}
           {/* ============================================================ */}
@@ -314,7 +359,7 @@ export function StateDetailModal({
           {/* 5. Season Dates — grid columns                               */}
           {/* ============================================================ */}
           {state.seasonTiers && state.seasonTiers.length > 0 && (
-            <section>
+            <section id="section-seasons">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" /> Season Dates
               </h3>
@@ -345,7 +390,7 @@ export function StateDetailModal({
                     >
                       <p className="text-xs font-semibold">{tier.tier}</p>
                       <p className="text-sm font-bold mt-0.5">{tier.dates}</p>
-                      <p className="text-[10px] text-muted-foreground mt-1 line-clamp-2">
+                      <p className="text-[10px] text-muted-foreground mt-1">
                         {tier.notes}
                       </p>
                       {isRecommended && (
@@ -364,7 +409,7 @@ export function StateDetailModal({
           {/* 6. Recommended Units                                         */}
           {/* ============================================================ */}
           {relevantUnits.length > 0 && (
-            <section>
+            <section id="section-units">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
                 <MapPin className="w-3.5 h-3.5" /> Recommended Units
               </h3>
@@ -375,6 +420,7 @@ export function StateDetailModal({
                   return (
                     <div
                       key={unit.id}
+                      id={`unit-${unit.id}`}
                       className="rounded-xl border border-border bg-card overflow-hidden"
                     >
                       <button
@@ -403,7 +449,7 @@ export function StateDetailModal({
                               value={`${Math.round(unit.successRate * 100)}%`}
                               color={
                                 unit.successRate > 0.25
-                                  ? "text-green-400"
+                                  ? "text-success"
                                   : "text-muted-foreground"
                               }
                             />
@@ -413,7 +459,7 @@ export function StateDetailModal({
                               value={`${unit.trophyRating}/10`}
                               color={
                                 unit.trophyRating >= 7
-                                  ? "text-amber-400"
+                                  ? "text-warning"
                                   : "text-muted-foreground"
                               }
                             />
@@ -423,7 +469,7 @@ export function StateDetailModal({
                               value={`${Math.round(unit.publicLandPct * 100)}%`}
                               color={
                                 unit.publicLandPct > 0.5
-                                  ? "text-emerald-400"
+                                  ? "text-success"
                                   : "text-muted-foreground"
                               }
                             />
@@ -433,9 +479,9 @@ export function StateDetailModal({
                               value={unit.pressureLevel}
                               color={
                                 unit.pressureLevel === "Low"
-                                  ? "text-green-400"
+                                  ? "text-success"
                                   : unit.pressureLevel === "High"
-                                  ? "text-red-400"
+                                  ? "text-destructive"
                                   : "text-muted-foreground"
                               }
                             />
@@ -519,7 +565,7 @@ export function StateDetailModal({
           {/* ============================================================ */}
           {/* 7. Costs & Fees — NR / Resident side-by-side                 */}
           {/* ============================================================ */}
-          <section>
+          <section id="section-costs">
             <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
               Costs & Fees
             </h3>
@@ -543,6 +589,12 @@ export function StateDetailModal({
                       </span>
                     </div>
                   ))}
+                  {state.feeSchedule.length > 1 && (
+                    <div className="flex justify-between text-xs gap-2 pt-1.5 mt-1.5 border-t border-border font-semibold">
+                      <span>Total</span>
+                      <span>${state.feeSchedule.reduce((s, f) => s + f.amount, 0)}</span>
+                    </div>
+                  )}
                 </div>
                 {/* NR point costs for user's species */}
                 {filteredPointCosts.length > 0 && (
@@ -590,13 +642,14 @@ export function StateDetailModal({
                   </div>
                 )}
             </div>
+            {stateId && <DataSourceBadge stateId={stateId} dataType="Fee Schedule" className="mt-3" />}
           </section>
 
           {/* ============================================================ */}
           {/* 8. Important Deadlines — filtered to user's species           */}
           {/* ============================================================ */}
           {filteredDeadlines.length > 0 && (
-            <section>
+            <section id="section-deadlines">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
                 Important Deadlines
               </h3>
@@ -650,6 +703,7 @@ export function StateDetailModal({
                   </div>
                 </div>
               )}
+              {stateId && <DataSourceBadge stateId={stateId} dataType="Application Deadlines" className="mt-3" />}
             </section>
           )}
 
@@ -662,13 +716,14 @@ export function StateDetailModal({
                 <p className="text-[10px] text-primary uppercase tracking-wider mb-1.5 font-semibold">
                   Tips
                 </p>
-                <ul className="space-y-1">
-                  {state.applicationTips.slice(0, 4).map((tip, i) => (
+                <ul className="space-y-1.5">
+                  {state.applicationTips.slice(0, 6).map((tip, i) => (
                     <li
                       key={i}
-                      className="text-xs text-muted-foreground leading-relaxed"
+                      className="text-xs text-muted-foreground leading-relaxed flex items-start gap-2"
                     >
-                      {tip}
+                      <span className="text-primary shrink-0 mt-0.5">&bull;</span>
+                      <span>{tip}</span>
                     </li>
                   ))}
                 </ul>

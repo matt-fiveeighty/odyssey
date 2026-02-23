@@ -94,38 +94,38 @@ const PHASE_STYLES: Record<StatusPhase, { icon: React.ReactNode; color: string; 
   },
   applied: {
     icon: <Check className="w-3.5 h-3.5" />,
-    color: "text-chart-2",
-    bg: "bg-chart-2/10",
+    color: "text-info",
+    bg: "bg-info/10",
   },
   awaiting_draw: {
     icon: <Hourglass className="w-3.5 h-3.5" />,
-    color: "text-amber-400",
-    bg: "bg-amber-400/10",
+    color: "text-warning",
+    bg: "bg-warning/10",
   },
   drew: {
     icon: <Trophy className="w-3.5 h-3.5" />,
-    color: "text-primary",
-    bg: "bg-primary/10",
+    color: "text-chart-2",
+    bg: "bg-chart-2/10",
   },
   didnt_draw: {
     icon: <X className="w-3.5 h-3.5" />,
-    color: "text-chart-4",
-    bg: "bg-chart-4/10",
+    color: "text-destructive",
+    bg: "bg-destructive/10",
   },
   points_bought: {
     icon: <Check className="w-3.5 h-3.5" />,
-    color: "text-blue-400",
-    bg: "bg-blue-400/10",
+    color: "text-info",
+    bg: "bg-info/10",
   },
   hunt_planned: {
     icon: <Clock className="w-3.5 h-3.5" />,
-    color: "text-green-400",
-    bg: "bg-green-400/10",
+    color: "text-success",
+    bg: "bg-success/10",
   },
   hunt_complete: {
     icon: <Check className="w-3.5 h-3.5" />,
-    color: "text-green-400",
-    bg: "bg-green-400/10",
+    color: "text-success",
+    bg: "bg-success/10",
   },
 };
 
@@ -231,7 +231,7 @@ export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardPro
             </span>
           )}
           {counts.awaitingDraw > 0 && (
-            <span className="flex items-center gap-1 text-amber-400 font-medium">
+            <span className="flex items-center gap-1 text-warning font-medium">
               <Hourglass className="w-3 h-3" /> {counts.awaitingDraw} pending
             </span>
           )}
@@ -299,7 +299,7 @@ export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardPro
                       {/* Cost */}
                       {m.totalCost > 0 && (
                         <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
-                          ${m.totalCost.toLocaleString()}
+                          ${Math.round(m.totalCost).toLocaleString()}
                         </span>
                       )}
                     </div>

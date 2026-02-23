@@ -32,15 +32,12 @@ const MONTH_NAMES = [
   "July", "August", "September", "October", "November", "December",
 ];
 
-const MONTH_ABBRS = [
-  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
+// Full month names used everywhere — no abbreviations
 
 interface MonthGroup {
   key: string;          // "2026-03"
   label: string;        // "March 2026"
-  abbr: string;         // "Mar"
+  abbr: string;         // "March"
   year: number;
   month: number;        // 0-indexed
   milestones: Milestone[];
@@ -149,7 +146,7 @@ export function MilestoneCalendar({
       result.push({
         key,
         label: `${MONTH_NAMES[m]} ${selectedYear}`,
-        abbr: MONTH_ABBRS[m],
+        abbr: MONTH_NAMES[m],
         year: selectedYear,
         month: m,
         milestones: ms,
@@ -206,7 +203,7 @@ export function MilestoneCalendar({
 
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span>{yearCompleted}/{yearMilestones.length} done</span>
-          <span>${yearTotal.toLocaleString()} total</span>
+          <span>${Math.round(yearTotal).toLocaleString()} total</span>
           <span>{monthsWithActions} active months</span>
           {yearMilestones.length > 0 && (
             <button
@@ -248,7 +245,7 @@ export function MilestoneCalendar({
                     : "bg-secondary/20 border border-transparent"
               }`}
             >
-              <p className={`text-[10px] font-semibold ${
+              <p className={`text-[9px] font-semibold truncate ${
                 group.isCurrentMonth ? "text-primary" : group.isPast ? "text-muted-foreground/50" : "text-muted-foreground"
               }`}>
                 {group.abbr}
@@ -259,7 +256,7 @@ export function MilestoneCalendar({
                     {group.milestones.length}
                   </p>
                   {group.totalCost > 0 && (
-                    <p className="text-[8px] text-muted-foreground font-mono">${group.totalCost.toLocaleString()}</p>
+                    <p className="text-[8px] text-muted-foreground font-mono">${Math.round(group.totalCost).toLocaleString()}</p>
                   )}
                 </>
               ) : (
@@ -290,7 +287,7 @@ export function MilestoneCalendar({
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
                     <span>{group.completedCount}/{group.milestones.length}</span>
                     {group.totalCost > 0 && (
-                      <span className="font-mono">${group.totalCost.toLocaleString()}</span>
+                      <span className="font-mono">${Math.round(group.totalCost).toLocaleString()}</span>
                     )}
                   </div>
                 </div>

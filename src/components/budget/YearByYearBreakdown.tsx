@@ -46,7 +46,7 @@ export function YearByYearBreakdown() {
         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10">
           <DollarSign className="w-3.5 h-3.5 text-primary" />
           <span className="text-sm font-bold text-primary">
-            ${grandTotal.toLocaleString()} total
+            ${Math.round(grandTotal).toLocaleString()} total
           </span>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function YearByYearBreakdown() {
                           isHuntYear ? "text-chart-2" : "text-foreground"
                         }`}
                       >
-                        ${totalCost.toLocaleString()}
+                        ${Math.round(totalCost).toLocaleString()}
                       </span>
                       {hasItems &&
                         (isExpanded ? (
@@ -131,46 +131,59 @@ export function YearByYearBreakdown() {
                 </CardContent>
               </button>
 
-              {/* Expanded: itemized list */}
+              {/* Expanded: itemized list grouped by state */}
               {isExpanded && hasItems && (
-                <CardContent className="px-4 pb-4 pt-0 space-y-1.5">
-                  <div className="border-t border-border pt-3 space-y-2">
-                    {ms.map((m) => {
-                      const vis = STATE_VISUALS[m.stateId];
-                      const state = STATES_MAP[m.stateId];
+                <CardContent className="px-4 pb-4 pt-0">
+                  <div className="border-t border-border pt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    {[...new Set(ms.map((m) => m.stateId))].map((stateId) => {
+                      const stateMs = ms.filter((m) => m.stateId === stateId);
+                      const vis = STATE_VISUALS[stateId];
+                      const state = STATES_MAP[stateId];
+                      const stateTotal = stateMs.reduce((s, m) => s + m.totalCost, 0);
                       return (
-                        <div
-                          key={m.id}
-                          className={`flex items-center justify-between py-1.5 ${
-                            m.completed ? "opacity-50" : ""
-                          }`}
-                        >
-                          <div className="flex items-center gap-2 min-w-0">
-                            <span
-                              className={`text-[9px] px-1.5 py-0.5 rounded font-bold text-white shrink-0 bg-gradient-to-br ${
-                                vis?.gradient ?? "from-slate-700 to-slate-900"
-                              }`}
-                            >
-                              {state?.abbreviation ?? m.stateId}
+                        <div key={stateId} className="p-2.5 rounded-lg bg-secondary/20 border border-border/50 space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1.5">
+                              <span
+                                className={`text-[9px] px-1.5 py-0.5 rounded font-bold text-white bg-gradient-to-br ${
+                                  vis?.gradient ?? "from-slate-700 to-slate-900"
+                                }`}
+                              >
+                                {state?.abbreviation ?? stateId}
+                              </span>
+                              <span className="text-xs font-semibold">{state?.name ?? stateId}</span>
+                            </div>
+                            <span className="text-xs font-bold font-mono text-primary">
+                              ${Math.round(stateTotal).toLocaleString()}
                             </span>
-                            <SpeciesAvatar speciesId={m.speciesId} size={16} />
-                            <span
-                              className={`text-xs truncate ${
-                                m.completed
-                                  ? "line-through text-muted-foreground"
-                                  : ""
-                              }`}
-                            >
-                              {SPECIES_MAP[m.speciesId]?.name ?? m.speciesId} —{" "}
-                              {m.title}
-                            </span>
-                            {m.type === "hunt" && (
-                              <Crosshair className="w-3 h-3 text-chart-2 shrink-0" />
-                            )}
                           </div>
-                          <span className="text-xs font-mono font-medium shrink-0 ml-2">
-                            ${m.totalCost.toLocaleString()}
-                          </span>
+                          {stateMs.map((m) => (
+                            <div
+                              key={m.id}
+                              className={`flex items-center justify-between py-0.5 ${
+                                m.completed ? "opacity-50" : ""
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <SpeciesAvatar speciesId={m.speciesId} size={14} />
+                                <span
+                                  className={`text-[11px] truncate ${
+                                    m.completed
+                                      ? "line-through text-muted-foreground"
+                                      : "text-muted-foreground"
+                                  }`}
+                                >
+                                  {SPECIES_MAP[m.speciesId]?.name ?? m.speciesId} — {m.title}
+                                </span>
+                                {m.type === "hunt" && (
+                                  <Crosshair className="w-3 h-3 text-chart-2 shrink-0" />
+                                )}
+                              </div>
+                              <span className="text-[11px] font-mono font-medium shrink-0 ml-2">
+                                ${Math.round(m.totalCost).toLocaleString()}
+                              </span>
+                            </div>
+                          ))}
                         </div>
                       );
                     })}

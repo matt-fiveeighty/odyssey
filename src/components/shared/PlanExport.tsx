@@ -203,8 +203,8 @@ export function PlanExport({ assessment, milestones }: PlanExportProps) {
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "12px", margin: "16px 0" }}>
                   {[
                     { label: "States", value: assessment.stateRecommendations.length },
-                    { label: "Year 1 Cost", value: `$${assessment.financialSummary.yearOneInvestment.toLocaleString()}` },
-                    { label: "10-Year Total", value: `$${assessment.financialSummary.tenYearTotal.toLocaleString()}` },
+                    { label: "Year 1 Cost", value: `$${Math.round(assessment.financialSummary.yearOneInvestment).toLocaleString()}` },
+                    { label: "10-Year Total", value: `$${Math.round(assessment.financialSummary.tenYearTotal).toLocaleString()}` },
                     { label: "Planned Hunts", value: assessment.macroSummary.plannedHunts },
                   ].map((s) => (
                     <div key={s.label} style={{ padding: "12px", background: "#f9f9f9", borderRadius: "6px", textAlign: "center" }}>
@@ -248,7 +248,7 @@ export function PlanExport({ assessment, milestones }: PlanExportProps) {
                     <span style={{ fontFamily: "monospace", fontWeight: 600, width: "40px" }}>{yr.year}</span>
                     <span style={{
                       padding: "1px 6px", borderRadius: "3px", color: "white", fontSize: "9px", fontWeight: 600,
-                      background: yr.phase === "building" ? "#2563eb" : yr.phase === "burn" ? "#16a34a" : yr.phase === "gap" ? "#9333ea" : "#dc2626",
+                      background: yr.phase === "building" ? "#3b82f6" : yr.phase === "burn" ? "#d97706" : yr.phase === "gap" ? "#6b7280" : "#ea580c",
                     }}>
                       {yr.phase}
                     </span>
@@ -256,7 +256,7 @@ export function PlanExport({ assessment, milestones }: PlanExportProps) {
                       {yr.actions.map((a) => `${STATES_MAP[a.stateId]?.abbreviation ?? a.stateId} ${SPECIES_MAP[a.speciesId]?.name ?? a.speciesId} (${a.type})`).join(" · ")}
                     </span>
                     <span style={{ fontFamily: "monospace", fontWeight: 600, fontSize: "11px" }}>
-                      ${yr.estimatedCost.toLocaleString()}
+                      ${Math.round(yr.estimatedCost).toLocaleString()}
                     </span>
                   </div>
                 ))}

@@ -93,7 +93,7 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
   return (
     <div ref={containerRef} className="relative">
       <svg
-        viewBox="0 0 540 460"
+        viewBox="-10 -10 560 480"
         className="w-full h-auto max-h-[500px] lg:max-h-[550px]"
         preserveAspectRatio="xMidYMid meet"
         role="img"
@@ -117,7 +117,7 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
                   d={stateData.path}
                   fill={fill}
                   stroke={active ? STROKE_ACTIVE : STROKE_INACTIVE}
-                  strokeWidth={isHovered ? 2.5 : 1.5}
+                  strokeWidth={isHovered ? 3 : 2}
                   opacity={active || !yearData ? 1 : 0.35}
                   className="cursor-pointer transition-all duration-200"
                   style={isHovered ? { filter: "brightness(1.25)" } : undefined}

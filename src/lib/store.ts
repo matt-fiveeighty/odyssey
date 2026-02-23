@@ -458,9 +458,36 @@ export const useAppStore = create<AppState>()(
         set((state) => {
           const hs = useWizardStore.getState().homeState;
           const goalMs = generateMilestonesForGoal(goal, hs);
+
+          // G1: Auto-create a savings goal if the hunt is >1 year out and >$500
+          const totalCost = goalMs.reduce((s, m) => s + m.totalCost, 0);
+          const currentYear = new Date().getFullYear();
+          const monthsAway = Math.max(1, (goal.targetYear - currentYear) * 12);
+          const shouldAutoSave =
+            totalCost > 500 &&
+            goal.targetYear > currentYear + 1 &&
+            !state.savingsGoals.some((sg) => sg.goalId === goal.id);
+
+          const now = new Date().toISOString();
+          const newSavingsGoals = shouldAutoSave
+            ? [
+                ...state.savingsGoals,
+                {
+                  id: `auto-sg-${goal.id}`,
+                  goalId: goal.id,
+                  currentSaved: 0,
+                  monthlySavings: Math.ceil(totalCost / monthsAway),
+                  contributions: [],
+                  createdAt: now,
+                  updatedAt: now,
+                },
+              ]
+            : state.savingsGoals;
+
           return {
             userGoals: [...state.userGoals, goal],
             milestones: [...state.milestones, ...goalMs],
+            savingsGoals: newSavingsGoals,
           };
         }),
       updateUserGoal: (id, updates) =>

@@ -129,6 +129,14 @@ export default function PlannerPage() {
     setShowAddModal(false);
   }
 
+  function handleUpdateItem(id: string, updates: Partial<Pick<PlanItem, "month" | "day" | "endMonth" | "endDay">>) {
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === id ? { ...item, ...updates } : item
+      )
+    );
+  }
+
   function handleAutoFill(newItems: PlanItem[]) {
     setItems((prev) => [...prev, ...newItems]);
   }
@@ -140,7 +148,7 @@ export default function PlannerPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Compass className="w-6 h-6 text-primary" />
-            My Year — {selectedYear}
+            Planner — {selectedYear}
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Plan your hunts, applications, scouting trips, and deadlines
@@ -193,7 +201,7 @@ export default function PlannerPage() {
         <Card className="bg-card border-border">
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-chart-2">
-              ${totalPlannedCost.toLocaleString()}
+              ${Math.round(totalPlannedCost).toLocaleString()}
             </p>
             <p className="text-xs text-muted-foreground">Est. Cost</p>
           </CardContent>
@@ -206,6 +214,7 @@ export default function PlannerPage() {
         selectedYear={selectedYear}
         onToggleComplete={toggleComplete}
         onRemove={removeItem}
+        onUpdateItem={handleUpdateItem}
       />
 
       {/* Opportunity Finder */}

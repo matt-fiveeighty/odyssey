@@ -3,9 +3,10 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Pencil, Check, Zap, ChevronDown } from "lucide-react";
+import { TrendingUp, Pencil, Check, Zap, ChevronDown, Info, DollarSign, Crosshair } from "lucide-react";
 import { useAppStore, useWizardStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
+import { StateOutline } from "@/components/shared/StateOutline";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 
 // ============================================================================
@@ -63,28 +64,37 @@ export function AnnualBudgetPlanner() {
     return total;
   }, [userPoints, homeState]);
 
-  // Compute plan-based budget from confirmed assessment
+  const currentYear = new Date().getFullYear();
+
+  // Compute plan-based budget from confirmed assessment — now year-aware
   const planBudget = useMemo(() => {
     if (!confirmedAssessment) return null;
 
-    const { budgetBreakdown, travelLogistics, financialSummary } = confirmedAssessment;
+    const { budgetBreakdown, travelLogistics, financialSummary, macroSummary, roadmap } = confirmedAssessment;
 
-    // Points & applications = point year cost
-    const pointsCost = budgetBreakdown.pointYearCost;
+    // --- Year-specific data from macroSummary.costByYear ---
+    const thisYearCosts = macroSummary.costByYear.find((c) => c.year === currentYear);
+    const thisYearRoadmap = roadmap.find((r) => r.year === currentYear);
+    const isHuntYear = thisYearRoadmap?.isHuntYear ?? false;
 
-    // Travel = travel logistics total
-    const travelCost = travelLogistics?.totalTravelBudget ?? 0;
+    // Definite: point-year costs (applications + point purchases + licenses)
+    const definiteCost = thisYearCosts?.pointCosts ?? budgetBreakdown.pointYearCost;
 
-    // Tags = estimated from hunt year items that are "tag" category
+    // If-you-draw: hunt costs (tags + travel + processing) — only meaningful in hunt years
+    const huntCosts = thisYearCosts?.huntCosts ?? 0;
+    const travelCost = isHuntYear ? (travelLogistics?.totalTravelBudget ?? 0) : 0;
+    const processingCost = isHuntYear
+      ? confirmedAssessment.stateRecommendations.length * 200
+      : 0;
+    const ifDrawnCost = huntCosts + travelCost + processingCost;
+
+    // Tags from budgetBreakdown (generic, not year-specific)
     const tagsCost = budgetBreakdown.huntYearItems
       .filter((item) => item.category === "tag")
       .reduce((s, item) => s + item.amount, 0);
 
-    // Meat processing estimate: $200 per state in plan
-    const processingCost = confirmedAssessment.stateRecommendations.length * 200;
-
-    // Suggested total based on plan
-    const suggestedTotal = pointsCost + travelCost + tagsCost + processingCost;
+    // Suggested total: definite + if-drawn
+    const suggestedTotal = definiteCost + ifDrawnCost;
 
     // Itemized breakdown per state for points
     const stateBreakdowns: { stateId: string; stateName: string; items: { label: string; amount: number }[]; total: number }[] = [];
@@ -104,15 +114,18 @@ export function AnnualBudgetPlanner() {
     }
 
     return {
-      pointsCost,
+      pointsCost: definiteCost,
       travelCost,
-      tagsCost,
+      tagsCost: isHuntYear ? tagsCost : 0,
       processingCost,
+      definiteCost,
+      ifDrawnCost,
+      isHuntYear,
       suggestedTotal,
       annualSubscription: financialSummary.annualSubscription,
       stateBreakdowns,
     };
-  }, [confirmedAssessment]);
+  }, [confirmedAssessment, currentYear]);
 
   const autoFillFromPlan = () => {
     if (!planBudget) return;
@@ -150,7 +163,7 @@ export function AnnualBudgetPlanner() {
                 <div>
                   <p className="text-sm font-semibold">Auto-fill from your Strategic Plan</p>
                   <p className="text-[10px] text-muted-foreground mt-0.5">
-                    We calculated ~${planBudget.suggestedTotal.toLocaleString()}/yr across {confirmedAssessment?.stateRecommendations.length} states — fill in your budget instantly
+                    We calculated ~${Math.round(planBudget.suggestedTotal).toLocaleString()}/yr across {confirmedAssessment?.stateRecommendations.length} states — fill in your budget instantly
                   </p>
                 </div>
               </div>
@@ -200,7 +213,7 @@ export function AnnualBudgetPlanner() {
                 className="w-32 px-2 py-1 rounded bg-secondary border border-border text-right text-sm font-bold focus:border-primary focus:outline-none"
               />
             ) : (
-              <span className="text-xl font-bold">${totalBudget.toLocaleString()}</span>
+              <span className="text-xl font-bold">${Math.round(totalBudget).toLocaleString()}</span>
             )}
           </div>
 
@@ -215,11 +228,49 @@ export function AnnualBudgetPlanner() {
                   key={cat.key}
                   className={`${cat.color} h-full transition-all`}
                   style={{ width: `${pct}%` }}
-                  title={`${cat.label}: $${amount.toLocaleString()}`}
+                  title={`${cat.label}: $${Math.round(amount).toLocaleString()} (${Math.round(pct)}%)`}
                 />
               );
             })}
           </div>
+
+          {/* Show your work context — definite vs if-you-draw */}
+          {planBudget && hasAutoFilled && (
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-success/5 border border-success/20">
+                <DollarSign className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
+                <div className="text-[10px] leading-relaxed">
+                  <span className="font-semibold text-success">Definite ({currentYear}):</span>{" "}
+                  <span className="text-muted-foreground">
+                    ${Math.round(planBudget.definiteCost).toLocaleString()} — annual point purchases, application fees, and qualifying licenses.
+                    You spend this whether you draw or not.
+                  </span>
+                </div>
+              </div>
+              {planBudget.ifDrawnCost > 0 && (
+                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-chart-2/5 border border-chart-2/20">
+                  <Crosshair className="w-3.5 h-3.5 text-chart-2 shrink-0 mt-0.5" />
+                  <div className="text-[10px] leading-relaxed">
+                    <span className="font-semibold text-chart-2">If you draw ({currentYear}):</span>{" "}
+                    <span className="text-muted-foreground">
+                      +${Math.round(planBudget.ifDrawnCost).toLocaleString()} — tags, travel, lodging, and processing.
+                      {!planBudget.isHuntYear && " This is not a planned hunt year, so these costs are unlikely."}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-info/5 border border-info/20">
+                <Info className="w-3.5 h-3.5 text-info shrink-0 mt-0.5" />
+                <p className="text-[10px] text-muted-foreground leading-relaxed">
+                  <span className="font-semibold text-foreground">Breakdown:</span>{" "}
+                  Points & apps = ${Math.round(planBudget.pointsCost).toLocaleString()},
+                  {planBudget.tagsCost > 0 && ` Tags = $${Math.round(planBudget.tagsCost).toLocaleString()},`}
+                  {planBudget.travelCost > 0 && ` Travel = $${Math.round(planBudget.travelCost).toLocaleString()},`}
+                  {planBudget.processingCost > 0 && ` Processing = $${Math.round(planBudget.processingCost).toLocaleString()}`}
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Category breakdown */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -241,7 +292,7 @@ export function AnnualBudgetPlanner() {
                       className="w-full px-1 py-0.5 rounded bg-secondary border border-border text-xs font-bold focus:border-primary focus:outline-none"
                     />
                   ) : (
-                    <p className="text-xs font-bold">${(categoryBudgets[cat.key] ?? 0).toLocaleString()}</p>
+                    <p className="text-xs font-bold">${Math.round(categoryBudgets[cat.key] ?? 0).toLocaleString()}</p>
                   )}
                 </div>
               </div>
@@ -252,7 +303,7 @@ export function AnnualBudgetPlanner() {
           <div className="flex items-center justify-between pt-2 border-t border-border">
             <span className="text-sm font-medium">Remaining</span>
             <span className={`text-lg font-bold ${remaining >= 0 ? "text-success" : "text-destructive"}`}>
-              ${remaining.toLocaleString()}
+              ${Math.round(remaining).toLocaleString()}
             </span>
           </div>
 
@@ -272,33 +323,45 @@ export function AnnualBudgetPlanner() {
             className="w-full p-4 flex items-center justify-between hover:bg-secondary/10 transition-colors"
             onClick={() => setShowBreakdown(!showBreakdown)}
           >
-            <div>
-              <p className="text-sm font-semibold text-left">Point Subscription by State</p>
-              <p className="text-[10px] text-muted-foreground text-left">
-                ${planBudget.annualSubscription.toLocaleString()}/yr across {planBudget.stateBreakdowns.length} states
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-1">
+                {planBudget.stateBreakdowns.slice(0, 4).map((sb) => (
+                  <StateOutline key={sb.stateId} stateId={sb.stateId} size={18} strokeColor="currentColor" strokeWidth={2.5} fillColor="rgba(255,255,255,0.05)" className="text-muted-foreground" />
+                ))}
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-left">Point Subscription by State</p>
+                <p className="text-[10px] text-muted-foreground text-left">
+                  ${Math.round(planBudget.annualSubscription).toLocaleString()}/yr across {planBudget.stateBreakdowns.length} states
+                </p>
+              </div>
             </div>
             <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${showBreakdown ? "rotate-180" : ""}`} />
           </button>
 
           {showBreakdown && (
-            <CardContent className="pt-0 pb-4 space-y-3">
-              {planBudget.stateBreakdowns.map((sb) => (
-                <div key={sb.stateId} className="p-3 rounded-lg bg-secondary/20 border border-border/50">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold">{sb.stateName}</span>
-                    <span className="text-xs font-bold text-primary">${sb.total}/yr</span>
-                  </div>
-                  <div className="space-y-0.5">
-                    {sb.items.map((item, i) => (
-                      <div key={i} className="flex justify-between text-[10px]">
-                        <span className="text-muted-foreground">{item.label}</span>
-                        <span className="font-mono">${item.amount}</span>
+            <CardContent className="pt-0 pb-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {planBudget.stateBreakdowns.map((sb) => (
+                  <div key={sb.stateId} className="p-3 rounded-lg bg-secondary/20 border border-border/50">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <StateOutline stateId={sb.stateId} size={20} strokeColor="white" strokeWidth={2} fillColor="rgba(255,255,255,0.1)" />
+                        <span className="text-sm font-semibold">{sb.stateName}</span>
                       </div>
-                    ))}
+                      <span className="text-xs font-bold text-primary">${Math.round(sb.total).toLocaleString()}/yr</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      {sb.items.map((item, i) => (
+                        <div key={i} className="flex justify-between text-[10px]">
+                          <span className="text-muted-foreground">{item.label}</span>
+                          <span className="font-mono">${Math.round(item.amount).toLocaleString()}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </CardContent>
           )}
         </Card>
@@ -315,7 +378,7 @@ export function AnnualBudgetPlanner() {
                   Cost to maintain all active preference points
                 </p>
               </div>
-              <p className="text-2xl font-bold text-primary">${pointSubscriptionCost.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-primary">${Math.round(pointSubscriptionCost).toLocaleString()}</p>
             </div>
           </CardContent>
         </Card>

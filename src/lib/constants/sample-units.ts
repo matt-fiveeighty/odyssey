@@ -20,7 +20,7 @@ export const SAMPLE_UNITS: Unit[] = [
     elevationRange: [6500, 9500],
     publicLandPct: 0.45,
     tagQuotaNonresident: 150,
-    notes: "High road density. 1st Rifle limited season. Good truck-based glassing.",
+    notes: "High road density. 1st Rifle limited season. Good glassing from the truck.",
     nearestAirport: "DEN (3.5 hrs) or GJT (2 hrs)",
     driveTimeFromAirport: "3.5 hours from DEN via I-70 W → Hwy 13 N to Meeker",
     tacticalNotes: {

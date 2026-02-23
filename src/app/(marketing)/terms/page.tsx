@@ -202,7 +202,7 @@ export default function TermsPage() {
             allocation, or hunting success. Draw results are determined solely
             by state wildlife agencies. You are responsible for verifying all
             deadlines, fees, regulations, and application requirements directly
-            with the relevant state fish and game department. Our calculations
+            with the relevant state Fish & Game department. Our calculations
             are estimates based on publicly available data and may not reflect
             current-year changes.
           </p>
@@ -216,7 +216,7 @@ export default function TermsPage() {
             regarding point costs, application deadlines, draw odds, and unit
             statistics, we cannot guarantee the accuracy of all data at all
             times. State regulations change frequently. Always verify critical
-            information directly with the relevant state fish and game agency.
+            information directly with the relevant state Fish & Game agency.
           </p>
         </section>
 

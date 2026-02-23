@@ -69,7 +69,7 @@ export function AnnualSpendForecast() {
                       </span>
                     </div>
                     <span className="text-xs font-mono font-medium shrink-0 ml-2">
-                      ${item.cost.toLocaleString()}
+                      ${Math.round(item.cost).toLocaleString()}
                     </span>
                   </div>
                 );

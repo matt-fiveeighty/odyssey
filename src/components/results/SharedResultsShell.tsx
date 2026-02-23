@@ -45,10 +45,10 @@ const ACTION_TYPE_BADGES: Record<
   string,
   { label: string; color: string }
 > = {
-  apply: { label: "Apply", color: "bg-blue-500/15 text-blue-400" },
-  buy_points: { label: "Buy Points", color: "bg-amber-500/15 text-amber-400" },
-  hunt: { label: "Hunt", color: "bg-emerald-500/15 text-emerald-400" },
-  scout: { label: "Scout", color: "bg-purple-500/15 text-purple-400" },
+  apply: { label: "Apply", color: "bg-info/15 text-info" },
+  buy_points: { label: "Buy Points", color: "bg-warning/15 text-warning" },
+  hunt: { label: "Hunt", color: "bg-success/15 text-success" },
+  scout: { label: "Scout", color: "bg-premium/15 text-premium" },
 };
 
 function formatExpirationDate(iso: string): string {

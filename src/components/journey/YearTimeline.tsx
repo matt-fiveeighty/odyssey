@@ -58,9 +58,9 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
 
             {/* Activity dots */}
             <span className="flex gap-0.5">
-              {hasHunts && <span className="w-1.5 h-1.5 rounded-full bg-green-500" />}
-              {hasApps && <span className="w-1.5 h-1.5 rounded-full bg-orange-500" />}
-              {hasPoints && !hasHunts && !hasApps && <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />}
+              {hasHunts && <span className="w-1.5 h-1.5 rounded-full bg-success" />}
+              {hasApps && <span className="w-1.5 h-1.5 rounded-full bg-info" />}
+              {hasPoints && !hasHunts && !hasApps && <span className="w-1.5 h-1.5 rounded-full bg-warning" />}
             </span>
 
             {/* Current year marker */}

@@ -340,13 +340,13 @@ export function OpportunityResultCard({
                       {firstYearCost.items.map((item, idx) => (
                         <div key={idx} className="flex items-center justify-between text-xs">
                           <span className="text-muted-foreground">{item.label}</span>
-                          <span className="font-medium font-mono">${item.amount.toLocaleString()}</span>
+                          <span className="font-medium font-mono">${Math.round(item.amount).toLocaleString()}</span>
                         </div>
                       ))}
                       <Separator className="my-1.5" />
                       <div className="flex items-center justify-between text-xs font-semibold">
                         <span>Total Year 1</span>
-                        <span className="text-primary font-mono">${firstYearCost.total.toLocaleString()}</span>
+                        <span className="text-primary font-mono">${Math.round(firstYearCost.total).toLocaleString()}</span>
                       </div>
                     </div>
                   </div>

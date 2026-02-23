@@ -32,6 +32,7 @@ import { goalFormSchema } from "@/lib/validations";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SuggestedUnit from "@/components/goals/SuggestedUnit";
+import { PHASE_BAR_COLORS } from "@/lib/constants/phase-colors";
 import { GoalConfirmation } from "@/components/goals/GoalConfirmation";
 import { MilestoneCalendar } from "@/components/goals/MilestoneCalendar";
 import { formatSpeciesName } from "@/lib/utils";
@@ -74,10 +75,10 @@ const DREAM_TIER_OPTIONS: { value: DreamHuntTier; label: string; desc: string; i
 ];
 
 const DREAM_TIER_STYLES: Record<DreamHuntTier, { bg: string; text: string; label: string }> = {
-  attainable: { bg: "bg-chart-2/15", text: "text-chart-2", label: "Attainable" },
-  bucket_list: { bg: "bg-chart-1/15", text: "text-chart-1", label: "Bucket List" },
+  attainable: { bg: "bg-info/15", text: "text-info", label: "Attainable" },
+  bucket_list: { bg: "bg-chart-2/15", text: "text-chart-2", label: "Bucket List" },
   trophy: { bg: "bg-chart-4/15", text: "text-chart-4", label: "Trophy" },
-  once_in_a_lifetime: { bg: "bg-primary/15", text: "text-primary", label: "Once-in-a-Lifetime" },
+  once_in_a_lifetime: { bg: "bg-premium/15", text: "text-premium", label: "Once-in-a-Lifetime" },
 };
 
 const HUNT_STYLE_LABELS: Record<string, string> = {
@@ -471,7 +472,7 @@ export default function GoalsPage() {
       } else if (isOpp) {
         evaluation = `Opportunity hunt — ${yearsOut <= 1 ? "you could draw this year" : `short ${yearsOut}-year timeline`} in ${stateName}. ${bestUnit ? `${Math.round(bestUnit.successRate * 100)}% success rate in the top unit.` : "Good draw odds with the current point system."}`;
       } else {
-        evaluation = `${yearsOut > 0 ? `${yearsOut}-year plan` : "Drawable now"} in ${stateName}. ${goalTotalCost > 0 ? `$${goalTotalCost.toLocaleString()} total investment across ${generatedMs.length} action items.` : `${generatedMs.length} action items created.`}`;
+        evaluation = `${yearsOut > 0 ? `${yearsOut}-year plan` : "Drawable now"} in ${stateName}. ${goalTotalCost > 0 ? `$${Math.round(goalTotalCost).toLocaleString()} total investment across ${generatedMs.length} action items.` : `${generatedMs.length} action items created.`}`;
       }
 
       // Add unit-specific info if a unit was selected
@@ -506,7 +507,7 @@ export default function GoalsPage() {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {hasMilestones
-              ? `${completedCount} of ${milestones.length} completed · $${completedCost.toLocaleString()} of $${totalCost.toLocaleString()} spent`
+              ? `${completedCount} of ${milestones.length} completed · $${Math.round(completedCost).toLocaleString()} of $${Math.round(totalCost).toLocaleString()} spent`
               : "Set hunt goals and visualize your strategic roadmap"}
           </p>
         </div>
@@ -753,7 +754,7 @@ export default function GoalsPage() {
                       {roadmapData.map(({ year, isHuntYear, yearCost }) => {
                         const isCurrentYear = year === currentYear;
                         const phase = year - currentYear < 3 ? "building" : year - currentYear < 5 ? "burn" : year - currentYear === 5 ? "gap" : "trophy";
-                        const phaseColors: Record<string, string> = { building: "bg-chart-1", burn: "bg-chart-2", gap: "bg-chart-3", trophy: "bg-primary" };
+                        const phaseColors = PHASE_BAR_COLORS;
 
                         return (
                           <div key={year} className={`relative pl-9 py-2 rounded-lg transition-colors ${isCurrentYear ? "bg-primary/5" : ""}`}>
@@ -766,7 +767,7 @@ export default function GoalsPage() {
                                 </span>
                                 {isHuntYear && <Crosshair className="w-3 h-3 text-chart-2" />}
                               </div>
-                              <span className="text-[10px] text-muted-foreground font-mono">${yearCost.toLocaleString()}</span>
+                              <span className="text-[10px] text-muted-foreground font-mono">${Math.round(yearCost).toLocaleString()}</span>
                             </div>
                           </div>
                         );
@@ -777,7 +778,7 @@ export default function GoalsPage() {
                   <Separator className="my-4" />
                   <div className="grid grid-cols-2 gap-2">
                     {([["building", "Build (1-3)"], ["burn", "Burn (4-5)"], ["gap", "Gap (6)"], ["trophy", "Trophy (7-10)"]] as const).map(([phase, label]) => {
-                      const colors: Record<string, string> = { building: "bg-chart-1", burn: "bg-chart-2", gap: "bg-chart-3", trophy: "bg-primary" };
+                      const colors = PHASE_BAR_COLORS;
                       return (
                         <div key={phase} className="flex items-center gap-2 text-[10px] text-muted-foreground">
                           <div className={`w-2.5 h-2.5 rounded-sm ${colors[phase]}`} />{label}
@@ -799,14 +800,62 @@ export default function GoalsPage() {
                     <p className="text-xs text-muted-foreground">Discretionary — if you have extra $, invest here:</p>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {dreamHunts.map((dh) => (
-                      <div key={dh.id} className="p-3 rounded-lg bg-secondary/30">
-                        <h4 className="font-medium text-sm">{dh.title}</h4>
-                        <p className="text-xs text-muted-foreground mt-1">{dh.description}</p>
-                        {dh.annualPointCost && <p className="text-xs text-chart-4 mt-1 font-medium">~${dh.annualPointCost}/yr</p>}
-                        {dh.notes && <p className="text-[10px] text-muted-foreground mt-1">{dh.notes}</p>}
-                      </div>
-                    ))}
+                    {dreamHunts.map((dh) => {
+                      // Check if already added as a UserGoal
+                      const alreadyAdded = userGoals.some(
+                        (g) => g.notes?.includes(`dream:${dh.id}`)
+                      );
+                      return (
+                        <div key={dh.id} className="p-3 rounded-lg bg-secondary/30">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-sm">{dh.title}</h4>
+                              <p className="text-xs text-muted-foreground mt-1">{dh.description}</p>
+                              {dh.annualPointCost != null && dh.annualPointCost > 0 && (
+                                <p className="text-xs text-chart-4 mt-1 font-medium">~${Math.round(dh.annualPointCost).toLocaleString()}/yr</p>
+                              )}
+                              {dh.notes && <p className="text-[10px] text-muted-foreground mt-1">{dh.notes}</p>}
+                            </div>
+                            {!alreadyAdded ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="shrink-0 text-[10px] h-7 gap-1"
+                                onClick={() => {
+                                  // Map dream hunt species name to speciesId
+                                  const speciesId = SPECIES.find(
+                                    (sp) => sp.name.toLowerCase() === dh.species.toLowerCase()
+                                  )?.id ?? dh.species.toLowerCase().replace(/\s+/g, "_");
+                                  const stateId = dh.stateOrRegion.length === 2 ? dh.stateOrRegion : "";
+                                  const targetYear = currentYear + (dh.estimatedTimelineYears ?? 5);
+                                  addUserGoal({
+                                    id: crypto.randomUUID(),
+                                    userId: "",
+                                    title: dh.title,
+                                    speciesId,
+                                    stateId,
+                                    targetYear,
+                                    status: "dream",
+                                    notes: `dream:${dh.id} — ${dh.notes}`,
+                                    milestones: [],
+                                    dreamTier: "once_in_a_lifetime",
+                                    trophyDescription: dh.description,
+                                  });
+                                }}
+                              >
+                                <Plus className="w-3 h-3" />
+                                Add Goal
+                              </Button>
+                            ) : (
+                              <span className="text-[9px] text-success font-medium flex items-center gap-1 shrink-0">
+                                <Check className="w-3 h-3" />
+                                Added
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
                   </CardContent>
                 </Card>
               )}
@@ -947,7 +996,7 @@ export default function GoalsPage() {
                   {roadmapData.map(({ year, yearCost, isHuntYear, milestones: ms }) => {
                     const isCurrentYear = year === currentYear;
                     const phase = year - currentYear < 3 ? "building" : year - currentYear < 5 ? "burn" : year - currentYear === 5 ? "gap" : "trophy";
-                    const phaseColors: Record<string, string> = { building: "bg-chart-1", burn: "bg-chart-2", gap: "bg-chart-3", trophy: "bg-primary" };
+                    const phaseColors = PHASE_BAR_COLORS;
                     return (
                       <div key={year} className={`relative pl-9 py-2 rounded-lg ${isCurrentYear ? "bg-primary/5" : ""}`}>
                         <div className={`absolute left-2 top-3 w-[14px] h-[14px] rounded-full border-2 border-background ${isCurrentYear ? "bg-primary" : isHuntYear ? "bg-chart-2" : "bg-muted"}`} />
@@ -960,7 +1009,7 @@ export default function GoalsPage() {
                             {isHuntYear && <Crosshair className="w-3 h-3 text-chart-2" />}
                           </div>
                           {yearCost > 0 && (
-                            <span className="text-[10px] text-muted-foreground font-mono">${yearCost.toLocaleString()}</span>
+                            <span className="text-[10px] text-muted-foreground font-mono">${Math.round(yearCost).toLocaleString()}</span>
                           )}
                         </div>
                         {ms.length > 0 && (

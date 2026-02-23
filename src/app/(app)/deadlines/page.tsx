@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, ExternalLink, Download, Star, Check, Trophy, X, History } from "lucide-react";
+import { Calendar, Clock, ExternalLink, Download, Star, Check, Trophy, X, History, ChevronDown, DollarSign, Info } from "lucide-react";
 import { STATES, STATES_MAP } from "@/lib/constants/states";
 import { useAppStore, useWizardStore } from "@/lib/store";
 import { formatSpeciesName } from "@/lib/utils";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { StateOutline } from "@/components/shared/StateOutline";
 import { exportDeadline } from "@/lib/calendar-export";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 
 /** Format YYYY-MM-DD → "April 7, 2026" (NAM) */
 function formatNAM(dateStr: string): string {
@@ -42,9 +45,20 @@ type Deadline = {
 export default function DeadlinesPage() {
   const { userGoals, userPoints, confirmedAssessment, milestones } = useAppStore();
   const wizardSpecies = useWizardStore((s) => s.species);
+  const homeState = useWizardStore((s) => s.homeState);
 
   const now = new Date();
   const monthRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const [collapsedStates, setCollapsedStates] = useState<Set<string>>(new Set());
+
+  function toggleCollapse(key: string) {
+    setCollapsedStates((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   const allDeadlines = useMemo(() => {
     return STATES
@@ -109,21 +123,62 @@ export default function DeadlinesPage() {
   }
 
   function urgencyClass(days: number) {
-    if (days <= 3) return "text-red-400";
-    if (days <= 7) return "text-orange-400";
-    if (days <= 14) return "text-amber-400";
+    if (days <= 3) return "text-destructive";
+    if (days <= 7) return "text-chart-4";
+    if (days <= 14) return "text-warning";
     return "text-muted-foreground";
   }
 
   function urgencyBorder(days: number) {
-    if (days <= 3) return "border-red-500/30";
-    if (days <= 7) return "border-orange-500/30";
-    if (days <= 14) return "border-amber-500/30";
+    if (days <= 3) return "border-destructive/30";
+    if (days <= 7) return "border-chart-4/30";
+    if (days <= 14) return "border-warning/30";
     return "";
   }
 
   function scrollToMonth(key: string) {
     monthRefs.current[key]?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  /** Build TLDR for a state */
+  function stateTldr(stateId: string): string | null {
+    const state = STATES_MAP[stateId];
+    if (!state) return null;
+    const approach = state.applicationApproach === "per_unit"
+      ? "Apply per unit"
+      : state.applicationApproach === "per_region"
+        ? "Apply by region"
+        : "Apply statewide";
+    const system = state.pointSystem === "preference"
+      ? "Preference points (highest points draw first)"
+      : state.pointSystem === "bonus"
+        ? "Bonus points (more points = better odds, not guaranteed)"
+        : state.pointSystem === "hybrid"
+          ? `Hybrid (${state.pointSystemDetails.preferencePct ?? 75}% preference, ${state.pointSystemDetails.randomPct ?? 25}% random)`
+          : state.pointSystem === "random"
+            ? "Random draw (no point advantage)"
+            : "Lottery system";
+    const ql = (() => {
+      const fees = resolveFees(state, homeState);
+      return fees.qualifyingLicense > 0
+        ? ` Qualifying license: $${Math.round(fees.qualifyingLicense)}.`
+        : "";
+    })();
+    return `${approach}. ${system}.${ql}`;
+  }
+
+  /** Species cost string */
+  function speciesCost(stateId: string, speciesId: string): string | null {
+    const state = STATES_MAP[stateId];
+    if (!state) return null;
+    const fees = resolveFees(state, homeState);
+    const ptCost = fees.pointCost[speciesId] ?? 0;
+    const tagCost = state.tagCosts[speciesId] ?? 0;
+    const parts: string[] = [];
+    if (ptCost > 0) parts.push(`$${Math.round(ptCost)} point`);
+    else parts.push("Free point");
+    if (tagCost > 0) parts.push(`$${Math.round(tagCost)} tag if drawn`);
+    return parts.join(" + ");
   }
 
   return (
@@ -134,13 +189,13 @@ export default function DeadlinesPage() {
           Deadlines
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Application deadlines across all states. Your species and states are featured.
+          Application deadlines across all states. Your species and states are highlighted.
         </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_140px] gap-6">
         {/* Main content */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {monthKeys.map((monthKey) => {
             const deadlines = deadlinesByMonth[monthKey];
             const [year, month] = monthKey.split("-");
@@ -149,25 +204,22 @@ export default function DeadlinesPage() {
               year: "numeric",
             });
 
-            // Split into relevant (large) and other (small)
+            // Split into relevant (featured) and other
             const relevant = deadlines.filter(isRelevant);
             const other = deadlines.filter((d) => !isRelevant(d));
 
-            // Group other deadlines by state for visual separation
-            const otherByState: Record<string, Deadline[]> = {};
-            for (const d of other) {
-              if (!otherByState[d.stateId]) otherByState[d.stateId] = [];
-              otherByState[d.stateId].push(d);
+            // Group by state
+            function groupByState(items: Deadline[]): Record<string, Deadline[]> {
+              const groups: Record<string, Deadline[]> = {};
+              for (const d of items) {
+                if (!groups[d.stateId]) groups[d.stateId] = [];
+                groups[d.stateId].push(d);
+              }
+              return groups;
             }
-            const otherStateKeys = Object.keys(otherByState);
 
-            // Group relevant deadlines by state too
-            const relevantByState: Record<string, Deadline[]> = {};
-            for (const d of relevant) {
-              if (!relevantByState[d.stateId]) relevantByState[d.stateId] = [];
-              relevantByState[d.stateId].push(d);
-            }
-            const relevantStateKeys = Object.keys(relevantByState);
+            const relevantByState = groupByState(relevant);
+            const otherByState = groupByState(other);
 
             return (
               <div
@@ -181,139 +233,175 @@ export default function DeadlinesPage() {
                   </h2>
                   <span className="text-[10px] text-muted-foreground/50 ml-auto">
                     {deadlines.length} deadline{deadlines.length !== 1 ? "s" : ""}
+                    {relevant.length > 0 && ` (${relevant.length} yours)`}
                   </span>
                 </div>
 
-                {/* Relevant deadlines — large cards, grouped by state */}
-                {relevantStateKeys.map((stateId) => {
-                  const stateDeadlines = relevantByState[stateId];
+                {/* Relevant deadlines — collapsible state sections */}
+                {Object.entries(relevantByState).map(([stateId, stateDeadlines]) => {
                   const s = STATES_MAP[stateId];
+                  const collapseKey = `${monthKey}-rel-${stateId}`;
+                  const isCollapsed = collapsedStates.has(collapseKey);
+                  const tldr = stateTldr(stateId);
+                  const soonest = Math.min(...stateDeadlines.map((d) => daysUntil(d.closeDate)));
+
                   return (
                     <div key={`rel-${stateId}`} className="mb-3">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Badge
-                          className="text-[10px] font-bold px-1.5 py-0"
-                          style={{ backgroundColor: stateDeadlines[0].color, color: "white" }}
-                        >
-                          {stateId}
-                        </Badge>
-                        <span className="text-xs text-muted-foreground">{s?.name}</span>
-                      </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                        {stateDeadlines.map((d, i) => {
-                          const days = daysUntil(d.closeDate);
-                          const state = STATES_MAP[d.stateId];
+                      {/* Collapsible state header */}
+                      <button
+                        onClick={() => toggleCollapse(collapseKey)}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg bg-primary/5 border border-primary/20 hover:bg-primary/10 transition-colors mb-2"
+                      >
+                        <StateOutline stateId={stateId} size={20} strokeColor="currentColor" strokeWidth={2} className="text-primary shrink-0" />
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-semibold">{s?.name}</span>
+                            <Star className="w-3 h-3 text-primary shrink-0" />
+                            <span className="text-[10px] text-muted-foreground">
+                              {stateDeadlines.length} species
+                            </span>
+                          </div>
+                          {tldr && (
+                            <p className="text-[10px] text-muted-foreground/70 mt-0.5 truncate">{tldr}</p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span className={`text-xs font-bold ${urgencyClass(soonest)}`}>
+                            {soonest}d
+                          </span>
+                          <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
+                        </div>
+                      </button>
 
-                          return (
-                            <Card
-                              key={`${d.stateId}-${d.species}-${i}`}
-                              className={`border-primary/25 bg-primary/5 ${urgencyBorder(days)}`}
-                            >
-                              <CardContent className="p-4 space-y-3">
-                                {/* Header: species avatar + name + countdown */}
-                                <div className="flex items-center gap-3">
-                                  <SpeciesAvatar speciesId={d.species} size={28} />
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-center gap-1.5">
-                                      <Star className="w-3 h-3 text-primary shrink-0" />
-                                      <span className="text-sm font-semibold truncate">
-                                        {formatSpeciesName(d.species)}
+                      {/* Expanded species list */}
+                      {!isCollapsed && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 ml-3">
+                          {stateDeadlines.map((d, i) => {
+                            const days = daysUntil(d.closeDate);
+                            const state = STATES_MAP[d.stateId];
+                            const cost = speciesCost(d.stateId, d.species);
+
+                            return (
+                              <div
+                                key={`${d.stateId}-${d.species}-${i}`}
+                                className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg border border-primary/15 bg-card ${urgencyBorder(days)}`}
+                              >
+                                <SpeciesAvatar speciesId={d.species} size={24} />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-xs font-semibold truncate">
+                                      {formatSpeciesName(d.species)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Closes {formatShort(d.closeDate)}
+                                    </span>
+                                    {cost && (
+                                      <span className="text-[10px] text-muted-foreground/60">
+                                        {cost}
                                       </span>
-                                    </div>
-                                  </div>
-                                  <div className={`text-right shrink-0 ${urgencyClass(days)}`}>
-                                    <div className="text-lg font-bold leading-tight">{days}d</div>
-                                    <div className="text-[9px] opacity-70">remaining</div>
+                                    )}
                                   </div>
                                 </div>
-
-                                {/* Date range */}
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                  <Clock className="w-3.5 h-3.5 shrink-0" />
-                                  <span>{formatNAM(d.openDate)} &ndash; {formatNAM(d.closeDate)}</span>
-                                </div>
-
-                                {/* Actions */}
-                                <div className="flex items-center gap-2 pt-1">
+                                <div className="flex items-center gap-1.5 shrink-0">
+                                  <span className={`text-sm font-bold tabular-nums ${urgencyClass(days)}`}>
+                                    {days}d
+                                  </span>
                                   <button
-                                    onClick={() =>
+                                    onClick={(e) => {
+                                      e.stopPropagation();
                                       exportDeadline({
                                         stateName: d.stateName,
                                         species: formatSpeciesName(d.species),
                                         openDate: d.openDate,
                                         closeDate: d.closeDate,
                                         url: state?.buyPointsUrl,
-                                      })
-                                    }
-                                    className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                                      });
+                                    }}
+                                    className="p-1 rounded hover:bg-secondary transition-colors cursor-pointer"
                                     title="Export to calendar (.ics)"
                                   >
-                                    <Download className="w-3.5 h-3.5" />
-                                    .ics
+                                    <Download className="w-3 h-3 text-muted-foreground" />
                                   </button>
                                   {state && (
                                     <a
                                       href={state.buyPointsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 transition-colors font-medium"
+                                      className="p-1 rounded hover:bg-primary/10 transition-colors"
                                       aria-label={`Apply at ${d.stateName} Fish & Game`}
                                     >
-                                      <ExternalLink className="w-3.5 h-3.5" />
-                                      Apply
+                                      <ExternalLink className="w-3 h-3 text-primary" />
                                     </a>
                                   )}
                                 </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
+                              </div>
+                            );
+                          })}
+                          <div className="col-span-full mt-1">
+                            <DataSourceInline stateId={stateId} />
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
 
-                {/* Other deadlines — compact cards, grouped by state */}
-                {otherStateKeys.map((stateId) => {
-                  const stateDeadlines = otherByState[stateId];
+                {/* Other deadlines — condensed collapsible state groups */}
+                {Object.entries(otherByState).map(([stateId, stateDeadlines]) => {
                   const s = STATES_MAP[stateId];
-                  const isInvested = investedStates.has(stateId);
+                  const collapseKey = `${monthKey}-other-${stateId}`;
+                  const isCollapsed = !collapsedStates.has(collapseKey); // collapsed by default for non-relevant
+                  const soonest = Math.min(...stateDeadlines.map((d) => daysUntil(d.closeDate)));
+
                   return (
-                    <div key={`other-${stateId}`} className="mb-3">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div key={`other-${stateId}`} className="mb-2">
+                      <button
+                        onClick={() => toggleCollapse(collapseKey)}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 rounded-md hover:bg-secondary/50 transition-colors"
+                      >
                         <Badge
-                          className="text-[10px] font-bold px-1.5 py-0"
+                          className="text-[9px] font-bold px-1.5 py-0"
                           style={{ backgroundColor: stateDeadlines[0].color, color: "white" }}
                         >
                           {stateId}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{s?.name}</span>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                        {stateDeadlines.map((d, i) => {
-                          const days = daysUntil(d.closeDate);
-                          const state = STATES_MAP[d.stateId];
+                        <span className="text-xs text-muted-foreground flex-1 text-left">{s?.name}</span>
+                        <span className="text-[10px] text-muted-foreground/50">
+                          {stateDeadlines.length} species
+                        </span>
+                        <span className={`text-[10px] font-medium ${urgencyClass(soonest)}`}>
+                          {soonest}d
+                        </span>
+                        <ChevronDown className={`w-3 h-3 text-muted-foreground/50 transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
+                      </button>
 
-                          return (
-                            <Card
-                              key={`${d.stateId}-${d.species}-other-${i}`}
-                              className={`transition-colors ${
-                                isInvested ? "border-primary/10 bg-primary/[0.02]" : ""
-                              } ${urgencyBorder(days)}`}
-                            >
-                              <CardContent className="p-2.5 space-y-1">
-                                <div className="flex items-center gap-1.5">
-                                  <span className="text-xs font-medium truncate flex-1">
+                      {!isCollapsed && (
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-1.5 mt-1.5 ml-3">
+                          {stateDeadlines.map((d, i) => {
+                            const days = daysUntil(d.closeDate);
+                            const state = STATES_MAP[d.stateId];
+                            const cost = speciesCost(d.stateId, d.species);
+
+                            return (
+                              <div
+                                key={`${d.stateId}-${d.species}-other-${i}`}
+                                className={`flex items-center justify-between px-2 py-1.5 rounded-md border border-border/50 bg-card ${urgencyBorder(days)}`}
+                              >
+                                <div className="min-w-0">
+                                  <span className="text-[11px] font-medium truncate block">
                                     {formatSpeciesName(d.species)}
                                   </span>
-                                  <span className={`text-[10px] font-medium shrink-0 ${urgencyClass(days)}`}>
-                                    {days}d
+                                  <span className="text-[9px] text-muted-foreground/60">
+                                    {formatShort(d.closeDate)}
+                                    {cost && ` \u00b7 ${cost}`}
                                   </span>
                                 </div>
-                                <div className="text-[10px] text-muted-foreground/70">
-                                  Opens {formatShort(d.openDate)} &middot; Closes {formatShort(d.closeDate)}
-                                </div>
-                                <div className="flex items-center gap-1">
+                                <div className="flex items-center gap-1 shrink-0 ml-1">
+                                  <span className={`text-[10px] font-medium ${urgencyClass(days)}`}>
+                                    {days}d
+                                  </span>
                                   <button
                                     onClick={() =>
                                       exportDeadline({
@@ -324,29 +412,27 @@ export default function DeadlinesPage() {
                                         url: state?.buyPointsUrl,
                                       })
                                     }
-                                    className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
+                                    className="p-0.5 rounded hover:bg-secondary transition-colors cursor-pointer"
                                     title="Export to calendar (.ics)"
                                   >
-                                    <Download className="w-2.5 h-2.5" />
-                                    .ics
+                                    <Download className="w-2.5 h-2.5 text-muted-foreground" />
                                   </button>
                                   {state && (
                                     <a
                                       href={state.buyPointsUrl}
                                       target="_blank"
                                       rel="noopener noreferrer"
-                                      className="inline-flex items-center gap-0.5 text-[9px] px-1.5 py-0.5 rounded bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+                                      className="p-0.5 rounded hover:bg-secondary transition-colors"
                                     >
-                                      <ExternalLink className="w-2.5 h-2.5" />
-                                      Apply
+                                      <ExternalLink className="w-2.5 h-2.5 text-muted-foreground" />
                                     </a>
                                   )}
                                 </div>
-                              </CardContent>
-                            </Card>
-                          );
-                        })}
-                      </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -357,13 +443,11 @@ export default function DeadlinesPage() {
 
         {/* Completed Actions — past deadlines the user acted on */}
         {(() => {
-          // Show milestones that match "apply" type and are completed or have draw outcomes
           const completedActions = milestones.filter(
             (m) => (m.type === "apply" || m.type === "buy_points") && (m.completed || m.drawOutcome)
           );
           if (completedActions.length === 0) return null;
 
-          // Group by state
           const byState: Record<string, typeof completedActions> = {};
           for (const m of completedActions) {
             if (!byState[m.stateId]) byState[m.stateId] = [];
@@ -437,7 +521,7 @@ export default function DeadlinesPage() {
                             )}
                             {m.totalCost > 0 && (
                               <span className="text-[10px] text-muted-foreground tabular-nums">
-                                ${m.totalCost.toLocaleString()}
+                                ${Math.round(m.totalCost).toLocaleString()}
                               </span>
                             )}
                           </div>

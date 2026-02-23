@@ -30,13 +30,9 @@ const ACTION_ICONS: Record<string, { icon: typeof Target; color: string; bg: str
   scout: { icon: Binoculars, color: "text-info", bg: "bg-info/15" },
 };
 
-const YEAR_TYPE_COLORS: Record<YearType, string> = {
-  build: "bg-blue-500/8",
-  positioning: "bg-indigo-500/8",
-  burn: "bg-primary/8",
-  recovery: "bg-purple-500/8",
-  youth_window: "bg-amber-500/8",
-};
+import { YEAR_TYPE_CELL_BG } from "@/lib/constants/phase-colors";
+
+const YEAR_TYPE_COLORS = YEAR_TYPE_CELL_BG;
 
 export function StateYearGrid({ roadmap }: StateYearGridProps) {
   const [hoveredCell, setHoveredCell] = useState<string | null>(null);
@@ -180,7 +176,7 @@ export function StateYearGrid({ roadmap }: StateYearGridProps) {
                               </Badge>
                               <span className="text-xs font-bold">{yr.year}</span>
                               <span className="text-[10px] text-muted-foreground ml-auto">
-                                ${cellActions.reduce((s, a) => s + a.cost, 0).toLocaleString()}
+                                ${Math.round(cellActions.reduce((s, a) => s + a.cost, 0)).toLocaleString()}
                               </span>
                             </div>
                             <div className="space-y-1.5">

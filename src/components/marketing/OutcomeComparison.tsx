@@ -110,7 +110,7 @@ export function OutcomeComparison() {
           </h3>
 
           <div className="grid grid-cols-3 gap-4">
-            <Stat label="Annual Spend" value={`$${planBlind.annualSpend.toLocaleString()}/yr`} />
+            <Stat label="Annual Spend" value={`$${Math.round(planBlind.annualSpend).toLocaleString()}/yr`} />
             <Stat label="States" value={String(planBlind.states)} />
             <Stat label="Burn Cycle" value="None" />
           </div>
@@ -131,7 +131,7 @@ export function OutcomeComparison() {
           </h3>
 
           <div className="grid grid-cols-3 gap-4">
-            <Stat label="Annual Spend" value={`$${planDisciplined.annualSpend.toLocaleString()}/yr`} />
+            <Stat label="Annual Spend" value={`$${Math.round(planDisciplined.annualSpend).toLocaleString()}/yr`} />
             <Stat label="States" value={String(planDisciplined.states)} />
             <Stat label="Burn Cycle" value="Coordinated" />
           </div>

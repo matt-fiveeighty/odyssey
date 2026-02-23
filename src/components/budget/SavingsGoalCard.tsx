@@ -68,10 +68,10 @@ function SavingsGoalItem({
         <div>
           <div className="flex items-center justify-between text-xs mb-1">
             <span className="text-muted-foreground">
-              ${goal.currentSaved.toLocaleString()} saved
+              ${Math.round(goal.currentSaved).toLocaleString()} saved
             </span>
             <span className="font-bold">
-              ${targetCost.toLocaleString()}
+              ${Math.round(targetCost).toLocaleString()}
             </span>
           </div>
           <div className="h-3 rounded-full bg-secondary overflow-hidden">
@@ -297,7 +297,7 @@ export function SavingsGoalsSection() {
                     </div>
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground">
-                        ${s.totalCost.toLocaleString()} total
+                        ${Math.round(s.totalCost).toLocaleString()} total
                       </span>
                       <span className="font-bold text-primary">
                         ${s.monthlySavings}/mo
@@ -383,7 +383,7 @@ export function SavingsGoalsSection() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold truncate">{selectedGoal.title}</p>
                     <p className="text-xs text-muted-foreground">
-                      Estimated cost: <span className="font-bold">${selectedTargetCost.toLocaleString()}</span>
+                      Estimated cost: <span className="font-bold">${Math.round(selectedTargetCost).toLocaleString()}</span>
                     </p>
                   </div>
                 </div>
