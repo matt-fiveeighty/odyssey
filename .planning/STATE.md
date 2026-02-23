@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 7 complete -- Scraper Enrichment & Data Freshness. Ready for Phase 8.
+**Current focus:** Phase 8 in progress -- Savings & Budget Tracker.
 
 ## Current Position
 
-Phase: 7 of 10 (Scraper Enrichment & Data Freshness)
-Plan: 5 of 5 complete
-Status: Phase 7 complete -- all 5 plans done
-Last activity: 2026-02-22 -- Plan 07-05 complete (UI freshness badges + scraper data-loss guards)
+Phase: 8 of 10 (Savings & Budget Tracker)
+Plan: 1 of 5 complete
+Status: Executing Phase 8
+Last activity: 2026-02-23 -- Plan 08-01 complete (SavingsGoal types + Zustand store + SavingsGoalCard refactor)
 
-Progress: [██████████████░] 70%
+Progress: [███████████████░] 73%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 7 min
-- Total execution time: 2.28 hours
+- Total execution time: 2.33 hours
 
 **By Phase:**
 
@@ -34,10 +34,11 @@ Progress: [██████████████░] 70%
 | 05-advisor-voice | 4 | 11 min | 3 min |
 | 06-api-integrations | 3 | 8 min | 3 min |
 | 07-scraper-enrichment-data-freshness | 5 | 24 min | 5 min |
+| 08-savings-budget-tracker | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 07-02 (4 min), 07-03 (12 min), 07-04 (4 min), 07-05 (8 min)
-- Trend: 07-05 moderate due to 4-component FreshnessBadge wiring + base-scraper guard integration
+- Last 5 plans: 07-03 (12 min), 07-04 (4 min), 07-05 (8 min), 08-01 (3 min)
+- Trend: 08-01 fast -- types + store slice + component refactor, no new dependencies
 
 *Updated after each plan completion*
 
@@ -115,6 +116,10 @@ Recent decisions affecting current work:
 - [07-05]: estimated() wrappers at render boundary (not full VerifiedDatum plumbing through engine) -- deliberate incremental approach
 - [07-05]: Draw history guard skipped because ref_unit_draw_history has no state_id column (uses unit_id FK)
 - [07-05]: FreshnessBadge showLabel=false for all inline annotations to preserve compact layout
+- [08-01]: targetCost derived from milestones at render time, never stored on SavingsGoal (avoids stale cost bug)
+- [08-01]: Manual savings goal creation requires linking to a UserGoal via dropdown selector
+- [08-01]: dismissedSuggestions kept as ephemeral useState (session-only, not persisted)
+- [08-01]: Persist key unchanged at hunt-planner-app-v2 (shallow merge handles existing users)
 
 ### Pending Todos
 
@@ -127,6 +132,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-22
-Stopped at: Completed 07-05-PLAN.md (Phase 7 complete -- UI freshness badges + scraper data-loss guards)
+Last session: 2026-02-23
+Stopped at: Completed 08-01-PLAN.md (SavingsGoal types + Zustand store + SavingsGoalCard refactor)
 Resume file: None
