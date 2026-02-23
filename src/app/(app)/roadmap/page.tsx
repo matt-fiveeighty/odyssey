@@ -132,10 +132,10 @@ export default function RoadmapPage() {
 
       {/* Two-column dashboard: Applications (left) + Roadmap Timeline (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="min-w-0">
+        <div className="min-w-0 max-h-[520px] overflow-y-auto rounded-xl scrollbar-thin">
           <ApplicationStatusBoard assessment={activeAssessment} />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 max-h-[520px] overflow-y-auto rounded-xl scrollbar-thin">
           <RoadmapTimeline roadmap={activeAssessment.roadmap} />
         </div>
       </div>

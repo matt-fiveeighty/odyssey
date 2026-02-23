@@ -27,8 +27,18 @@ import { DataSourceInline } from "@/components/shared/DataSourceBadge";
 import { exportDeadline } from "@/lib/calendar-export";
 import { resolveFees } from "@/lib/engine/fee-resolver";
 
-/** Short date: "Apr 7" */
-function formatShort(dateStr: string): string {
+/** NAM date: "April 7, 2026" */
+function formatNAM(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** Compact date for tight spaces: "Apr 7" */
+function formatCompact(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
   return new Date(y, m - 1, d).toLocaleDateString("en-US", {
     month: "short",
@@ -168,8 +178,8 @@ export default function DeadlinesPage() {
       .map((u) => u.unitCode);
   }
 
-  // ── State Row Component ─────────────────────────────────────────
-  function StateDeadlineRow({
+  // ── State Card Component (compact for 2-wide grid) ─────────────
+  function StateDeadlineCard({
     group,
     featured,
   }: {
@@ -182,10 +192,8 @@ export default function DeadlinesPage() {
     const vis = STATE_VISUALS[group.stateId];
     const fees = resolveFees(state, homeState);
     const earliestDays = daysUntil(group.earliestClose);
-    const hasPoints = !!state.pointSystem;
     const appApproach = state.applicationApproach;
 
-    // Get the first draw result date across species
     const drawResultSample = group.deadlines.find(
       (d) => d.drawResultDate,
     )?.drawResultDate;
@@ -198,206 +206,152 @@ export default function DeadlinesPage() {
             : "border-border/40 bg-card/60"
         }`}
       >
-        <div className="flex flex-col lg:flex-row">
-          {/* ── Left Panel (~1/4) ─────────────────────────────────── */}
-          <div className="lg:w-[280px] shrink-0 p-4 space-y-3 border-b lg:border-b-0 lg:border-r border-border/30">
-            {/* State identity */}
-            <div className="flex items-center gap-2.5">
-              <div
-                className={`w-10 h-10 rounded-lg flex items-center justify-center text-[11px] font-bold text-white shrink-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-700 to-slate-900"}`}
-              >
-                <StateOutline
-                  stateId={group.stateId}
-                  size={22}
-                  strokeColor="white"
-                  strokeWidth={2.5}
-                  fillColor="rgba(255,255,255,0.15)"
-                />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold leading-tight">
-                  {state.name}
-                </h3>
-                <DataSourceInline stateId={group.stateId} />
-              </div>
-            </div>
-
-            {/* Urgency countdown */}
-            <div
-              className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-medium ${urgencyBg(earliestDays)} ${urgencyColor(earliestDays)}`}
-            >
-              <Clock className="w-3 h-3" />
-              {earliestDays > 0
-                ? `${earliestDays} days remaining`
-                : "Deadline passed"}
-            </div>
-
-            {/* Key facts grid */}
-            <div className="space-y-1.5 text-[11px]">
-              {/* License fee */}
-              {fees.qualifyingLicense > 0 && (
-                <div className="flex items-start gap-2 text-muted-foreground">
-                  <DollarSign className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                  <span>
-                    <span className="font-medium text-foreground/80">
-                      ${Math.round(fees.qualifyingLicense)}
-                    </span>{" "}
-                    {fees.label.toLowerCase()} license
-                  </span>
-                </div>
-              )}
-
-              {/* App fee */}
-              <div className="flex items-start gap-2 text-muted-foreground">
-                <DollarSign className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                <span>
-                  <span className="font-medium text-foreground/80">
-                    ${Math.round(fees.appFee)}
-                  </span>{" "}
-                  app fee (non-refundable)
-                </span>
-              </div>
-
-              {/* Points Y/N */}
-              <div className="flex items-start gap-2 text-muted-foreground">
-                <Target className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                <span>
-                  Points:{" "}
-                  {hasPoints ? (
-                    <span className="font-medium text-foreground/80">
-                      Yes
-                      <span className="text-muted-foreground font-normal">
-                        {" "}
-                        ({state.pointSystem})
-                      </span>
-                    </span>
-                  ) : (
-                    <span className="text-muted-foreground/60">No</span>
-                  )}
-                </span>
-              </div>
-
-              {/* Application approach */}
-              <div className="flex items-start gap-2 text-muted-foreground">
-                <MapPin className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                <span>
-                  Apply{" "}
-                  {appApproach === "per_unit"
-                    ? "per unit"
-                    : appApproach === "per_region"
-                      ? "per region"
-                      : "statewide"}
-                </span>
-              </div>
-
-              {/* Draw results */}
-              {drawResultSample && (
-                <div className="flex items-start gap-2 text-muted-foreground">
-                  <Trophy className="w-3 h-3 mt-0.5 shrink-0 text-muted-foreground/60" />
-                  <span>
-                    Results ~{formatShort(drawResultSample)}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Action links */}
-            <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/20">
-              <a
-                href={state.buyPointsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1 text-[10px] text-primary font-medium hover:underline"
-              >
-                Apply at F&G <ExternalLink className="w-2.5 h-2.5" />
-              </a>
-              <button
-                onClick={() => {
-                  // Export all deadlines for this state as one calendar download
-                  for (const d of group.deadlines) {
-                    exportDeadline({
-                      stateName: d.stateName,
-                      species: formatSpeciesName(d.species),
-                      openDate: d.openDate,
-                      closeDate: d.closeDate,
-                      url: state.buyPointsUrl,
-                    });
-                  }
-                }}
-                className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-              >
-                <Download className="w-2.5 h-2.5" /> Export all .ics
-              </button>
-            </div>
+        {/* ── State header bar ─────────────────────────────────── */}
+        <div className="flex items-center gap-2.5 px-3 py-2.5 border-b border-border/30">
+          <div
+            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-700 to-slate-900"}`}
+          >
+            <StateOutline
+              stateId={group.stateId}
+              size={18}
+              strokeColor="white"
+              strokeWidth={2.5}
+              fillColor="rgba(255,255,255,0.15)"
+            />
           </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold leading-tight truncate">
+                {state.name}
+              </h3>
+              <div
+                className={`shrink-0 px-2 py-0.5 rounded-full border text-[10px] font-medium ${urgencyBg(earliestDays)} ${urgencyColor(earliestDays)}`}
+              >
+                {earliestDays > 0 ? `${earliestDays}d left` : "Passed"}
+              </div>
+            </div>
+            <DataSourceInline stateId={group.stateId} />
+          </div>
+        </div>
 
-          {/* ── Right Panel: Species Grid (~3/4) ──────────────────── */}
-          <div className="flex-1 p-3">
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
-              {group.deadlines.map((d, i) => {
-                const days = daysUntil(d.closeDate);
-                const speciesImg = SPECIES_IMAGES[d.species];
-                const tagCost = fees.tagCosts[d.species] ?? 0;
-                const ptCost = fees.pointCost[d.species] ?? 0;
+        {/* ── Quick facts row ──────────────────────────────────── */}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-[10px] text-muted-foreground border-b border-border/20">
+          {fees.qualifyingLicense > 0 && (
+            <span>
+              <span className="font-medium text-foreground/80">
+                ${Math.round(fees.qualifyingLicense)}
+              </span>{" "}
+              license
+            </span>
+          )}
+          <span>
+            <span className="font-medium text-foreground/80">
+              ${Math.round(fees.appFee)}
+            </span>{" "}
+            app fee
+          </span>
+          <span>
+            {state.pointSystem} points
+          </span>
+          <span>
+            {appApproach === "per_unit"
+              ? "per unit"
+              : appApproach === "per_region"
+                ? "per region"
+                : "statewide"}
+          </span>
+          {drawResultSample && (
+            <span>
+              Results ~{formatCompact(drawResultSample)}
+            </span>
+          )}
+        </div>
 
-                return (
-                  <div
-                    key={`${d.species}-${i}`}
-                    className="relative rounded-lg overflow-hidden border border-border/30 group hover:border-primary/30 transition-all"
-                  >
-                    {/* Background image */}
-                    <div className="relative h-20 overflow-hidden">
-                      {speciesImg ? (
-                        <Image
-                          src={speciesImg.src}
-                          alt={speciesImg.alt}
-                          fill
-                          className="object-cover opacity-60 group-hover:opacity-75 transition-opacity duration-300"
-                          sizes="(max-width: 768px) 50vw, 20vw"
-                        />
-                      ) : (
-                        <div
-                          className={`absolute inset-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-800 to-slate-900"} opacity-40`}
-                        />
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+        {/* ── Species grid ─────────────────────────────────────── */}
+        <div className="p-2.5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {group.deadlines.map((d, i) => {
+              const days = daysUntil(d.closeDate);
+              const speciesImg = SPECIES_IMAGES[d.species];
+              const tagCost = fees.tagCosts[d.species] ?? 0;
+              const ptCost = fees.pointCost[d.species] ?? 0;
 
-                      {/* Urgency badge */}
+              return (
+                <div
+                  key={`${d.species}-${i}`}
+                  className="relative rounded-lg overflow-hidden border border-border/30 group/card hover:border-primary/30 transition-all"
+                >
+                  {/* Background image */}
+                  <div className="relative h-16 overflow-hidden">
+                    {speciesImg ? (
+                      <Image
+                        src={speciesImg.src}
+                        alt={speciesImg.alt}
+                        fill
+                        className="object-cover opacity-60 group-hover/card:opacity-75 transition-opacity duration-300"
+                        sizes="(max-width: 768px) 50vw, 15vw"
+                      />
+                    ) : (
                       <div
-                        className={`absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-card/80 backdrop-blur-sm ${urgencyColor(days)}`}
-                      >
-                        {days}d
-                      </div>
-                    </div>
-
-                    {/* Info below image */}
-                    <div className="p-2 space-y-1">
-                      <p className="text-[11px] font-semibold truncate leading-tight">
-                        {formatSpeciesName(d.species)}
-                      </p>
-                      <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                        <Clock className="w-2.5 h-2.5 shrink-0" />
-                        <span>
-                          {formatShort(d.openDate)} &rarr;{" "}
-                          {formatShort(d.closeDate)}
-                        </span>
-                      </div>
-                      <div className="flex flex-wrap gap-x-2 gap-y-0 text-[9px] text-muted-foreground/70">
-                        {tagCost > 0 && (
-                          <span className="font-medium">
-                            ${Math.round(tagCost).toLocaleString()} tag
-                          </span>
-                        )}
-                        {ptCost > 0 && (
-                          <span>${Math.round(ptCost)}/pt</span>
-                        )}
-                      </div>
+                        className={`absolute inset-0 bg-gradient-to-br ${vis?.gradient ?? "from-slate-800 to-slate-900"} opacity-40`}
+                      />
+                    )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-card via-card/60 to-transparent" />
+                    <div
+                      className={`absolute top-1 right-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold bg-card/80 backdrop-blur-sm ${urgencyColor(days)}`}
+                    >
+                      {days}d
                     </div>
                   </div>
-                );
-              })}
-            </div>
+
+                  <div className="px-2 py-1.5 space-y-0.5">
+                    <p className="text-[10px] font-semibold truncate leading-tight">
+                      {formatSpeciesName(d.species)}
+                    </p>
+                    <p className="text-[9px] text-muted-foreground">
+                      {formatCompact(d.openDate)} &rarr; {formatCompact(d.closeDate)}
+                    </p>
+                    <div className="flex gap-x-2 text-[9px] text-muted-foreground/70">
+                      {tagCost > 0 && (
+                        <span>${Math.round(tagCost).toLocaleString()} tag</span>
+                      )}
+                      {ptCost > 0 && (
+                        <span>${Math.round(ptCost)}/pt</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        {/* ── Footer links ─────────────────────────────────────── */}
+        <div className="flex items-center gap-3 px-3 py-2 border-t border-border/20">
+          <a
+            href={state.buyPointsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1 text-[10px] text-primary font-medium hover:underline"
+          >
+            Apply at F&G <ExternalLink className="w-2.5 h-2.5" />
+          </a>
+          <button
+            onClick={() => {
+              for (const d of group.deadlines) {
+                exportDeadline({
+                  stateName: d.stateName,
+                  species: formatSpeciesName(d.species),
+                  openDate: d.openDate,
+                  closeDate: d.closeDate,
+                  url: state.buyPointsUrl,
+                });
+              }
+            }}
+            className="flex items-center gap-1 text-[10px] text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+          >
+            <Download className="w-2.5 h-2.5" /> .ics
+          </button>
         </div>
       </div>
     );
@@ -442,9 +396,9 @@ export default function DeadlinesPage() {
               {yourByState.length !== 1 ? "s" : ""}
             </span>
           </div>
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {yourByState.map((group) => (
-              <StateDeadlineRow
+              <StateDeadlineCard
                 key={group.stateId}
                 group={group}
                 featured
@@ -483,9 +437,9 @@ export default function DeadlinesPage() {
               </h2>
             </div>
           )}
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             {otherByState.map((group) => (
-              <StateDeadlineRow key={group.stateId} group={group} />
+              <StateDeadlineCard key={group.stateId} group={group} />
             ))}
           </div>
         </section>

@@ -58,30 +58,40 @@ function resolvePhase(m: Milestone): StatusPhase {
   return "not_started";
 }
 
+/** Format YYYY-MM-DD → "April 7, 2026" */
+function formatNAM(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function getNextAction(entry: StatusEntry): string {
   switch (entry.phase) {
     case "not_started": {
       if (entry.daysUntilDeadline !== undefined && entry.daysUntilDeadline > 0) {
-        return `Apply by ${new Date(entry.milestone.dueDate!).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+        return `Submit your application by ${formatNAM(entry.milestone.dueDate!)} (${entry.daysUntilDeadline} days left)`;
       }
-      return "Deadline passed — check late options";
+      return "The deadline has passed — check the state's website for late application options";
     }
     case "applied":
-      return "Waiting for draw results";
+      return "Your application is in — waiting for draw results";
     case "awaiting_draw": {
       if (entry.daysUntilDrawResult !== undefined && entry.daysUntilDrawResult > 0) {
-        return `Results in ~${entry.daysUntilDrawResult} days`;
+        return `Draw results expected in about ${entry.daysUntilDrawResult} days`;
       }
-      return "Check draw results";
+      return "Draw results should be out — check the state's website";
     }
     case "drew":
-      return "Plan your hunt — scout, book, prepare";
+      return "You drew a tag! Time to start planning your hunt";
     case "didnt_draw":
-      return "Points banked. Reapply next year.";
+      return "You didn't draw this year — your points carry over to next year";
     case "points_bought":
-      return "Point secured for this year";
+      return "Point purchased — it'll help your odds next time you apply";
     case "hunt_planned":
-      return "Upcoming hunt — prep gear & logistics";
+      return "You have a hunt coming up — start prepping gear and logistics";
     case "hunt_complete":
       return "Hunt complete";
   }
