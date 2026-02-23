@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Compass,
   Zap,
+  PiggyBank,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -41,6 +42,8 @@ import { generateAdvisorInsights } from "@/lib/engine/advisor";
 import { buildTemporalContext } from "@/lib/engine/advisor-temporal";
 import { computeBoardState } from "@/lib/engine/board-state";
 import { AdvisorCard } from "@/components/advisor/AdvisorCard";
+import { SavingsProgressRing } from "@/components/budget/SavingsProgressRing";
+import { deriveTargetCost, calculateSavingsStatus } from "@/lib/engine/savings-calculator";
 import type { AdvisorInsight as AdvisorInsightType } from "@/lib/types";
 
 // --- Health score color ---
@@ -93,7 +96,7 @@ function YearPill({
 }
 
 export default function DashboardPage() {
-  const { milestones, confirmedAssessment, userPoints, userGoals, lastVisitAt, recordVisit } =
+  const { milestones, confirmedAssessment, userPoints, userGoals, lastVisitAt, recordVisit, savingsGoals } =
     useAppStore();
   const homeState = useWizardStore((s) => s.homeState);
   const router = useRouter();
@@ -172,6 +175,19 @@ export default function DashboardPage() {
       confirmedAssessment,
     );
   }, [confirmedAssessment, boardState, health, metrics, violations, milestones, userPoints, temporal]);
+
+  // Savings progress summaries
+  const savingsSummary = useMemo(() => {
+    if (savingsGoals.length === 0) return [];
+    return savingsGoals.map((sg) => {
+      const goal = userGoals.find((g) => g.id === sg.goalId);
+      const targetCost = deriveTargetCost(milestones, sg.goalId);
+      const pct = targetCost > 0 ? Math.min(100, (sg.currentSaved / targetCost) * 100) : 0;
+      const targetDate = new Date(`${goal?.targetYear ?? 2030}-09-01`);
+      const status = calculateSavingsStatus(targetCost, sg.currentSaved, sg.monthlySavings, targetDate);
+      return { ...sg, goal, targetCost, pct, status };
+    }).filter(s => s.goal);
+  }, [savingsGoals, userGoals, milestones]);
 
   const now = new Date();
 
@@ -303,6 +319,44 @@ export default function DashboardPage() {
             <div className="space-y-2">
               {advisorInsights.map((insight) => (
                 <AdvisorCard key={insight.id} insight={insight} />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ================================================================ */}
+      {/* HUNT FUND SAVINGS                                                */}
+      {/* ================================================================ */}
+      {hasPlan && savingsSummary.length > 0 && (
+        <Card className="bg-card border-border overflow-hidden">
+          <div className="h-1 bg-gradient-to-r from-chart-2 to-chart-4" />
+          <CardContent className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <PiggyBank className="w-4 h-4 text-chart-2" />
+                <p className="text-sm font-semibold">Hunt Fund Savings</p>
+              </div>
+              <Link href="/budget" className="text-xs text-muted-foreground hover:text-primary transition-colors">
+                Manage
+              </Link>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {savingsSummary.map((s) => (
+                <div key={s.id} className="flex items-center gap-3">
+                  <SavingsProgressRing percent={s.pct} status={s.status} size={56}>
+                    <span className="text-[10px] font-bold">{Math.round(s.pct)}%</span>
+                  </SavingsProgressRing>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{s.goal?.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      ${s.currentSaved.toLocaleString()} / ${s.targetCost.toLocaleString()}
+                    </p>
+                    <p className={`text-[10px] font-medium ${s.status === "green" ? "text-chart-2" : s.status === "amber" ? "text-chart-4" : "text-destructive"}`}>
+                      {s.status === "green" ? "On track" : s.status === "amber" ? "Slightly behind" : "Behind"}
+                    </p>
+                  </div>
+                </div>
               ))}
             </div>
           </CardContent>
