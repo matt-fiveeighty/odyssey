@@ -180,14 +180,11 @@ Plans:
   2. Diff items are sourced from deadline proximity changes, draw result dates, point creep shifts, and new opportunities
   3. A materiality filter ensures only significant changes surface -- cost changes over $25, deadline shifts over 5 days, draw timeline changes over 1 year
   4. Each diff item is categorized (action_required, opportunity, status_update, warning) and has advisor voice interpretation with a recommended action
-**Plans**: 5 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] 09-01: Diff engine -- compare lastVisitTimestamp against current data for all diff sources
-- [ ] 09-02: Materiality filter (threshold-based suppression of noise)
-- [ ] 09-03: Diff item categorization and advisor voice interpretation
-- [ ] 09-04: DiffView component replacing Welcome Back card
-- [ ] 09-05: "What changed" persistence (mark diffs as seen, track visit timestamps)
+- [ ] 09-01-PLAN.md — Diff engine pipeline (types, sub-generators, materiality filter, categorization) + Zustand seen-tracking
+- [ ] 09-02-PLAN.md — DiffView/DiffItemCard components + dashboard integration + temporal insight suppression
 
 ### Phase 10: Scouting Strategy
 **Goal**: Users with multi-year point-building strategies see actionable dual-purpose hunt recommendations -- OTC hunts near their trophy draw units that serve as scouting missions while they wait
@@ -223,5 +220,5 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 6. API Integrations | 0/3 | Complete    | 2026-02-22 |
 | 7. Scraper Enrichment & Data Freshness | 5/5 | Complete | 2026-02-22 |
 | 8. Savings & Budget Tracker | 5/5 | Complete | 2026-02-23 |
-| 9. Diff View | 0/5 | Not started | - |
+| 9. Diff View | 0/2 | Not started | - |
 | 10. Scouting Strategy | 0/5 | Not started | - |
