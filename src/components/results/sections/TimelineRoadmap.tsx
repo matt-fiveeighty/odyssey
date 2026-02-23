@@ -11,6 +11,8 @@ import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
 import { estimated } from "@/lib/engine/verified-datum";
 import { formatSpeciesName } from "@/lib/utils";
 import { ChevronDown, Target, Pencil, Check, DollarSign, Trash2, Plus, List, CalendarDays } from "lucide-react";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { useWizardStore } from "@/lib/store";
 import { SeasonCalendar } from "./SeasonCalendar";
 import { LEGACY_PHASE_COLORS, ACTION_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
@@ -313,6 +315,29 @@ export function TimelineRoadmap({ assessment, editedActions, onEditedActionsChan
                                 ))}
                               </div>
                             )}
+                            {/* Fee breakdown from state schedule */}
+                            {action.costs.length === 0 && (() => {
+                              const homeState = useWizardStore.getState().homeState;
+                              const st = STATES_MAP[action.stateId];
+                              if (!st) return null;
+                              const fees = resolveFees(st, homeState);
+                              const parts: string[] = [];
+                              if (action.type === "apply" || action.type === "buy_points") {
+                                if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+                                if (action.type === "apply" && fees.appFee > 0) parts.push(`$${Math.round(fees.appFee)} app`);
+                                if (action.type === "buy_points") {
+                                  const pt = fees.pointCost[action.speciesId ?? ""] ?? 0;
+                                  if (pt > 0) parts.push(`$${Math.round(pt)} point`);
+                                }
+                                if (action.type === "apply") {
+                                  const tag = fees.tagCosts[action.speciesId ?? ""] ?? 0;
+                                  if (tag > 0) parts.push(`If drawn: $${Math.round(tag).toLocaleString()} tag`);
+                                }
+                              }
+                              return parts.length > 0 ? (
+                                <p className="text-[9px] text-muted-foreground/50 mt-0.5">{parts.join(" · ")}</p>
+                              ) : null;
+                            })()}
                           </>
                         )}
                       </div>

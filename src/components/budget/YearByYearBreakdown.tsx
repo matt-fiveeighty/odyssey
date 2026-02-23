@@ -2,18 +2,20 @@
 
 import { useState, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar, ChevronDown, ChevronUp, Crosshair, DollarSign } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import { Calendar, ChevronDown, ChevronUp, Crosshair, DollarSign, Star } from "lucide-react";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 
 const currentYear = new Date().getFullYear();
 const YEARS = Array.from({ length: 10 }, (_, i) => currentYear + i);
 
 export function YearByYearBreakdown() {
   const { milestones, confirmedAssessment } = useAppStore();
+  const homeState = useWizardStore((s) => s.homeState);
   const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
 
   const yearData = useMemo(() => {
@@ -157,33 +159,61 @@ export function YearByYearBreakdown() {
                               ${Math.round(stateTotal).toLocaleString()}
                             </span>
                           </div>
-                          {stateMs.map((m) => (
+                          {state?.nicheFacts && state.nicheFacts.length > 0 && (
+                            <p className="text-[9px] text-warning/60 flex items-start gap-1">
+                              <Star className="w-2.5 h-2.5 shrink-0 mt-px" />
+                              {state.nicheFacts[0]}
+                            </p>
+                          )}
+                          {stateMs.map((m) => {
+                            const mState = STATES_MAP[m.stateId];
+                            const fees = mState ? resolveFees(mState, homeState) : null;
+                            const feeParts: string[] = [];
+                            if (fees) {
+                              if (m.type === "apply" || m.type === "buy_points") {
+                                if (fees.qualifyingLicense > 0) feeParts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+                                if (m.type === "apply" && fees.appFee > 0) feeParts.push(`$${Math.round(fees.appFee)} app`);
+                                if (m.type === "buy_points") {
+                                  const pt = fees.pointCost[m.speciesId] ?? 0;
+                                  if (pt > 0) feeParts.push(`$${Math.round(pt)} point`);
+                                }
+                                if (m.type === "apply") {
+                                  const tag = fees.tagCosts[m.speciesId] ?? 0;
+                                  if (tag > 0) feeParts.push(`if drawn: $${Math.round(tag)} tag`);
+                                }
+                              }
+                            }
+                            return (
                             <div
                               key={m.id}
-                              className={`flex items-center justify-between py-0.5 ${
-                                m.completed ? "opacity-50" : ""
-                              }`}
+                              className={`py-0.5 ${m.completed ? "opacity-50" : ""}`}
                             >
-                              <div className="flex items-center gap-1.5 min-w-0">
-                                <SpeciesAvatar speciesId={m.speciesId} size={14} />
-                                <span
-                                  className={`text-[11px] truncate ${
-                                    m.completed
-                                      ? "line-through text-muted-foreground"
-                                      : "text-muted-foreground"
-                                  }`}
-                                >
-                                  {SPECIES_MAP[m.speciesId]?.name ?? m.speciesId} — {m.title}
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <SpeciesAvatar speciesId={m.speciesId} size={14} />
+                                  <span
+                                    className={`text-[11px] truncate ${
+                                      m.completed
+                                        ? "line-through text-muted-foreground"
+                                        : "text-muted-foreground"
+                                    }`}
+                                  >
+                                    {SPECIES_MAP[m.speciesId]?.name ?? m.speciesId} — {m.title}
+                                  </span>
+                                  {m.type === "hunt" && (
+                                    <Crosshair className="w-3 h-3 text-chart-2 shrink-0" />
+                                  )}
+                                </div>
+                                <span className="text-[11px] font-mono font-medium shrink-0 ml-2">
+                                  ${Math.round(m.totalCost).toLocaleString()}
                                 </span>
-                                {m.type === "hunt" && (
-                                  <Crosshair className="w-3 h-3 text-chart-2 shrink-0" />
-                                )}
                               </div>
-                              <span className="text-[11px] font-mono font-medium shrink-0 ml-2">
-                                ${Math.round(m.totalCost).toLocaleString()}
-                              </span>
+                              {feeParts.length > 0 && (
+                                <p className="text-[9px] text-muted-foreground/50 ml-5">{feeParts.join(" · ")}</p>
+                              )}
                             </div>
-                          ))}
+                          );
+                          })}
                         </div>
                       );
                     })}

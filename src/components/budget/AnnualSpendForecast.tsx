@@ -3,17 +3,19 @@
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CalendarDays } from "lucide-react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { calculateAnnualSpendForecast } from "@/lib/engine/savings-calculator";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 
 export function AnnualSpendForecast() {
   const userGoals = useAppStore((s) => s.userGoals);
   const milestones = useAppStore((s) => s.milestones);
+  const homeState = useWizardStore((s) => s.homeState);
 
   const activeYears = useMemo(() => {
     const forecast = calculateAnnualSpendForecast(userGoals, milestones, 5);
@@ -50,27 +52,44 @@ export function AnnualSpendForecast() {
                 const vis = STATE_VISUALS[item.stateId];
                 const species = SPECIES_MAP[item.speciesId];
 
+                const fees = (() => {
+                  const mState = STATES_MAP[item.stateId];
+                  if (!mState) return null;
+                  const f = resolveFees(mState, homeState);
+                  const parts: string[] = [];
+                  if (f.qualifyingLicense > 0) parts.push(`$${Math.round(f.qualifyingLicense)} license`);
+                  if (f.appFee > 0) parts.push(`$${Math.round(f.appFee)} app`);
+                  const pt = f.pointCost[item.speciesId] ?? 0;
+                  if (pt > 0) parts.push(`$${Math.round(pt)} point`);
+                  return parts.length > 0 ? parts.join(" · ") : null;
+                })();
+
                 return (
                   <div
                     key={`${item.stateId}-${item.speciesId}-${i}`}
-                    className="flex items-center justify-between py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
+                    className="py-1.5 px-2 rounded-md hover:bg-muted/50 transition-colors"
                   >
-                    <div className="flex items-center gap-2 min-w-0">
-                      <SpeciesAvatar speciesId={item.speciesId} size={24} />
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold text-white shrink-0 bg-gradient-to-br ${
-                          vis?.gradient ?? "from-slate-700 to-slate-900"
-                        }`}
-                      >
-                        {state?.abbreviation ?? item.stateId}
-                      </span>
-                      <span className="text-xs text-muted-foreground truncate">
-                        {species?.name ?? item.speciesId}
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <SpeciesAvatar speciesId={item.speciesId} size={24} />
+                        <span
+                          className={`text-[9px] px-1.5 py-0.5 rounded font-bold text-white shrink-0 bg-gradient-to-br ${
+                            vis?.gradient ?? "from-slate-700 to-slate-900"
+                          }`}
+                        >
+                          {state?.abbreviation ?? item.stateId}
+                        </span>
+                        <span className="text-xs text-muted-foreground truncate">
+                          {species?.name ?? item.speciesId}
+                        </span>
+                      </div>
+                      <span className="text-xs font-mono font-medium shrink-0 ml-2">
+                        ${Math.round(item.cost).toLocaleString()}
                       </span>
                     </div>
-                    <span className="text-xs font-mono font-medium shrink-0 ml-2">
-                      ${Math.round(item.cost).toLocaleString()}
-                    </span>
+                    {fees && (
+                      <p className="text-[9px] text-muted-foreground/50 pl-10 mt-0.5">{fees}</p>
+                    )}
                   </div>
                 );
               })}

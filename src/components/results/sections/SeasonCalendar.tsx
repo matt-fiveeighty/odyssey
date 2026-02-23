@@ -11,7 +11,10 @@ import {
 import { generateCalendarAdvisorNotes } from "@/lib/engine/advisor-calendar";
 import { useAppStore } from "@/lib/store";
 import { CalendarSlot } from "./CalendarSlot";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { exportDeadline } from "@/lib/calendar-export";
+import { STATES_MAP } from "@/lib/constants/states";
+import { formatSpeciesName } from "@/lib/utils";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -123,12 +126,42 @@ export function SeasonCalendar({ assessment }: SeasonCalendarProps) {
           )}
         </div>
 
-        <div className="text-[10px] text-muted-foreground">
-          {grid.rows.length} state{grid.rows.length !== 1 ? "s" : ""} ·{" "}
-          <span className="font-mono font-bold text-foreground">
-            ${Math.round(grid.totalCost).toLocaleString()}
-          </span>{" "}
-          annual
+        <div className="flex items-center gap-3">
+          <div className="text-[10px] text-muted-foreground">
+            {grid.rows.length} state{grid.rows.length !== 1 ? "s" : ""} ·{" "}
+            <span className="font-mono font-bold text-foreground">
+              ${Math.round(grid.totalCost).toLocaleString()}
+            </span>{" "}
+            annual
+          </div>
+          {grid.rows.length > 0 && (
+            <button
+              onClick={() => {
+                // Export all deadline slots as individual .ics events
+                for (const row of grid.rows) {
+                  for (const [, slots] of row.months) {
+                    for (const slot of slots) {
+                      if (slot.dueDate && (slot.itemType === "application" || slot.itemType === "deadline")) {
+                        const state = STATES_MAP[slot.stateId];
+                        exportDeadline({
+                          stateName: state?.name ?? slot.stateId,
+                          species: formatSpeciesName(slot.speciesId),
+                          openDate: slot.dueDate,
+                          closeDate: slot.dueDate,
+                          url: slot.url,
+                        });
+                      }
+                    }
+                  }
+                }
+              }}
+              className="text-[10px] px-2 py-1 rounded bg-secondary text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors flex items-center gap-1 cursor-pointer"
+              title="Export all deadlines to .ics calendar files"
+            >
+              <Download className="w-3 h-3" />
+              Export .ics
+            </button>
+          )}
         </div>
       </div>
 
@@ -239,7 +272,7 @@ function StateRow({
         return (
           <div
             key={i}
-            className={`bg-background p-0.5 min-h-[52px] flex flex-col justify-center ${
+            className={`bg-background p-0.5 min-h-[64px] flex flex-col justify-center ${
               isEmpty ? "bg-secondary/5" : ""
             } ${isHighlighted ? "ring-1 ring-inset ring-primary/20" : ""}`}
           >

@@ -11,7 +11,10 @@ import {
   Binoculars,
   AlertCircle,
   Wrench,
+  Download,
 } from "lucide-react";
+import { exportDeadline } from "@/lib/calendar-export";
+import { STATES_MAP } from "@/lib/constants/states";
 
 // ── Item Type Icons ────────────────────────────────────────────────────────
 
@@ -100,6 +103,25 @@ export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
           <span className="text-[8px] text-muted-foreground font-mono truncate">
             ${Math.round(slot.estimatedCost).toLocaleString()}
           </span>
+          {slot.dueDate && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                const state = STATES_MAP[slot.stateId];
+                exportDeadline({
+                  stateName: state?.name ?? slot.stateId,
+                  species: formatSpeciesName(slot.speciesId),
+                  openDate: slot.dueDate!,
+                  closeDate: slot.dueDate!,
+                  url: slot.url,
+                });
+              }}
+              className="shrink-0 p-0.5 rounded text-muted-foreground/40 hover:text-foreground transition-colors cursor-pointer"
+              title="Export to calendar (.ics)"
+            >
+              <Download className="w-2 h-2" />
+            </button>
+          )}
         </div>
       </div>
 

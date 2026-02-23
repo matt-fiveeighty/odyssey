@@ -8,6 +8,8 @@ import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { formatSpeciesName } from "@/lib/utils";
 import { CalendarCheck, DollarSign, AlertCircle, Clock, Check, Hourglass, Trophy, X } from "lucide-react";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { useWizardStore } from "@/lib/store";
 
 interface YearOneActionPlanProps {
   assessment: StrategicAssessment;
@@ -50,9 +52,34 @@ function getStatusBadge(status: ActionStatus) {
   }
 }
 
+/** Fee summary for an action */
+function buildActionFeeSummary(
+  stateId: string,
+  speciesId: string,
+  type: string,
+  homeState: string,
+): string | null {
+  const state = STATES_MAP[stateId];
+  if (!state) return null;
+  const fees = resolveFees(state, homeState);
+  const parts: string[] = [];
+  if (type === "apply") {
+    if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+    if (fees.appFee > 0) parts.push(`$${Math.round(fees.appFee)} app`);
+    const tag = fees.tagCosts[speciesId] ?? 0;
+    if (tag > 0) parts.push(`If drawn: $${Math.round(tag).toLocaleString()} tag`);
+  } else if (type === "buy_points") {
+    const pt = fees.pointCost[speciesId] ?? 0;
+    if (pt > 0) parts.push(`$${Math.round(pt)} point fee`);
+    if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export function YearOneActionPlan({ assessment }: YearOneActionPlanProps) {
   const year1 = assessment.roadmap[0];
   const milestones = useAppStore((s) => s.milestones);
+  const homeState = useWizardStore((s) => s.homeState);
   if (!year1) return null;
 
   const { actions, sortedDeadlines, totalCost, upcomingCount } = useMemo(() => {
@@ -233,6 +260,18 @@ export function YearOneActionPlan({ assessment }: YearOneActionPlanProps) {
                         {a.speciesId && <span className="text-muted-foreground/60">({formatSpeciesName(a.speciesId)})</span>}
                         {getStatusBadge(status)}
                         {i < stateActions.length - 1 && <span className="text-muted-foreground/30 mx-0.5">&middot;</span>}
+                      </span>
+                    );
+                  })}
+                </div>
+                {/* Fee breakdown per action */}
+                <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-0.5">
+                  {stateActions.map((a, i) => {
+                    const feeLine = buildActionFeeSummary(a.stateId, a.speciesId, a.type, homeState);
+                    if (!feeLine) return null;
+                    return (
+                      <span key={i} className="text-[9px] text-muted-foreground/50">
+                        {formatSpeciesName(a.speciesId)}: {feeLine}
                       </span>
                     );
                   })}

@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Pencil, Check, Zap, ChevronDown, Info, DollarSign, Crosshair } from "lucide-react";
+import { TrendingUp, Pencil, Check, Zap, ChevronDown, Info, DollarSign, Crosshair, Star } from "lucide-react";
 import { useAppStore, useWizardStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
 import { StateOutline } from "@/components/shared/StateOutline";
@@ -307,6 +307,42 @@ export function AnnualBudgetPlanner() {
               <p className="text-[9px] text-muted-foreground/60 mt-0.5">
                 You spend this whether you draw or not — points, apps, licenses, gear
               </p>
+              {/* By-state breakdown of definite spend */}
+              {planBudget && planBudget.stateBreakdowns.length > 0 && definiteTotal > 0 && (
+                <div className="mt-2 space-y-1">
+                  {planBudget.stateBreakdowns.map((sb) => {
+                    const state = STATES_MAP[sb.stateId];
+                    if (!state) return null;
+                    const fees = resolveFees(state, homeState);
+                    // Definite items: license + app fees + point fees (not tags)
+                    const definiteParts: { label: string; amount: number }[] = [];
+                    if (fees.qualifyingLicense > 0) {
+                      definiteParts.push({ label: "license", amount: fees.qualifyingLicense });
+                    }
+                    for (const item of sb.items) {
+                      if (item.label.toLowerCase().includes("tag") || item.label.toLowerCase().includes("if drawn")) continue;
+                      if (item.label.toLowerCase().includes("license") || item.label.toLowerCase().includes("qualifying")) continue;
+                      if (item.amount > 0) {
+                        definiteParts.push({ label: item.label, amount: item.amount });
+                      }
+                    }
+                    const stateDefinite = definiteParts.reduce((s, p) => s + p.amount, 0);
+                    if (stateDefinite <= 0) return null;
+                    return (
+                      <div key={sb.stateId} className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <StateOutline stateId={sb.stateId} size={14} strokeColor="currentColor" strokeWidth={2.5} fillColor="rgba(255,255,255,0.05)" className="text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground font-medium truncate">{state.name}</span>
+                          <span className="text-muted-foreground/50 text-[9px] truncate">
+                            {definiteParts.map(p => `$${Math.round(p.amount)} ${p.label}`).join(" + ")}
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono font-medium shrink-0 ml-2">${Math.round(stateDefinite).toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* If You Draw Bar */}
@@ -337,6 +373,38 @@ export function AnnualBudgetPlanner() {
               <p className="text-[9px] text-muted-foreground/60 mt-0.5">
                 Only paid if you draw a tag — tags, travel, lodging, meat processing
               </p>
+              {/* By-state breakdown of if-drawn costs */}
+              {planBudget && planBudget.stateBreakdowns.length > 0 && ifDrawnTotal > 0 && (
+                <div className="mt-2 space-y-1">
+                  {planBudget.stateBreakdowns.map((sb) => {
+                    const state = STATES_MAP[sb.stateId];
+                    if (!state) return null;
+                    const fees = resolveFees(state, homeState);
+                    // If-drawn items: tag costs
+                    const ifDrawnParts: { label: string; amount: number }[] = [];
+                    for (const [speciesId, tagCost] of Object.entries(fees.tagCosts)) {
+                      if (tagCost > 0) {
+                        const spName = speciesId.replace(/_/g, " ");
+                        ifDrawnParts.push({ label: `${spName} tag`, amount: tagCost });
+                      }
+                    }
+                    const stateIfDrawn = ifDrawnParts.reduce((s, p) => s + p.amount, 0);
+                    if (stateIfDrawn <= 0) return null;
+                    return (
+                      <div key={sb.stateId} className="flex items-center justify-between text-[10px]">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <StateOutline stateId={sb.stateId} size={14} strokeColor="currentColor" strokeWidth={2.5} fillColor="rgba(255,255,255,0.05)" className="text-muted-foreground shrink-0" />
+                          <span className="text-muted-foreground font-medium truncate">{state.name}</span>
+                          <span className="text-muted-foreground/50 text-[9px] truncate">
+                            {ifDrawnParts.map(p => `$${Math.round(p.amount)} ${p.label}`).join(" + ")}
+                          </span>
+                        </div>
+                        <span className="text-xs font-mono font-medium shrink-0 ml-2">${Math.round(stateIfDrawn).toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
@@ -445,6 +513,12 @@ export function AnnualBudgetPlanner() {
                         {(state.licenseFees.qualifyingLicense ?? 0) > 0 && (
                           <p className="text-[9px] text-muted-foreground/60">
                             &bull; Qualifying license: ${Math.round(state.licenseFees.qualifyingLicense!)}
+                          </p>
+                        )}
+                        {state.nicheFacts && state.nicheFacts.length > 0 && (
+                          <p className="text-[9px] text-warning/60 flex items-start gap-1">
+                            <Star className="w-2.5 h-2.5 shrink-0 mt-px" />
+                            {state.nicheFacts[0]}
                           </p>
                         )}
                       </div>

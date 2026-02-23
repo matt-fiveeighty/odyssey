@@ -7,7 +7,9 @@ import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { useWizardStore } from "@/lib/store";
-import { DollarSign, TrendingUp, Lightbulb, PieChart, AlertTriangle } from "lucide-react";
+import { DollarSign, TrendingUp, Lightbulb, PieChart, AlertTriangle, Star } from "lucide-react";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { formatSpeciesName } from "@/lib/utils";
 import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
 import { estimated } from "@/lib/engine/verified-datum";
 import { WhatIfModeler } from "./WhatIfModeler";
@@ -21,6 +23,7 @@ const DAYS_PER_HUNT = 6; // avg western hunt: 5-7 days incl. travel
 export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
   const { macroSummary, budgetBreakdown, stateRecommendations, insights } = assessment;
   const userSpecies = useWizardStore((s) => s.species);
+  const homeState = useWizardStore((s) => s.homeState);
   const huntDaysPerYear = useWizardStore((s) => s.huntDaysPerYear);
   const [inflationOn, setInflationOn] = useState(false);
   const [inflationRate, setInflationRate] = useState(0.035);
@@ -84,6 +87,34 @@ export function PortfolioOverview({ assessment }: PortfolioOverviewProps) {
                   <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
                     <div className="h-full rounded-full bg-primary/60 bar-fill" style={{ width: `${cs.pctOfTotal}%` }} />
                   </div>
+                  {/* Fee breakdown */}
+                  {(() => {
+                    const fees = resolveFees(state, homeState);
+                    const parts: string[] = [];
+                    if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+                    const rec = stateRecommendations.find(r => r.stateId === cs.stateId);
+                    if (rec) {
+                      const speciesCosts = rec.annualCostItems
+                        .filter(item => item.speciesId && item.category !== "license")
+                        .reduce<Record<string, number>>((acc, item) => {
+                          const sp = item.speciesId!;
+                          acc[sp] = (acc[sp] ?? 0) + item.amount;
+                          return acc;
+                        }, {});
+                      for (const [sp, cost] of Object.entries(speciesCosts)) {
+                        parts.push(`$${Math.round(cost)} ${formatSpeciesName(sp)}`);
+                      }
+                    }
+                    return parts.length > 0 ? (
+                      <p className="text-[9px] text-muted-foreground/50 mt-0.5">{parts.join(" + ")}</p>
+                    ) : null;
+                  })()}
+                  {state.nicheFacts && state.nicheFacts.length > 0 && (
+                    <p className="text-[9px] text-warning/60 flex items-start gap-1 mt-0.5">
+                      <Star className="w-2.5 h-2.5 shrink-0 mt-px" />
+                      {state.nicheFacts[0]}
+                    </p>
+                  )}
                 </div>
               </div>
             );
