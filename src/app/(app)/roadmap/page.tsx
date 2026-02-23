@@ -100,13 +100,10 @@ export default function RoadmapPage() {
         </div>
       </div>
 
-      {/* Board State Header */}
+      {/* Board State Header — position / health at top */}
       {boardState && <BoardStateHeader boardState={boardState} />}
 
-      {/* Application Status — "where do things stand right now?" */}
-      <ApplicationStatusBoard assessment={activeAssessment} />
-
-      {/* Discipline Alerts */}
+      {/* Discipline Alerts — surface issues early */}
       <DisciplineAlerts violations={violations} />
 
       {/* Interactive State Map — click a state for details, year selector on right */}
@@ -125,8 +122,15 @@ export default function RoadmapPage() {
       </div>
       <MapLegend />
 
-      {/* Roadmap Timeline */}
-      <RoadmapTimeline roadmap={activeAssessment.roadmap} />
+      {/* Two-column dashboard: Applications (left) + Roadmap Timeline (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="min-w-0">
+          <ApplicationStatusBoard assessment={activeAssessment} />
+        </div>
+        <div className="min-w-0">
+          <RoadmapTimeline roadmap={activeAssessment.roadmap} />
+        </div>
+      </div>
 
       {/* State Detail Modal */}
       <StateDetailModal

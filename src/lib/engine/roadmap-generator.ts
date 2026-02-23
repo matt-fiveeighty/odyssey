@@ -555,12 +555,17 @@ function getStateRole(
   stateId: string,
   totalScore: number,
   maxScore: number,
+  bestDrawYears?: number,
 ): StateRecommendation["role"] {
   const state = _data.statesMap[stateId];
   if (!state) return "secondary";
 
   if (state.pointSystem === "random") return "wildcard";
   if (state.pointSystem === "bonus_squared") return "long_term";
+
+  // If the fastest drawable unit in this state takes 15+ years,
+  // classify as long_term regardless of score — it's a multi-decade play.
+  if (bestDrawYears !== undefined && bestDrawYears > 15) return "long_term";
 
   const pct = totalScore / maxScore;
   if (pct > 0.65) return "primary";
@@ -596,7 +601,6 @@ export function generateStrategicAssessment(
       const { stateId } = scoreBreakdown;
       const state = _data.statesMap[stateId];
       if (!state) return null;
-      const role = getStateRole(stateId, scoreBreakdown.totalScore, scoreBreakdown.maxPossibleScore);
 
       const relevantSpecies = getRelevantSpecies(input.species, state);
       const stateUnits = _data.units.filter(
@@ -615,6 +619,7 @@ export function generateStrategicAssessment(
             unitCode: unit.unitCode,
             unitName: unit.unitName ?? unit.unitCode,
             drawTimeline: years === 0 ? "Drawable now" : `Year ${years} with points (est. ${currentYear + years})`,
+            drawYears: years,
             drawConfidence: years === 0 ? undefined : confidence,
             successRate: unit.successRate,
             trophyRating: unit.trophyRating,
@@ -632,6 +637,13 @@ export function generateStrategicAssessment(
           return bVal - aVal;
         })
         .slice(0, 3);
+
+      // Determine fastest drawable unit — used for role assignment
+      const bestDrawYears = bestUnits.length > 0
+        ? Math.min(...bestUnits.map((u) => u.drawYears))
+        : undefined;
+
+      const role = getStateRole(stateId, scoreBreakdown.totalScore, scoreBreakdown.maxPossibleScore, bestDrawYears);
 
       // Itemized annual cost
       const costResult = calculatePointYearCost(stateId, relevantSpecies, input.homeState);
@@ -1203,9 +1215,9 @@ function generateKeyYears(
     description: `Applications across ${recs.length} states. Build points in preference states. Apply for random draw wild cards.`,
   });
 
-  // Year 3: First potential burns
+  // Year 3: First potential burns — only units drawable in 2-3 years
   const shortTermUnits = recs
-    .flatMap(r => r.bestUnits.filter(u => u.drawTimeline.includes("Year 2") || u.drawTimeline.includes("Year 3")));
+    .flatMap(r => r.bestUnits.filter(u => u.drawYears >= 2 && u.drawYears <= 3));
   if (shortTermUnits.length > 0) {
     keyYears.push({
       year: currentYear + 2,
@@ -1404,7 +1416,11 @@ function generateYearlyPlan(
     }
 
     if (phase === "burn" && i >= 3 && i < 6) {
-      const burnTarget = recs.flatMap(r => r.bestUnits).find(u => u.drawTimeline.includes("Year") && u.trophyRating >= 6);
+      // Only mark as a planned hunt if the unit is actually drawable by this year
+      // (drawYears <= current roadmap year offset). Units with 10+ year timelines
+      // are NOT planned hunts — they're long-term maybes.
+      const burnTarget = recs.flatMap(r => r.bestUnits)
+        .find(u => u.drawYears > 0 && u.drawYears <= i && u.trophyRating >= 6);
       if (burnTarget) {
         const sid = recs.find(r => r.bestUnits.includes(burnTarget))?.stateId ?? defaultState;
         const { tNotes } = lookupUnit(burnTarget.unitCode, sid);
@@ -1434,7 +1450,9 @@ function generateYearlyPlan(
     }
 
     if (phase === "burn" && i >= 6) {
-      const trophyTarget = recs.flatMap(r => r.bestUnits).find(u => u.trophyRating >= 8);
+      // Trophy conversion — only if the unit is drawable by this year
+      const trophyTarget = recs.flatMap(r => r.bestUnits)
+        .find(u => u.trophyRating >= 8 && u.drawYears <= i);
       if (trophyTarget) {
         const sid = recs.find(r => r.bestUnits.includes(trophyTarget))?.stateId ?? defaultState;
         const { tNotes } = lookupUnit(trophyTarget.unitCode, sid);

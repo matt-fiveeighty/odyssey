@@ -776,6 +776,7 @@ export interface StateRecommendation {
     unitCode: string;
     unitName: string;
     drawTimeline: string;   // "Year 3-5 with preference points"
+    drawYears: number;      // 0 = drawable now, 30 = cap (effectively never)
     drawConfidence?: { optimistic: number; expected: number; pessimistic: number };
     successRate: number;
     trophyRating: number;
