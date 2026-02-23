@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 8 of 10 (Savings & Budget Tracker)
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: Executing Phase 8
-Last activity: 2026-02-23 -- Plan 08-03 complete (SavingsProgressRing SVG + dashboard savings section)
+Last activity: 2026-02-23 -- Plan 08-05 complete (AnnualSpendForecast component + budget page integration)
 
 Progress: [████████████████░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 6 min
-- Total execution time: 2.41 hours
+- Total execution time: 2.44 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [████████████████░] 80%
 | 05-advisor-voice | 4 | 11 min | 3 min |
 | 06-api-integrations | 3 | 8 min | 3 min |
 | 07-scraper-enrichment-data-freshness | 5 | 24 min | 5 min |
-| 08-savings-budget-tracker | 3 | 8 min | 3 min |
+| 08-savings-budget-tracker | 4 | 10 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-05 (8 min), 08-01 (3 min), 08-02 (3 min), 08-03 (2 min)
-- Trend: 08-03 fastest yet -- small SVG component + dashboard section, no new deps, zero deviations
+- Last 5 plans: 08-01 (3 min), 08-02 (3 min), 08-03 (2 min), 08-05 (2 min)
+- Trend: Consistent sub-3-min for Phase 8 component plans -- small focused components with clear patterns
 
 *Updated after each plan completion*
 
@@ -124,6 +124,9 @@ Recent decisions affecting current work:
 - [08-02]: Traffic light thresholds: green = on time, amber = 1-3 months late, red = >3 months or $0/mo
 - [08-02]: Composable calculator: calculateSavingsStatus calls calculateFundedDate, calculateCatchUpDelta calls calculateMonthlySavingsTarget
 - [08-02]: Engine __tests__ directory established at src/lib/engine/__tests__/ for co-located engine tests
+- [Phase 08]: [08-05]: Used STATE_VISUALS gradients for state badges instead of state.color (matches YearByYearBreakdown pattern)
+- [Phase 08]: [08-04]: Savings urgency caps: red='soon', amber='informational', never 'immediate' (deadlines rank higher)
+- [Phase 08]: [08-04]: Default params (savingsGoals=[], userGoals=[]) for backwards compat at all existing call sites
 
 ### Pending Todos
 
@@ -137,5 +140,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 08-03-PLAN.md (SavingsProgressRing SVG + dashboard savings section)
+Stopped at: Completed 08-05-PLAN.md (AnnualSpendForecast component + budget page integration)
 Resume file: None
