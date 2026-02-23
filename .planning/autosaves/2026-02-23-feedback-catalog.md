@@ -1,6 +1,6 @@
 # Feedback Catalog — Session 2026-02-23
 
-## Status: ESSENTIALLY COMPLETE — Only engine-dependent items remain
+## Status: 100% COMPLETE — All 43 items done
 All A-section (landing page) and A8 (pricing) items done in session 1.
 All feasible B through I items done in sessions 2-4 (context continuations).
 
@@ -66,8 +66,8 @@ All feasible B through I items done in sessions 2-4 (context continuations).
 
 ### B1. State collision / padding — ✅ DONE
 ### B2. Cadence, labels, hierarchy — ✅ DONE
-### B3. Year-specific state writeups — ⏳ PENDING (engine changes needed — per-year narrative generation)
-### B4. Unit selection concern — ⏳ PENDING (engine/data review — unit recommendation logic)
+### B3. Year-specific state writeups — ✅ DONE (generateYearStateNarrative() in engine, YearCard "Year Strategy" section, StateDetailModal collapsible "Year by Year Strategy")
+### B4. Unit selection concern — ✅ DONE (TROPHY_VS_MEAT_WEIGHTS replaces hardcoded 0.4/0.6 — meat_focused=75/25, trophy_focused=20/80)
 ### B5. Species in state detail — ✅ DONE
 ### B6. Season dates truncation — ✅ DONE
 ### B7. Recommended unit scroll — ✅ DONE (quick-jump nav pills: Units, Seasons, Deadlines, Costs)
@@ -91,7 +91,7 @@ All feasible B through I items done in sessions 2-4 (context continuations).
 ### D3. Color consistency — ✅ DONE (part of I1, all semantic tokens)
 ### D4. Full month names — ✅ DONE (YearCalendar, SeasonCalendar, MilestoneCalendar, AddPlanItemDialog)
 ### D5. Edit hunt duration — ✅ DONE (inline HuntDurationEditor with month/day selects for start and end)
-### D6. Calendar sharing / collaboration — ⏳ PENDING (new feature, needs backend design)
+### D6. Calendar sharing / collaboration — ✅ DONE (SharePlanDialog, /api/planner/share POST, /shared/planner/[token] read-only view, /api/planner/cal/[token] iCal subscription)
 ### D7. Year toggle labeling — ✅ DONE (renamed to "Planner" in sidebar, header, page heading)
 
 ---
@@ -146,17 +146,19 @@ All feasible B through I items done in sessions 2-4 (context continuations).
 
 ---
 
-## REMAINING ITEMS (require engine/data changes or new features)
-- B3: Year-specific state writeups — needs engine to generate per-year narrative content
-- B4: Unit selection concern — needs data review of recommended unit scoring logic
-- D6: Calendar sharing/collaboration — new feature requiring backend design + auth
+### Session 6 (engine + backend — B3, B4, D6):
+- B3: Year-specific state writeups — `generateYearStateNarrative()` in roadmap-generator.ts, `stateNarratives` field on RoadmapYear type, YearCard "Year Strategy" section with StateOutline + narrative, StateDetailModal collapsible "Year by Year Strategy" details section
+- B4: Unit selection scoring — `TROPHY_VS_MEAT_WEIGHTS` constant replaces hardcoded 0.4/0.6 sort weights; meat_focused=75% success/25% trophy, trophy_focused=20% success/80% trophy
+- D6: Calendar sharing — SharePlanDialog component, POST /api/planner/share (Redis, 90-day TTL), /shared/planner/[token] read-only page, /api/planner/cal/[token] iCal subscription endpoint
+
+---
 
 ## COMPLETION SUMMARY
-- **Total items:** 37 original + 6 polish items
-- **Completed:** 34 original + 6 polish = 40 (93% of original, 100% of feasible)
-- **Remaining:** 3 (all require engine changes or new backend features)
-- **Sessions:** 5 context windows
-- **Files modified:** 65+
+- **Total items:** 37 original + 6 polish items = 43
+- **Completed:** 43/43 (100%)
+- **Remaining:** 0
+- **Sessions:** 6 context windows
+- **Files modified:** 75+
 - **TypeScript:** Clean compile ✅
 - **Next.js build:** Clean ✅
 - **Raw Tailwind colors in src/:** 0 ✅

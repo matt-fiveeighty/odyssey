@@ -240,6 +240,33 @@ export function StateDetailModal({
             </section>
           )}
 
+          {/* Year-by-year strategy */}
+          {(() => {
+            const yearNarratives = assessment?.roadmap
+              ?.filter(yr => yr.stateNarratives?.[stateId])
+              .map(yr => ({ year: yr.year, narrative: yr.stateNarratives![stateId] }));
+
+            if (!yearNarratives || yearNarratives.length === 0) return null;
+
+            return (
+              <details className="group">
+                <summary className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors">
+                  <Calendar className="w-3.5 h-3.5" />
+                  Year by Year Strategy ({yearNarratives.length} years)
+                  <ChevronDown className="w-3 h-3 transition-transform group-open:rotate-180 ml-auto" />
+                </summary>
+                <div className="mt-2 space-y-1.5">
+                  {yearNarratives.map(({ year, narrative }) => (
+                    <div key={year} className="flex gap-2 text-xs">
+                      <span className="font-bold text-foreground/80 tabular-nums shrink-0 w-10">{year}</span>
+                      <p className="text-muted-foreground leading-relaxed">{narrative}</p>
+                    </div>
+                  ))}
+                </div>
+              </details>
+            );
+          })()}
+
           {/* Quick-jump pills — lets user skip to any section */}
           <div className="flex flex-wrap gap-1.5">
             {relevantUnits.length > 0 && (

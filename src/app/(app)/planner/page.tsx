@@ -8,6 +8,7 @@ import { YearCalendar } from "@/components/planner/YearCalendar";
 import { AddPlanItemDialog } from "@/components/planner/AddPlanItemDialog";
 import { AutoFillButton } from "@/components/planner/AutoFillButton";
 import { OpportunityCards } from "@/components/planner/OpportunityCards";
+import { SharePlanDialog } from "@/components/planner/SharePlanDialog";
 import type { PlanItem } from "@/components/planner/PlanItemCard";
 import { generatePlanDefaultItems } from "@/lib/engine/auto-fill";
 import type { RoadmapYear } from "@/lib/types";
@@ -172,6 +173,7 @@ export default function PlannerPage() {
           >
             &rarr;
           </Button>
+          <SharePlanDialog items={items} year={selectedYear} />
           <AutoFillButton
             selectedYear={selectedYear}
             existingItems={items}

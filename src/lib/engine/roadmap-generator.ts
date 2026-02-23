@@ -121,6 +121,16 @@ export interface ConsultationInput {
 
 // --- Shared Helpers ---
 
+/** Weight profiles for bestUnit sorting based on user's trophyVsMeat preference.
+ *  Meat-focused hunters weight success rate higher; trophy-focused weight trophy rating higher. */
+const TROPHY_VS_MEAT_WEIGHTS: Record<string, { success: number; trophy: number }> = {
+  meat_focused:    { success: 0.75, trophy: 0.25 },
+  lean_meat:       { success: 0.60, trophy: 0.40 },
+  balanced:        { success: 0.50, trophy: 0.50 },
+  lean_trophy:     { success: 0.35, trophy: 0.65 },
+  trophy_focused:  { success: 0.20, trophy: 0.80 },
+};
+
 import { formatSpeciesName } from "@/lib/utils";
 const fmtSpecies = formatSpeciesName;
 
@@ -614,9 +624,11 @@ export function generateStrategicAssessment(
           };
         })
         .sort((a, b) => {
-          // Sort by a combo of accessibility and quality
-          const aVal = a.successRate * 0.4 + (a.trophyRating / 10) * 0.6;
-          const bVal = b.successRate * 0.4 + (b.trophyRating / 10) * 0.6;
+          // Weight success vs trophy based on user's trophyVsMeat preference
+          const successW = TROPHY_VS_MEAT_WEIGHTS[input.trophyVsMeat]?.success ?? 0.5;
+          const trophyW = TROPHY_VS_MEAT_WEIGHTS[input.trophyVsMeat]?.trophy ?? 0.5;
+          const aVal = a.successRate * successW + (a.trophyRating / 10) * trophyW;
+          const bVal = b.successRate * successW + (b.trophyRating / 10) * trophyW;
           return bVal - aVal;
         })
         .slice(0, 3);
@@ -1449,6 +1461,13 @@ function generateYearlyPlan(
       .reduce((s, a) => s + a.cost, 0);
     const yearCost = pointCosts + huntCosts;
 
+    // Generate per-state narrative for this year
+    const stateNarratives: Record<string, string> = {};
+    for (const rec of recs) {
+      const narrative = generateYearStateNarrative(i, year, phase, rec, actions, input, duration);
+      if (narrative) stateNarratives[rec.stateId] = narrative;
+    }
+
     roadmap.push({
       year,
       phase,
@@ -1458,10 +1477,106 @@ function generateYearlyPlan(
       isHuntYear,
       pointYearCost: Math.round(pointCosts),
       huntYearCost: Math.round(huntCosts),
+      stateNarratives: Object.keys(stateNarratives).length > 0 ? stateNarratives : undefined,
     });
   }
 
   return roadmap;
+}
+
+// --- Year-Specific State Narrative Generator (B3) ---
+
+function generateYearStateNarrative(
+  yearIndex: number,
+  year: number,
+  phase: YearType,
+  rec: StateRecommendation,
+  yearActions: RoadmapAction[],
+  input: ConsultationInput,
+  duration: number,
+): string | null {
+  const state = _data.statesMap[rec.stateId];
+  if (!state) return null;
+
+  const abbr = state.abbreviation;
+  const stateActions = yearActions.filter(a => a.stateId === rec.stateId);
+  if (stateActions.length === 0) return null;
+
+  const sp = input.species[0] ?? "elk";
+  const spName = fmtSpecies(sp);
+  const role = rec.role;
+  const isRandom = state.pointSystem === "random";
+  const userPts = input.existingPoints[rec.stateId]?.[sp] ?? 0;
+  const accumulatedPts = userPts + yearIndex; // rough estimate: +1 point per year
+  const huntAction = stateActions.find(a => a.type === "hunt");
+  const pointAction = stateActions.find(a => a.type === "buy_points");
+  const scoutAction = stateActions.find(a => a.type === "scout");
+
+  // Find best drawable unit timeline
+  const bestUnit = rec.bestUnits[0];
+  const bestUnitDrawable = bestUnit?.drawTimeline === "Drawable now";
+
+  const parts: string[] = [];
+
+  // Phase-specific opener
+  if (yearIndex === 0) {
+    if (isRandom) {
+      parts.push(`${abbr}: Apply and hope. ${state.name} uses a random draw, so odds reset every year.`);
+    } else if (role === "primary") {
+      parts.push(`${abbr}: Year 1, portfolio anchor. Start accumulating ${spName} preference points.`);
+    } else if (role === "secondary") {
+      parts.push(`${abbr}: Supporting state. Begin your point build alongside your primary.`);
+    } else if (role === "wildcard") {
+      parts.push(`${abbr}: Wild card. Random draw, so apply every year for a shot at a tag.`);
+    } else {
+      parts.push(`${abbr}: Long term investment. Starting the multi-year point build.`);
+    }
+  } else if (phase === "build") {
+    if (bestUnitDrawable) {
+      parts.push(`${abbr}: You could draw now with ${accumulatedPts} points. Consider applying aggressively on a mid-tier unit.`);
+    } else {
+      parts.push(`${abbr}: Year ${yearIndex + 1} of building. ~${accumulatedPts} points accumulated.`);
+      if (bestUnit && !isRandom) {
+        parts.push(`Your top unit (${bestUnit.unitCode}) is still ${bestUnit.drawTimeline.replace("Year ", "~").replace(" with points", " years out")}.`);
+      }
+    }
+  } else if (phase === "positioning") {
+    parts.push(`${abbr}: Positioning phase. You have ~${accumulatedPts} points and are approaching burn territory.`);
+    if (bestUnit) {
+      parts.push(`E-scout ${bestUnit.unitCode} (${bestUnit.unitName}). Know this unit before you draw.`);
+    }
+  } else if (phase === "burn") {
+    if (huntAction) {
+      parts.push(`${abbr}: Conversion year. Deploy your ${accumulatedPts} points on ${spName}.`);
+      if (bestUnit) {
+        parts.push(`Target: Unit ${bestUnit.unitCode} — ${Math.round(bestUnit.successRate * 100)}% success, ${bestUnit.trophyRating}/10 trophy quality.`);
+      }
+    } else {
+      parts.push(`${abbr}: Burn phase, but no hunt scheduled this year. Continue applications and watch for opportunities.`);
+    }
+  } else if (phase === "recovery") {
+    parts.push(`${abbr}: Recovery year. Reassess your point position vs creep. Deep e-scout for the next burn cycle.`);
+  } else if (phase === "youth_window") {
+    parts.push(`${abbr}: Youth phase. Building points early gives a massive head start. No cost for hunting license in many states.`);
+  }
+
+  // Add cost context
+  if (pointAction && !isRandom) {
+    parts.push(`Annual cost: $${Math.round(pointAction.cost)}.`);
+  }
+
+  // Add hunt detail if it's a hunt year
+  if (huntAction && huntAction.unitCode) {
+    const { tNotes } = lookupUnit(huntAction.unitCode, rec.stateId);
+    if (tNotes?.trophyExpectation) parts.push(tNotes.trophyExpectation + ".");
+  }
+
+  // Add scout note
+  if (scoutAction && !huntAction) {
+    parts.push("Focus on scouting and preparation this year.");
+  }
+
+  return parts.join(" ");
 }
 
 // --- Helpers

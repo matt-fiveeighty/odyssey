@@ -1,229 +1,211 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Share2, UserPlus, X, Mail, Eye, Edit } from "lucide-react";
+import { Share2, Copy, Check, Loader2, AlertCircle, Calendar } from "lucide-react";
+import type { PlanItem } from "./PlanItemCard";
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type ShareRole = "view" | "edit";
-
-interface SharedUser {
-  id: string;
-  email: string;
-  role: ShareRole;
-  sharedAt: string;
-}
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface SharePlanDialogProps {
-  planId: string;
-  isOpen: boolean;
-  onClose: () => void;
+  items: PlanItem[];
+  year: number;
 }
 
-// ============================================================================
-// SharePlanDialog
-// ============================================================================
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
 
-export function SharePlanDialog({ planId, isOpen, onClose }: SharePlanDialogProps) {
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<ShareRole>("view");
-  const [shares, setShares] = useState<SharedUser[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+export function SharePlanDialog({ items, year }: SharePlanDialogProps) {
+  const [open, setOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [token, setToken] = useState<string | null>(null);
 
-  const handleShare = useCallback(async () => {
-    if (!email.trim()) return;
-
-    // Basic email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError("Please enter a valid email address.");
-      return;
-    }
-
-    // Check for duplicate
-    if (shares.some((s) => s.email.toLowerCase() === email.toLowerCase())) {
-      setError("This user already has access.");
-      return;
-    }
-
-    setIsSubmitting(true);
+  const generateShareLink = useCallback(async () => {
+    setLoading(true);
     setError(null);
 
     try {
       const res = await fetch("/api/planner/share", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId, email, role }),
+        body: JSON.stringify({ items, year }),
       });
 
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        throw new Error(data?.error ?? "Failed to share plan.");
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data.error ?? `Failed to create share link (${res.status})`,
+        );
       }
 
-      // Add to local state
-      setShares((prev) => [
-        ...prev,
-        {
-          id: crypto.randomUUID(),
-          email,
-          role,
-          sharedAt: new Date().toISOString(),
-        },
-      ]);
-      setEmail("");
+      const data = await res.json();
+      setShareUrl(data.url);
+      setExpiresAt(data.expiresAt);
+      setToken(data.token);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to share plan.");
+      setError(
+        err instanceof Error ? err.message : "Failed to create share link",
+      );
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  }, [email, role, planId, shares]);
+  }, [items, year]);
 
-  const handleRemove = useCallback(
-    async (shareId: string) => {
-      try {
-        await fetch("/api/planner/share", {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ planId, shareId }),
-        });
+  const handleOpen = useCallback(() => {
+    // Reset state on each open
+    setShareUrl(null);
+    setExpiresAt(null);
+    setError(null);
+    setCopied(false);
+    setToken(null);
+    setOpen(true);
+    // Immediately generate share link
+    void generateShareLink();
+  }, [generateShareLink]);
 
-        setShares((prev) => prev.filter((s) => s.id !== shareId));
-      } catch {
-        // Silent fail for removal -- user can retry
-      }
-    },
-    [planId]
-  );
+  const handleCopy = useCallback(async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const input = document.createElement("input");
+      input.value = shareUrl;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }, [shareUrl]);
+
+  const calendarUrl = token ? `/api/planner/cal/${token}` : null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Share2 className="w-4 h-4" />
-            Share Plan
-          </DialogTitle>
-          <DialogDescription>
-            Invite others to view or edit this plan.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="gap-2"
+        onClick={handleOpen}
+        disabled={items.length === 0}
+      >
+        <Share2 className="w-4 h-4" />
+        Share
+      </Button>
 
-        {/* Invite form */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="relative flex-1">
-              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  setError(null);
-                }}
-                placeholder="Email address..."
-                className="pl-9"
-                onKeyDown={(e) => e.key === "Enter" && handleShare()}
-              />
-            </div>
-            <Select value={role} onValueChange={(v) => setRole(v as ShareRole)}>
-              <SelectTrigger className="w-[100px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="view">
-                  <span className="flex items-center gap-1.5">
-                    <Eye className="w-3 h-3" />
-                    View
-                  </span>
-                </SelectItem>
-                <SelectItem value="edit">
-                  <span className="flex items-center gap-1.5">
-                    <Edit className="w-3 h-3" />
-                    Edit
-                  </span>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            <Button
-              size="sm"
-              onClick={handleShare}
-              disabled={!email.trim() || isSubmitting}
-              aria-label="Invite user"
-            >
-              <UserPlus className="w-4 h-4" />
-            </Button>
-          </div>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Share Your Hunt Plan</DialogTitle>
+            <DialogDescription>
+              Anyone with this link can view a read-only snapshot of your{" "}
+              {year} planner ({items.length} items).
+            </DialogDescription>
+          </DialogHeader>
 
-          {error && (
-            <p className="text-xs text-destructive">{error}</p>
-          )}
-        </div>
+          <div className="space-y-4 py-2">
+            {loading && (
+              <div className="flex items-center justify-center gap-2 py-6 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-sm">Generating share link...</span>
+              </div>
+            )}
 
-        {/* Current shares */}
-        {shares.length > 0 && (
-          <div className="space-y-2 mt-2">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Shared with
-            </p>
-            <div className="space-y-1.5">
-              {shares.map((share) => (
-                <div
-                  key={share.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-secondary/50"
-                >
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                      <span className="text-xs font-medium text-primary">
-                        {share.email.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                    <span className="text-sm truncate">{share.email}</span>
-                    <Badge variant="secondary" className="text-[10px] shrink-0">
-                      {share.role === "edit" ? "Can edit" : "Can view"}
-                    </Badge>
-                  </div>
-                  <button
-                    onClick={() => handleRemove(share.id)}
-                    aria-label={`Remove ${share.email} access`}
-                    className="text-muted-foreground hover:text-destructive shrink-0 ml-2 p-2 -m-2"
+            {error && (
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-sm text-destructive">
+                <AlertCircle className="w-4 h-4 shrink-0" />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {shareUrl && !loading && (
+              <>
+                {/* Share URL */}
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={shareUrl}
+                    className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm font-mono text-foreground truncate"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button
+                    size="sm"
+                    variant={copied ? "default" : "outline"}
+                    onClick={handleCopy}
+                    className="gap-1.5 shrink-0"
                   >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
+                    {copied ? (
+                      <>
+                        <Check className="w-4 h-4" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-4 h-4" />
+                        Copy
+                      </>
+                    )}
+                  </Button>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
 
-        {shares.length === 0 && (
-          <div className="text-center py-4">
-            <p className="text-xs text-muted-foreground">
-              No one has access yet. Add an email above to share.
-            </p>
+                {/* Calendar subscription link */}
+                {calendarUrl && (
+                  <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/30 border border-border/50">
+                    <Calendar className="w-4 h-4 text-primary shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium">iCal Subscription</p>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        Recipients can subscribe to this plan in their calendar app
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Expiration note */}
+                {expiresAt && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    This link expires on{" "}
+                    {new Date(expiresAt).toLocaleDateString("en-US", {
+                      month: "long",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </>
+            )}
+
+            {error && !loading && (
+              <div className="flex justify-center">
+                <Button variant="outline" size="sm" onClick={generateShareLink}>
+                  Try Again
+                </Button>
+              </div>
+            )}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+
+          <DialogFooter showCloseButton />
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

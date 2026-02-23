@@ -7,6 +7,8 @@ import { MoveCard } from "./MoveCard";
 import type { RoadmapYear, YearType } from "@/lib/types";
 import { YEAR_TYPE_LABELS, migratePhaseToYearType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { STATES_MAP } from "@/lib/constants/states";
+import { StateOutline } from "@/components/shared/StateOutline";
 
 import { YEAR_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
@@ -73,6 +75,24 @@ export function YearCard({ year, defaultExpanded = false }: YearCardProps) {
           {year.actions.map((action, i) => (
             <MoveCard key={`${action.stateId}-${action.speciesId}-${action.type}-${i}`} action={action} />
           ))}
+
+          {year.stateNarratives && Object.keys(year.stateNarratives).length > 0 && (
+            <div className="mt-3 pt-3 border-t border-border/30 space-y-2">
+              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Year Strategy</p>
+              {Object.entries(year.stateNarratives).map(([stateId, narrative]) => {
+                const state = STATES_MAP[stateId];
+                return (
+                  <div key={stateId} className="flex items-start gap-2 p-2.5 rounded-lg bg-secondary/30">
+                    <StateOutline stateId={stateId} className="w-5 h-5 text-muted-foreground/50 shrink-0 mt-0.5" />
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      <span className="font-semibold text-foreground">{state?.abbreviation ?? stateId}:</span>{" "}
+                      {narrative}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
     </Card>
