@@ -196,14 +196,11 @@ Plans:
   2. Scouting opportunities are scored by geographic proximity, terrain similarity, season overlap, and cost
   3. Scouting hunts appear as a distinct color/badge in the season calendar, visually differentiated from primary draw hunts
   4. The advisor explains the strategic connection -- e.g., "While you build for WY Unit 100, hunt CO Unit 76 for scouting intel on the same elk migration corridor"
-**Plans**: 5 plans
+**Plans**: 2 plans
 
 Plans:
-- [ ] 10-01: Geographic proximity engine (unit-to-unit distance calculation)
-- [ ] 10-02: Scouting opportunity scorer (proximity, terrain, season overlap, cost)
-- [ ] 10-03: Dual-purpose recommendation presentation ("Scouting Move" cards)
-- [ ] 10-04: Scouting hunt badge/color in season calendar
-- [ ] 10-05: Advisor voice scouting explanations with strategic context
+- [ ] 10-01-PLAN.md — Unit centroid lookup + haversine distance + scouting opportunity detection engine
+- [ ] 10-02-PLAN.md — ScoutingMoveCard UI + calendar scouting badge + advisor scouting sub-generator
 
 ## Progress
 
@@ -221,4 +218,4 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 7. Scraper Enrichment & Data Freshness | 5/5 | Complete | 2026-02-22 |
 | 8. Savings & Budget Tracker | 5/5 | Complete | 2026-02-23 |
 | 9. Diff View | 2/2 | Complete | 2026-02-23 |
-| 10. Scouting Strategy | 0/5 | Not started | - |
+| 10. Scouting Strategy | 0/2 | Not started | - |
