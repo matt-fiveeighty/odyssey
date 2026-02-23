@@ -42,6 +42,8 @@ import { generateAdvisorInsights } from "@/lib/engine/advisor";
 import { buildTemporalContext } from "@/lib/engine/advisor-temporal";
 import { computeBoardState } from "@/lib/engine/board-state";
 import { AdvisorCard } from "@/components/advisor/AdvisorCard";
+import { computeDiffItems } from "@/lib/engine/diff-engine";
+import { DiffView } from "@/components/diff/DiffView";
 import { SavingsProgressRing } from "@/components/budget/SavingsProgressRing";
 import { deriveTargetCost, calculateSavingsStatus } from "@/lib/engine/savings-calculator";
 import type { AdvisorInsight as AdvisorInsightType } from "@/lib/types";
@@ -96,7 +98,7 @@ function YearPill({
 }
 
 export default function DashboardPage() {
-  const { milestones, confirmedAssessment, userPoints, userGoals, lastVisitAt, recordVisit, savingsGoals } =
+  const { milestones, confirmedAssessment, userPoints, userGoals, lastVisitAt, recordVisit, savingsGoals, seenDiffIds, markAllDiffsSeen, lastDiffComputedAt } =
     useAppStore();
   const homeState = useWizardStore((s) => s.homeState);
   const router = useRouter();
@@ -161,6 +163,17 @@ export default function DashboardPage() {
     [confirmedAssessment, violations, userPoints],
   );
 
+  // Diff items (Phase 9) -- computed BEFORE recordVisit() fires
+  const diffItems = useMemo(() => {
+    if (!confirmedAssessment || !temporal.isReturningUser) return [];
+    return computeDiffItems(temporal, milestones, confirmedAssessment, userPoints, STATES, lastDiffComputedAt);
+  }, [confirmedAssessment, temporal, milestones, userPoints, lastDiffComputedAt]);
+
+  const unseenDiffs = useMemo(
+    () => diffItems.filter((d) => !seenDiffIds.includes(d.id)),
+    [diffItems, seenDiffIds],
+  );
+
   // Advisor insights
   const advisorInsights: AdvisorInsightType[] = useMemo(() => {
     if (!confirmedAssessment || !boardState || !health || !metrics) return [];
@@ -175,8 +188,9 @@ export default function DashboardPage() {
       confirmedAssessment,
       savingsGoals,
       userGoals,
+      diffItems.length > 0, // suppressTemporal -- avoid duplicating diff content
     );
-  }, [confirmedAssessment, boardState, health, metrics, violations, milestones, userPoints, temporal, savingsGoals, userGoals]);
+  }, [confirmedAssessment, boardState, health, metrics, violations, milestones, userPoints, temporal, savingsGoals, userGoals, diffItems]);
 
   // Savings progress summaries
   const savingsSummary = useMemo(() => {
@@ -299,6 +313,14 @@ export default function DashboardPage() {
           </div>
         );
       })()}
+
+      {/* DIFF VIEW -- What Changed since last visit */}
+      {hasPlan && unseenDiffs.length > 0 && (
+        <DiffView
+          items={unseenDiffs}
+          onDismissAll={() => markAllDiffsSeen(diffItems.map((d) => d.id))}
+        />
+      )}
 
       {/* ================================================================ */}
       {/* ADVISOR INSIGHTS -- replaces Welcome Back                        */}

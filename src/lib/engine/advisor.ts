@@ -494,6 +494,7 @@ export function generateAdvisorInsights(
   assessment: StrategicAssessment,
   savingsGoals: SavingsGoal[] = [],
   userGoals: UserGoal[] = [],
+  suppressTemporal: boolean = false,
 ): AdvisorInsight[] {
   // Call all sub-generators
   const deadlineInsights = generateDeadlineInsights(milestones, assessment);
@@ -504,7 +505,7 @@ export function generateAdvisorInsights(
     assessment,
   );
   const disciplineInsights = generateDisciplineInsights(violations);
-  const temporalInsights = generateTemporalInsights(temporal, milestones);
+  const temporalInsights = suppressTemporal ? [] : generateTemporalInsights(temporal, milestones);
   const milestoneInsights = generateMilestoneInsights(milestones);
   const creepInsights = generatePointCreepInsights(assessment, userPoints);
   const savingsInsights = generateSavingsInsights(savingsGoals, userGoals, milestones);
