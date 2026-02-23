@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 8 complete -- Savings & Budget Tracker. Ready for Phase 9.
+**Current focus:** Phase 9 -- Diff View (returning user change detection)
 
 ## Current Position
 
-Phase: 8 of 10 (Savings & Budget Tracker)
-Plan: 5 of 5 complete
-Status: Phase 8 complete -- all 5 plans done
-Last activity: 2026-02-23 -- Phase 8 verified (5/5 must-haves passed)
+Phase: 9 of 10 (Diff View)
+Plan: 1 of 2 complete
+Status: Executing Phase 9
+Last activity: 2026-02-23 -- Completed 09-01 (diff engine pipeline)
 
-Progress: [████████████████░░] 80%
+Progress: [█████████████████░] 85%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
+- Total plans completed: 27
 - Average duration: 6 min
-- Total execution time: 2.48 hours
+- Total execution time: 2.53 hours
 
 **By Phase:**
 
@@ -35,10 +35,11 @@ Progress: [████████████████░░] 80%
 | 06-api-integrations | 3 | 8 min | 3 min |
 | 07-scraper-enrichment-data-freshness | 5 | 24 min | 5 min |
 | 08-savings-budget-tracker | 5 | 12 min | 2 min |
+| 09-diff-view | 1 | 3 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 08-02 (3 min), 08-03 (2 min), 08-04 (2 min), 08-05 (2 min)
-- Trend: Phase 8 averaging 2 min/plan -- focused plans with clear patterns from thorough research
+- Last 5 plans: 08-03 (2 min), 08-04 (2 min), 08-05 (2 min), 09-01 (3 min)
+- Trend: Consistent 2-3 min/plan with focused research-first approach
 
 *Updated after each plan completion*
 
@@ -127,6 +128,10 @@ Recent decisions affecting current work:
 - [Phase 08]: [08-05]: Used STATE_VISUALS gradients for state badges instead of state.color (matches YearByYearBreakdown pattern)
 - [Phase 08]: [08-04]: Savings urgency caps: red='soon', amber='informational', never 'immediate' (deadlines rank higher)
 - [Phase 08]: [08-04]: Default params (savingsGoals=[], userGoals=[]) for backwards compat at all existing call sites
+- [09-01]: Stale assessment guard: skip diffs when assessment.createdAt > lastDiffComputedAt (prevents stale diffs after plan regeneration)
+- [09-01]: Categorization inline in sub-generators (not separate step) since each source maps to fixed category
+- [09-01]: Draw result diffs scoped to species within stateRecommendations only (not all available species)
+- [09-01]: No persist key bump for seenDiffIds/lastDiffComputedAt (nullable/default-empty shallow merge compatible)
 
 ### Pending Todos
 
@@ -140,5 +145,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Phase 8 verified and complete. Ready for Phase 9.
+Stopped at: Completed 09-01-PLAN.md (diff engine pipeline). Ready for 09-02.
 Resume file: None
