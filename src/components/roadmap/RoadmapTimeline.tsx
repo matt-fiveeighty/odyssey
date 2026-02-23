@@ -80,6 +80,7 @@ function actionFeeSummary(
   const fees = resolveFees(state, homeState);
   const parts: string[] = [];
   if (type === "apply") {
+    if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
     if (fees.appFee > 0) parts.push(`$${Math.round(fees.appFee)} app (non-refundable)`);
     const tag = fees.tagCosts[speciesId] ?? 0;
     if (tag > 0) parts.push(`If drawn: $${Math.round(tag).toLocaleString()} tag`);

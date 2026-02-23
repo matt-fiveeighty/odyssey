@@ -154,6 +154,10 @@ function buildFeeSummary(
   const parts: string[] = [];
 
   if (actionType === "apply") {
+    // Qualifying license (if required)
+    if (fees.qualifyingLicense > 0) {
+      parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+    }
     // Non-refundable app fee
     if (fees.appFee > 0) {
       parts.push(`$${Math.round(fees.appFee)} app (non-refundable)`);
