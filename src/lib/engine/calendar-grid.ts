@@ -20,8 +20,16 @@ import type {
   ScoutingTarget,
 } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
+import { SAMPLE_UNITS } from "@/lib/constants/sample-units";
 import { getUrgencyLevel } from "./urgency";
 import type { UrgencyLevel } from "./urgency";
+
+// ── Unit Lookup Index (built once) ────────────────────────────────────────
+
+/** Fast lookup: "STATE:UNITCODE" → Unit for OTC detection. */
+const UNIT_INDEX = new Map(
+  SAMPLE_UNITS.map((u) => [`${u.stateId}:${u.unitCode}`, u]),
+);
 
 // ── Exported Types ──────────────────────────────────────────────────────────
 
@@ -94,8 +102,9 @@ function mapActionTypeToItemType(
 }
 
 /**
- * Derive tag type from action type and state point system.
- * OTC/leftover detection is deferred to Phase 7 scraper integration.
+ * Derive tag type from action type and unit data.
+ * OTC detection: unit with pointsRequiredNonresident === 0.
+ * Leftover detection: deferred until scraper data flows into runtime.
  */
 function deriveTagType(
   action: RoadmapAction,
@@ -103,7 +112,14 @@ function deriveTagType(
 ): CalendarSlotData["tagType"] {
   if (action.type === "buy_points") return "points_only";
   if (action.type === "scout") return "n/a";
-  // TODO: Phase 7 — derive OTC/leftover from scraper data (SCRP-09)
+
+  // OTC detection from unit data
+  if (action.unitCode) {
+    const unit = UNIT_INDEX.get(`${action.stateId}:${action.unitCode}`);
+    if (unit && unit.pointsRequiredNonresident === 0) return "otc";
+  }
+
+  // Leftover detection requires scraper→DB→runtime pipeline (future milestone)
   return "draw";
 }
 
@@ -176,6 +192,7 @@ function mapMilestoneTypeToItemType(
 
 /**
  * Map Milestone.type to tag type.
+ * Milestones lack unitCode, so OTC detection is best-effort via speciesId.
  */
 function milestoneDeriveTagType(
   milestone: Milestone,
@@ -183,7 +200,19 @@ function milestoneDeriveTagType(
   if (milestone.type === "buy_points") return "points_only";
   if (milestone.type === "scout") return "n/a";
   if (milestone.type === "deadline") return "n/a";
-  // TODO: Phase 7 — derive OTC/leftover from scraper data
+
+  // Milestones don't carry unitCode, so we check if ANY unit for this
+  // state+species is OTC (conservative: if all are OTC, mark as OTC)
+  const stateSpeciesUnits = SAMPLE_UNITS.filter(
+    (u) => u.stateId === milestone.stateId && u.speciesId === milestone.speciesId,
+  );
+  if (
+    stateSpeciesUnits.length > 0 &&
+    stateSpeciesUnits.every((u) => u.pointsRequiredNonresident === 0)
+  ) {
+    return "otc";
+  }
+
   return "draw";
 }
 
