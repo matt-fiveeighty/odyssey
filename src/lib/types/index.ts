@@ -48,7 +48,8 @@ export type AdvisorInsightCategory =
   | "discipline"
   | "milestone"
   | "temporal"
-  | "calendar";
+  | "calendar"
+  | "savings";    // Phase 8
 
 /** CTA target -- where the user should go */
 export interface AdvisorCTA {
@@ -70,6 +71,28 @@ export interface AdvisorInsight {
   temporalContext?: string;            // "Since your last visit (12 days ago)..."
   confidence?: "verified" | "estimated" | "stale" | "user_reported";  // Matches DataConfidence
   expiresAt?: string;                  // ISO date -- insight only relevant until this date
+}
+
+// ============================================================================
+// Savings & Budget Tracker (Phase 8)
+// ============================================================================
+
+export type SavingsStatus = "green" | "amber" | "red";
+
+export interface SavingsContribution {
+  amount: number;
+  date: string;       // ISO date string
+  note?: string;      // "February deposit", "Tax refund bonus"
+}
+
+export interface SavingsGoal {
+  id: string;
+  goalId: string;              // Links to UserGoal.id (SAV-02)
+  currentSaved: number;        // Running total of contributions
+  monthlySavings: number;      // User-set monthly contribution amount
+  contributions: SavingsContribution[];  // Audit trail
+  createdAt: string;           // ISO date
+  updatedAt: string;           // ISO date
 }
 
 // ============================================================================
@@ -441,6 +464,8 @@ export interface State {
   pointOnlyApplication?: PointOnlyApplication;
   // v3: Season tiers
   seasonTiers?: SeasonTier[];
+  // v7: Scraped season dates keyed by "speciesId:seasonType"
+  seasonDates?: Record<string, { start: string; end: string }>;
   // v3: Advisor personality narrative
   statePersonality?: string;
 }

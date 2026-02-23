@@ -9,6 +9,7 @@ import {
   Target,
   RefreshCw,
   Calendar,
+  PiggyBank,
   ArrowRight,
   ExternalLink,
 } from "lucide-react";
@@ -60,6 +61,7 @@ const CATEGORY_ICONS: Record<AdvisorInsightCategory, React.ComponentType<{ class
   milestone: Target,
   temporal: RefreshCw,
   calendar: Calendar,
+  savings: PiggyBank,
 };
 
 // --- Component ---
