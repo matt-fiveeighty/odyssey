@@ -21,7 +21,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 7: Scraper Enrichment & Data Freshness** - Enhanced scrapers (deadlines, fees, seasons, leftovers) plus freshness badges and provenance tooltips
 - [x] **Phase 8: Savings & Budget Tracker** - Goal-based hunt fund savings with progress rings, projections, and advisor integration
 - [x] **Phase 9: Diff View** - Structured "since your last visit" diff engine replacing the Welcome Back card
-- [ ] **Phase 10: Scouting Strategy** - Dual-purpose OTC hunt detection near trophy draw units
+- [x] **Phase 10: Scouting Strategy** - Dual-purpose OTC hunt detection near trophy draw units
 
 ## Phase Details
 
@@ -218,4 +218,4 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 7. Scraper Enrichment & Data Freshness | 5/5 | Complete | 2026-02-22 |
 | 8. Savings & Budget Tracker | 5/5 | Complete | 2026-02-23 |
 | 9. Diff View | 2/2 | Complete | 2026-02-23 |
-| 10. Scouting Strategy | 0/2 | Not started | - |
+| 10. Scouting Strategy | 2/2 | Complete | 2026-02-23 |
