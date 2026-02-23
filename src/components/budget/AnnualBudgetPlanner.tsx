@@ -22,6 +22,62 @@ export const BUDGET_CATEGORIES = [
   { key: "other", label: "Other", color: "bg-muted-foreground" },
 ];
 
+// Definite categories (you pay these whether you draw or not)
+const DEFINITE_CATEGORIES = [
+  { key: "points", label: "Points & Applications", color: "bg-info", colorHex: "var(--color-info)" },
+  { key: "gear", label: "Gear & Equipment", color: "bg-premium", colorHex: "var(--color-premium)" },
+  { key: "other", label: "Other", color: "bg-muted-foreground", colorHex: "var(--color-muted-foreground)" },
+];
+
+// If-you-draw categories (only paid if you draw a tag)
+const IF_DRAWN_CATEGORIES = [
+  { key: "tags", label: "Tags & Licenses", color: "bg-success", colorHex: "var(--color-success)" },
+  { key: "travel", label: "Travel & Lodging", color: "bg-warning", colorHex: "var(--color-warning)" },
+  { key: "processing", label: "Meat Processing", color: "bg-destructive", colorHex: "var(--color-destructive)" },
+];
+
+// ============================================================================
+// Hover Tooltip for bar segments
+// ============================================================================
+
+function BarSegment({
+  label,
+  amount,
+  pct,
+  colorClass,
+  totalBar,
+}: {
+  label: string;
+  amount: number;
+  pct: number;
+  colorClass: string;
+  totalBar: number;
+}) {
+  const [hovered, setHovered] = useState(false);
+
+  if (pct <= 0) return null;
+
+  return (
+    <div
+      className={`${colorClass} h-full transition-all relative group cursor-default`}
+      style={{ width: `${pct}%` }}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {hovered && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 pointer-events-none">
+          <div className="bg-popover border border-border rounded-lg shadow-xl px-3 py-2 whitespace-nowrap text-center fade-in-up">
+            <p className="text-[10px] text-muted-foreground">{label}</p>
+            <p className="text-sm font-bold">${Math.round(amount).toLocaleString()}</p>
+            <p className="text-[9px] text-muted-foreground">{Math.round(pct)}% of ${Math.round(totalBar).toLocaleString()}</p>
+          </div>
+          <div className="w-2 h-2 bg-popover border-r border-b border-border rotate-45 absolute left-1/2 -translate-x-1/2 -bottom-1" />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -151,6 +207,10 @@ export function AnnualBudgetPlanner() {
   const totalAllocated = Object.values(categoryBudgets).reduce((s, v) => s + v, 0);
   const remaining = totalBudget - totalAllocated;
 
+  // Compute definite vs if-drawn totals from category budgets
+  const definiteTotal = DEFINITE_CATEGORIES.reduce((s, cat) => s + (categoryBudgets[cat.key] ?? 0), 0);
+  const ifDrawnTotal = IF_DRAWN_CATEGORIES.reduce((s, cat) => s + (categoryBudgets[cat.key] ?? 0), 0);
+
   return (
     <>
       {/* Auto-populate from plan CTA */}
@@ -217,60 +277,68 @@ export function AnnualBudgetPlanner() {
             )}
           </div>
 
-          {/* Budget bar */}
-          <div className="h-4 rounded-full bg-secondary overflow-hidden flex">
-            {BUDGET_CATEGORIES.map((cat) => {
-              const amount = categoryBudgets[cat.key] ?? 0;
-              const pct = totalBudget > 0 ? (amount / totalBudget) * 100 : 0;
-              if (pct <= 0) return null;
-              return (
-                <div
-                  key={cat.key}
-                  className={`${cat.color} h-full transition-all`}
-                  style={{ width: `${pct}%` }}
-                  title={`${cat.label}: $${Math.round(amount).toLocaleString()} (${Math.round(pct)}%)`}
-                />
-              );
-            })}
-          </div>
-
-          {/* Show your work context — definite vs if-you-draw */}
-          {planBudget && hasAutoFilled && (
-            <div className="space-y-2">
-              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-success/5 border border-success/20">
-                <DollarSign className="w-3.5 h-3.5 text-success shrink-0 mt-0.5" />
-                <div className="text-[10px] leading-relaxed">
-                  <span className="font-semibold text-success">Definite ({currentYear}):</span>{" "}
-                  <span className="text-muted-foreground">
-                    ${Math.round(planBudget.definiteCost).toLocaleString()} — annual point purchases, application fees, and qualifying licenses.
-                    You spend this whether you draw or not.
-                  </span>
+          {/* TWO budget bars: Definite + If You Draw */}
+          <div className="space-y-3">
+            {/* Definite Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <DollarSign className="w-3 h-3 text-success" />
+                  <span className="text-[10px] font-semibold text-success uppercase tracking-wider">Definite</span>
                 </div>
+                <span className="text-xs font-bold">${Math.round(definiteTotal).toLocaleString()}</span>
               </div>
-              {planBudget.ifDrawnCost > 0 && (
-                <div className="flex items-start gap-2 p-2.5 rounded-lg bg-chart-2/5 border border-chart-2/20">
-                  <Crosshair className="w-3.5 h-3.5 text-chart-2 shrink-0 mt-0.5" />
-                  <div className="text-[10px] leading-relaxed">
-                    <span className="font-semibold text-chart-2">If you draw ({currentYear}):</span>{" "}
-                    <span className="text-muted-foreground">
-                      +${Math.round(planBudget.ifDrawnCost).toLocaleString()} — tags, travel, lodging, and processing.
-                      {!planBudget.isHuntYear && " This is not a planned hunt year, so these costs are unlikely."}
-                    </span>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-info/5 border border-info/20">
-                <Info className="w-3.5 h-3.5 text-info shrink-0 mt-0.5" />
-                <p className="text-[10px] text-muted-foreground leading-relaxed">
-                  <span className="font-semibold text-foreground">Breakdown:</span>{" "}
-                  Points & apps = ${Math.round(planBudget.pointsCost).toLocaleString()},
-                  {planBudget.tagsCost > 0 && ` Tags = $${Math.round(planBudget.tagsCost).toLocaleString()},`}
-                  {planBudget.travelCost > 0 && ` Travel = $${Math.round(planBudget.travelCost).toLocaleString()},`}
-                  {planBudget.processingCost > 0 && ` Processing = $${Math.round(planBudget.processingCost).toLocaleString()}`}
-                </p>
+              <div className="h-5 rounded-full bg-secondary overflow-hidden flex">
+                {DEFINITE_CATEGORIES.map((cat) => {
+                  const amount = categoryBudgets[cat.key] ?? 0;
+                  const pct = definiteTotal > 0 ? (amount / totalBudget) * 100 : 0;
+                  return (
+                    <BarSegment
+                      key={cat.key}
+                      label={cat.label}
+                      amount={amount}
+                      pct={pct}
+                      colorClass={cat.color}
+                      totalBar={definiteTotal}
+                    />
+                  );
+                })}
               </div>
+              <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                You spend this whether you draw or not — points, apps, licenses, gear
+              </p>
             </div>
-          )}
+
+            {/* If You Draw Bar */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <Crosshair className="w-3 h-3 text-chart-2" />
+                  <span className="text-[10px] font-semibold text-chart-2 uppercase tracking-wider">If You Draw</span>
+                </div>
+                <span className="text-xs font-bold">${Math.round(ifDrawnTotal).toLocaleString()}</span>
+              </div>
+              <div className="h-5 rounded-full bg-secondary overflow-hidden flex">
+                {IF_DRAWN_CATEGORIES.map((cat) => {
+                  const amount = categoryBudgets[cat.key] ?? 0;
+                  const pct = ifDrawnTotal > 0 ? (amount / totalBudget) * 100 : 0;
+                  return (
+                    <BarSegment
+                      key={cat.key}
+                      label={cat.label}
+                      amount={amount}
+                      pct={pct}
+                      colorClass={cat.color}
+                      totalBar={ifDrawnTotal}
+                    />
+                  );
+                })}
+              </div>
+              <p className="text-[9px] text-muted-foreground/60 mt-0.5">
+                Only paid if you draw a tag — tags, travel, lodging, meat processing
+              </p>
+            </div>
+          </div>
 
           {/* Category breakdown */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
@@ -342,25 +410,47 @@ export function AnnualBudgetPlanner() {
           {showBreakdown && (
             <CardContent className="pt-0 pb-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {planBudget.stateBreakdowns.map((sb) => (
-                  <div key={sb.stateId} className="p-3 rounded-lg bg-secondary/20 border border-border/50">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-2">
-                        <StateOutline stateId={sb.stateId} size={20} strokeColor="white" strokeWidth={2} fillColor="rgba(255,255,255,0.1)" />
-                        <span className="text-sm font-semibold">{sb.stateName}</span>
-                      </div>
-                      <span className="text-xs font-bold text-primary">${Math.round(sb.total).toLocaleString()}/yr</span>
-                    </div>
-                    <div className="space-y-0.5">
-                      {sb.items.map((item, i) => (
-                        <div key={i} className="flex justify-between text-[10px]">
-                          <span className="text-muted-foreground">{item.label}</span>
-                          <span className="font-mono">${Math.round(item.amount).toLocaleString()}</span>
+                {planBudget.stateBreakdowns.map((sb) => {
+                  const state = STATES_MAP[sb.stateId];
+                  if (!state) return null;
+                  return (
+                    <div key={sb.stateId} className="p-3 rounded-lg bg-secondary/20 border border-border/50">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <StateOutline stateId={sb.stateId} size={20} strokeColor="white" strokeWidth={2} fillColor="rgba(255,255,255,0.1)" />
+                          <span className="text-sm font-semibold">{sb.stateName}</span>
                         </div>
-                      ))}
+                        <span className="text-xs font-bold text-primary">${Math.round(sb.total).toLocaleString()}/yr</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {sb.items.map((item, i) => (
+                          <div key={i} className="flex justify-between text-[10px]">
+                            <span className="text-muted-foreground">{item.label}</span>
+                            <span className="font-mono">${Math.round(item.amount).toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                      {/* Info bullets for this state */}
+                      <div className="mt-2 pt-2 border-t border-border/30 space-y-0.5">
+                        {state.applicationApproach && (
+                          <p className="text-[9px] text-muted-foreground/60">
+                            &bull; {state.applicationApproachDescription || state.applicationApproach}
+                          </p>
+                        )}
+                        {state.pointSystem && (
+                          <p className="text-[9px] text-muted-foreground/60">
+                            &bull; {state.pointSystemDetails.description}
+                          </p>
+                        )}
+                        {(state.licenseFees.qualifyingLicense ?? 0) > 0 && (
+                          <p className="text-[9px] text-muted-foreground/60">
+                            &bull; Qualifying license: ${Math.round(state.licenseFees.qualifyingLicense!)}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           )}

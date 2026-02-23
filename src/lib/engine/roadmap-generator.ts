@@ -729,11 +729,27 @@ export function generateStrategicAssessment(
     .filter((s) => s !== null);
 
   const totalCost = roadmap.reduce((sum, yr) => sum + yr.estimatedCost, 0);
-  const totalHunts = roadmap.reduce(
-    (sum, yr) => sum + yr.actions.filter((a) => a.type === "hunt").length,
-    0
+  // Split hunts: "definite" = OTC or draw odds >= 50%, "if-drawn" = low-odds draws
+  const allHuntActions = roadmap.flatMap((yr) =>
+    yr.actions.filter((a) => a.type === "hunt"),
   );
+  const definiteHunts = allHuntActions.filter(
+    (a) => (a.estimatedDrawOdds ?? 0) >= 0.5,
+  ).length;
+  const ifDrawnHunts = allHuntActions.length - definiteHunts;
   const horizonYears = input.planningHorizon ?? 10;
+
+  // Build ROI string that distinguishes definite from if-drawn
+  let roiStr: string;
+  if (definiteHunts > 0 && ifDrawnHunts > 0) {
+    roiStr = `${definiteHunts} likely hunt${definiteHunts !== 1 ? "s" : ""} + ${ifDrawnHunts} if-drawn over ${horizonYears} years`;
+  } else if (definiteHunts > 0) {
+    roiStr = `${definiteHunts} likely hunt${definiteHunts !== 1 ? "s" : ""} over ${horizonYears} years`;
+  } else if (ifDrawnHunts > 0) {
+    roiStr = `${ifDrawnHunts} if-drawn hunt${ifDrawnHunts !== 1 ? "s" : ""} over ${horizonYears} years`;
+  } else {
+    roiStr = `Building points over ${horizonYears} years`;
+  }
 
   return {
     id: `assessment-${Date.now()}`,
@@ -748,7 +764,7 @@ export function generateStrategicAssessment(
       annualSubscription: subscription.total,
       tenYearTotal: totalCost,
       yearOneInvestment: roadmap[0]?.estimatedCost ?? 0,
-      roi: `${totalHunts} planned hunts over ${horizonYears} years`,
+      roi: roiStr,
     },
     macroSummary,
     budgetBreakdown,
@@ -1306,7 +1322,11 @@ function generateYearlyPlan(
       else phase = "burn";
     }
 
-    const isHuntYear = phase === "burn" || (phase === "build" && i <= 1) || (phase === "positioning" && i % 2 === 0);
+    // Phase hint for whether hunts COULD happen this year
+    const phaseHuntEligible = phase === "burn" || (phase === "build" && i <= 1) || (phase === "positioning" && i % 2 === 0);
+    // Actual isHuntYear is set AFTER actions are built — based on whether any
+    // hunt action has draw odds >= 50% (likely to actually happen)
+    let isHuntYear = phaseHuntEligible;
 
     // Point buying for all non-random states
     for (const rec of recs) {
@@ -1485,6 +1505,13 @@ function generateYearlyPlan(
       const narrative = generateYearStateNarrative(i, year, phase, rec, actions, input, duration);
       if (narrative) stateNarratives[rec.stateId] = narrative;
     }
+
+    // Recalculate isHuntYear based on actual hunt actions with favorable odds
+    // A year is only a "hunt year" if it has at least one hunt with >= 50% draw odds
+    const likelyHunts = actions.filter(
+      (a) => a.type === "hunt" && (a.estimatedDrawOdds ?? 0) >= 0.5,
+    );
+    isHuntYear = likelyHunts.length > 0;
 
     roadmap.push({
       year,

@@ -11,7 +11,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Download, X, Pencil, Check as CheckIcon } from "lucide-react";
-import { PlanItemCard } from "./PlanItemCard";
+import { PlanItemCard, ITEM_TYPE_CONFIG } from "./PlanItemCard";
 import { exportPlanItem } from "@/lib/calendar-export";
 import type { PlanItem } from "./PlanItemCard";
 
@@ -342,6 +342,53 @@ export function YearCalendar({
                     );
                   })}
                 </div>
+
+                {/* Outlook-style event labels below the day grid */}
+                {items.length > 0 && (
+                  <div className="mt-1.5 space-y-0.5 max-h-[52px] overflow-hidden">
+                    {/* Deduplicate: show each unique item once per month */}
+                    {(() => {
+                      const seen = new Set<string>();
+                      const unique = items.filter((item) => {
+                        if (seen.has(item.id)) return false;
+                        seen.add(item.id);
+                        return true;
+                      });
+                      return unique.slice(0, 3).map((item) => {
+                        const cfg = ITEM_TYPE_CONFIG[item.type];
+                        const typeColors: Record<string, string> = {
+                          hunt: "bg-destructive/15 text-destructive border-destructive/20",
+                          deadline: "bg-warning/15 text-warning border-warning/20",
+                          application: "bg-premium/15 text-premium border-premium/20",
+                          point_purchase: "bg-chart-5/15 text-chart-5 border-chart-5/20",
+                          scout: "bg-info/15 text-info border-info/20",
+                          prep: "bg-success/15 text-success border-success/20",
+                        };
+                        return (
+                          <button
+                            key={item.id}
+                            data-day-btn
+                            onClick={() => setSelectedCell({ month, day: item.day ?? 1 })}
+                            className={`w-full text-left px-1 py-0.5 rounded text-[7px] xl:text-[6px] font-medium truncate border cursor-pointer hover:opacity-80 transition-opacity ${typeColors[item.type] ?? "bg-secondary/30 text-muted-foreground border-border/30"}`}
+                          >
+                            {item.stateId ? `${item.stateId} ` : ""}{cfg.label}{item.day ? ` · ${item.day}` : ""}
+                          </button>
+                        );
+                      });
+                    })()}
+                    {(() => {
+                      const seen = new Set<string>();
+                      const count = items.filter((item) => {
+                        if (seen.has(item.id)) return false;
+                        seen.add(item.id);
+                        return true;
+                      }).length;
+                      return count > 3 ? (
+                        <p className="text-[7px] text-muted-foreground/50 text-center">+{count - 3} more</p>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
               </Card>
 
               {/* Floating popover — appears over the month card when a day is selected */}

@@ -15,6 +15,7 @@ import {
   TrendingUp,
   AlertTriangle,
   Shield,
+  Info,
 } from "lucide-react";
 
 export default function PortfolioPage() {
@@ -154,7 +155,35 @@ export default function PortfolioPage() {
                       style={{ width: `${Math.min(100, pct)}%` }}
                     />
                   </div>
-                  <p className="text-[10px] text-muted-foreground/60">{pct}% of annual portfolio</p>
+                  {/* Info bullets — contextual state facts */}
+                  {state && (
+                    <div className="space-y-0.5 ml-0.5">
+                      {state.applicationApproachDescription && (
+                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
+                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
+                          {state.applicationApproachDescription}
+                        </p>
+                      )}
+                      {(state.licenseFees.qualifyingLicense ?? 0) > 0 && (
+                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
+                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
+                          Requires ${Math.round(state.licenseFees.qualifyingLicense!)} qualifying license
+                        </p>
+                      )}
+                      {state.pointSystem && (
+                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
+                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
+                          {state.pointSystemDetails.description}
+                        </p>
+                      )}
+                      {state.onceInALifetime && state.onceInALifetime.length > 0 && (
+                        <p className="text-[9px] text-warning/60 flex items-start gap-1">
+                          <AlertTriangle className="w-2.5 h-2.5 shrink-0 mt-px" />
+                          Once-in-a-lifetime: {state.onceInALifetime.map(s => SPECIES_MAP[s]?.name ?? s).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
