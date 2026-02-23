@@ -88,12 +88,14 @@ describe("savings-calculator", () => {
   // ==========================================================================
   describe("calculateFundedDate", () => {
     it("projects funded date based on monthly savings", () => {
-      // $5000 target, $1000 saved, $200/mo -> 20 months from now
+      // $5000 target, $1000 saved, $200/mo -> ceil(4000/200) = 20 months from now
       const result = calculateFundedDate(5000, 1000, 200, NOW);
       expect(result).not.toBeNull();
-      // NOW is 2026-03-01, +20 months = 2027-11-01
-      expect(result!.getFullYear()).toBe(2027);
-      expect(result!.getMonth()).toBe(10); // November = 10 (0-indexed)
+      // Verify the funded date is approximately 20 months from NOW
+      const monthsDiff =
+        (result!.getFullYear() - NOW.getFullYear()) * 12 +
+        (result!.getMonth() - NOW.getMonth());
+      expect(monthsDiff).toBe(20);
     });
 
     it("returns now when already funded", () => {
@@ -128,8 +130,11 @@ describe("savings-calculator", () => {
       // $5000 target, $0 saved, $3000/mo -> ceil(5000/3000) = ceil(1.67) = 2 months
       const result = calculateFundedDate(5000, 0, 3000, NOW);
       expect(result).not.toBeNull();
-      // NOW = March 2026, +2 months = May 2026
-      expect(result!.getMonth()).toBe(4); // May = 4 (0-indexed)
+      // Verify 2 months ahead of NOW
+      const monthsDiff =
+        (result!.getFullYear() - NOW.getFullYear()) * 12 +
+        (result!.getMonth() - NOW.getMonth());
+      expect(monthsDiff).toBe(2);
     });
 
     it("defaults now to current time when not provided", () => {
