@@ -15,6 +15,9 @@
  *   - Some general season hunts are OTC (no draw needed)
  *   - Apply per unit, $8 per species application
  *   - Late deadline (May) — strategically useful
+ *
+ * Parsing: All HTML table extraction uses cheerio via BaseScraper.extractTable()
+ * and parseHtml(). Zero regex HTML patterns remain.
  */
 
 import {
@@ -27,6 +30,19 @@ import {
   ScrapedRegulation,
   ScrapedLeftoverTag,
 } from "./base-scraper";
+import {
+  validateBatch,
+  PlausibleDeadlineSchema,
+  PlausibleFeeSchema,
+  PlausibleSeasonSchema,
+  PlausibleLeftoverTagSchema,
+} from "./schemas";
+import {
+  computeFingerprint,
+  compareFingerprint,
+  storeFingerprint,
+  getLastFingerprint,
+} from "../../src/lib/scrapers/fingerprint";
 
 // ---------------------------------------------------------------------------
 // URL constants
@@ -83,6 +99,15 @@ export class OregonScraper extends BaseScraper {
       this.log("Checking ODFW report downloads portal...");
       const html = await this.fetchPage(ODFW_REPORT_DOWNLOADS);
 
+      // Fingerprint the report downloads page
+      const fp = computeFingerprint(html, ODFW_REPORT_DOWNLOADS, "OR");
+      const lastFp = await getLastFingerprint("OR", ODFW_REPORT_DOWNLOADS, this.supabase);
+      const fpResult = compareFingerprint(fp, lastFp);
+      if (fpResult.changed) {
+        this.log(`  WARNING: Structure change detected on report downloads: ${fpResult.details}`);
+      }
+      await storeFingerprint(fp, this.supabase);
+
       // Look for downloadable data files
       const links = this.extractDownloadLinks(html);
       this.log(`  Found ${links.length} download links`);
@@ -119,6 +144,15 @@ export class OregonScraper extends BaseScraper {
       this.log("Scraping controlled hunts page...");
       const html = await this.fetchPage(ODFW_CONTROLLED_HUNTS);
 
+      // Fingerprint the controlled hunts page
+      const fp = computeFingerprint(html, ODFW_CONTROLLED_HUNTS, "OR");
+      const lastFp = await getLastFingerprint("OR", ODFW_CONTROLLED_HUNTS, this.supabase);
+      const fpResult = compareFingerprint(fp, lastFp);
+      if (fpResult.changed) {
+        this.log(`  WARNING: Structure change detected on controlled hunts: ${fpResult.details}`);
+      }
+      await storeFingerprint(fp, this.supabase);
+
       // Look for hunt numbers and unit names
       const huntPattern = /Hunt\s+#?\s*(\d{3}[A-Z]?\d?)/gi;
       let match: RegExpExecArray | null;
@@ -133,7 +167,7 @@ export class OregonScraper extends BaseScraper {
         }
       }
 
-      // Look for CSV/data links
+      // Look for CSV/data links using cheerio
       const csvLinks = this.extractCsvLinks(html);
       for (const csvUrl of csvLinks) {
         try {
@@ -253,10 +287,20 @@ export class OregonScraper extends BaseScraper {
       } catch { /* skip */ }
     }
 
-    // Scrape controlled hunts page for HTML tables
+    // Scrape controlled hunts page for HTML tables using cheerio
     try {
       this.log("Scraping controlled hunts page for table data...");
       const html = await this.fetchPage(ODFW_CONTROLLED_HUNTS);
+
+      // Fingerprint the controlled hunts page
+      const fp = computeFingerprint(html, ODFW_CONTROLLED_HUNTS, "OR");
+      const lastFp = await getLastFingerprint("OR", ODFW_CONTROLLED_HUNTS, this.supabase);
+      const fpResult = compareFingerprint(fp, lastFp);
+      if (fpResult.changed) {
+        this.log(`  WARNING: Structure change detected: ${fpResult.details}`);
+      }
+      await storeFingerprint(fp, this.supabase);
+
       const tableData = this.parseHtmlTables(html);
       results.push(...tableData);
     } catch { /* skip */ }
@@ -266,34 +310,55 @@ export class OregonScraper extends BaseScraper {
   }
 
   // -------------------------------------------------------------------------
-  // Internal helpers
+  // Internal helpers — all HTML parsing via cheerio (zero regex patterns)
   // -------------------------------------------------------------------------
 
+  /**
+   * Extract download links (CSV, XLSX, PDF) from HTML using cheerio.
+   * Resolves relative URLs against the appropriate base.
+   */
   private extractDownloadLinks(html: string): { url: string; label: string }[] {
+    const $ = this.parseHtml(html);
     const links: { url: string; label: string }[] = [];
-    const pattern = /href=["']([^"']*\.(csv|xlsx?|pdf)[^"']*)["'][^>]*>([\s\S]*?)<\/a>/gi;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(html)) !== null) {
-      let href = match[1];
-      const label = match[3].replace(/<[^>]*>/g, "").trim();
+
+    $("a[href]").each((_, el) => {
+      let href = $(el).attr("href") || "";
+      const label = $(el).text().trim();
+
+      // Only include data file links
+      if (!/\.(csv|xlsx?|pdf)(\?|$)/i.test(href)) return;
+
+      // Resolve relative URLs
       if (!href.startsWith("http")) {
-        if (href.startsWith("/")) href = `https://odfw.huntfishoregon.com${href}`;
-        else href = `${ODFW_STATS_BASE}${href}`;
+        if (href.startsWith("/")) {
+          href = `https://odfw.huntfishoregon.com${href}`;
+        } else {
+          href = `${ODFW_STATS_BASE}${href}`;
+        }
       }
+
       links.push({ url: href, label });
-    }
+    });
+
     return links;
   }
 
+  /**
+   * Extract CSV links from HTML using cheerio.
+   * Resolves relative URLs against the DFW base.
+   */
   private extractCsvLinks(html: string): string[] {
+    const $ = this.parseHtml(html);
     const links: string[] = [];
-    const pattern = /href=["']([^"']*\.csv[^"']*)["']/gi;
-    let match: RegExpExecArray | null;
-    while ((match = pattern.exec(html)) !== null) {
-      let href = match[1];
-      if (!href.startsWith("http")) href = `https://www.dfw.state.or.us${href}`;
+
+    $('a[href$=".csv"]').each((_, el) => {
+      let href = $(el).attr("href") || "";
+      if (!href.startsWith("http")) {
+        href = `https://www.dfw.state.or.us${href}`;
+      }
       links.push(href);
-    }
+    });
+
     return links;
   }
 
@@ -322,25 +387,29 @@ export class OregonScraper extends BaseScraper {
     };
   }
 
+  /**
+   * Parse HTML tables for draw history data using cheerio extractTable().
+   * Replaces the old regex-based table parsing.
+   */
   private parseHtmlTables(html: string): ScrapedDrawHistory[] {
     const results: ScrapedDrawHistory[] = [];
-    const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-    for (const table of tables) {
-      const headers: string[] = [];
-      const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-      for (const th of ths) headers.push(th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-      if (headers.length < 3) continue;
-      const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
-      for (const tr of trs) {
-        const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-        if (tds.length < 3) continue;
-        const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-        const row: Record<string, string> = {};
-        for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+    const $ = this.parseHtml(html);
+
+    $("table").each((_, tableEl) => {
+      const tableHtml = $.html(tableEl);
+      const rows = this.extractTable(tableHtml, "table");
+      if (rows.length === 0) return;
+
+      // Check that table has enough columns to be useful
+      const firstRow = rows[0];
+      if (Object.keys(firstRow).length < 3) return;
+
+      for (const row of rows) {
         const parsed = this.parseOrRow(row);
         if (parsed) results.push(parsed);
       }
-    }
+    });
+
     return results;
   }
 
@@ -406,8 +475,8 @@ export class OregonScraper extends BaseScraper {
       this.log(`Deadline scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${deadlines.length} OR deadlines`);
-    return deadlines;
+    this.log(`Found ${deadlines.length} OR deadlines (pre-validation)`);
+    return validateBatch(deadlines, PlausibleDeadlineSchema, "OR deadlines", this.log.bind(this));
   }
 
   async scrapeFees(): Promise<ScrapedFee[]> {
@@ -474,7 +543,7 @@ export class OregonScraper extends BaseScraper {
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
-          const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-–]|for|per)?\s*([^<\n]{5,80})/gi;
+          const feePattern = /\$(\d+(?:,\d{3})*(?:\.\d{2})?)\s*(?:[-\u2013]|for|per)?\s*([^<\n]{5,80})/gi;
           let match: RegExpExecArray | null;
 
           while ((match = feePattern.exec(html)) !== null) {
@@ -508,8 +577,8 @@ export class OregonScraper extends BaseScraper {
       this.log(`Supplemental fee scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${fees.length} OR fee entries total`);
-    return fees;
+    this.log(`Found ${fees.length} OR fee entries total (pre-validation)`);
+    return validateBatch(fees, PlausibleFeeSchema, "OR fees", this.log.bind(this));
   }
 
   async scrapeSeasons(): Promise<ScrapedSeason[]> {
@@ -526,7 +595,7 @@ export class OregonScraper extends BaseScraper {
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
-          const seasonPattern = /(archery|muzzleloader|rifle|general|any\s+legal\s+weapon|youth)[^:]*?:\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})\s*[-–]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})/gi;
+          const seasonPattern = /(archery|muzzleloader|rifle|general|any\s+legal\s+weapon|youth)[^:]*?:\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})\s*[-\u2013]\s*((?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*\.?\s+\d{1,2})/gi;
           let match: RegExpExecArray | null;
 
           while ((match = seasonPattern.exec(html)) !== null) {
@@ -548,8 +617,8 @@ export class OregonScraper extends BaseScraper {
       this.log(`Season scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${seasons.length} OR season entries`);
-    return seasons;
+    this.log(`Found ${seasons.length} OR season entries (pre-validation)`);
+    return validateBatch(seasons, PlausibleSeasonSchema, "OR seasons", this.log.bind(this));
   }
 
   async scrapeRegulations(): Promise<ScrapedRegulation[]> {
@@ -566,12 +635,12 @@ export class OregonScraper extends BaseScraper {
       for (const url of urls) {
         try {
           const html = await this.fetchPage(url);
-          const newsPattern = /<(?:h[2-4]|a)[^>]*>([\s\S]*?)<\/(?:h[2-4]|a)>/gi;
-          let match: RegExpExecArray | null;
+          // Use cheerio for heading/link extraction instead of regex
+          const $ = this.parseHtml(html);
 
-          while ((match = newsPattern.exec(html)) !== null) {
-            const text = match[1].replace(/<[^>]*>/g, "").trim();
-            if (text.length < 10 || text.length > 300) continue;
+          $("h2, h3, h4, a").each((_, el) => {
+            const text = $(el).text().trim();
+            if (text.length < 10 || text.length > 300) return;
 
             const lower = text.toLowerCase();
             if (
@@ -588,7 +657,7 @@ export class OregonScraper extends BaseScraper {
 
               regs.push({ stateId: "OR", title: text.substring(0, 200), summary: text, sourceUrl: url, category });
             }
-          }
+          });
         } catch (err) {
           this.log(`  Regulation page fetch failed (${url}): ${(err as Error).message}`);
         }
@@ -639,40 +708,38 @@ export class OregonScraper extends BaseScraper {
         }
       }
 
-      // Also check HTML tables
-      const tables = html.match(/<table[\s\S]*?<\/table>/gi) || [];
-      for (const table of tables) {
-        const lower = table.toLowerCase();
-        if (!lower.includes("leftover") && !lower.includes("remaining") && !lower.includes("available")) continue;
+      // Also check HTML tables using cheerio
+      const $ = this.parseHtml(html);
+      $("table").each((_, tableEl) => {
+        const tableText = $(tableEl).text().toLowerCase();
+        if (!tableText.includes("leftover") && !tableText.includes("remaining") && !tableText.includes("available")) return;
 
-        const ths = table.match(/<th[^>]*>([\s\S]*?)<\/th>/gi) || [];
-        const headers = ths.map((th) => th.replace(/<[^>]*>/g, "").trim().toLowerCase());
-        const trs = table.match(/<tr[^>]*>([\s\S]*?)<\/tr>/gi) || [];
+        const tableHtml = $.html(tableEl);
+        const rows = this.extractTable(tableHtml, "table");
 
-        for (const tr of trs) {
-          const tds = tr.match(/<td[^>]*>([\s\S]*?)<\/td>/gi) || [];
-          if (tds.length < 2) continue;
-          const cells = tds.map((td) => td.replace(/<[^>]*>/g, "").trim());
-          const row: Record<string, string> = {};
-          for (let i = 0; i < headers.length && i < cells.length; i++) row[headers[i]] = cells[i];
+        for (const row of rows) {
+          const unitCode = row["hunt"] || row["unit"] || Object.values(row)[0] || "";
+          const availableStr = row["available"] || row["remaining"] || Object.values(row).pop() || "0";
+          const available = parseInt(availableStr.replace(/,/g, ""), 10);
 
-          const unitCode = row["hunt"] || row["unit"] || cells[0] || "";
-          const available = parseInt((row["available"] || row["remaining"] || cells[cells.length - 1] || "0").replace(/,/g, ""), 10);
           if (unitCode && available > 0) {
             const species = (row["species"] || "").toLowerCase();
             leftovers.push({
-              stateId: "OR", speciesId: this.detectSingleSpecies(species) || "elk", unitCode,
-              tagsAvailable: available, sourceUrl: ODFW_REPORT_DOWNLOADS,
+              stateId: "OR",
+              speciesId: this.detectSingleSpecies(species) || "elk",
+              unitCode,
+              tagsAvailable: available,
+              sourceUrl: ODFW_REPORT_DOWNLOADS,
             });
           }
         }
-      }
+      });
     } catch (err) {
       this.log(`Leftover tag scrape failed: ${(err as Error).message}`);
     }
 
-    this.log(`Found ${leftovers.length} OR leftover tags`);
-    return leftovers;
+    this.log(`Found ${leftovers.length} OR leftover tags (pre-validation)`);
+    return validateBatch(leftovers, PlausibleLeftoverTagSchema, "OR leftover tags", this.log.bind(this));
   }
 
   private detectSpeciesFromContext(text: string): string[] {

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Info } from "lucide-react";
 import { STATES_MAP } from "@/lib/constants/states";
 
@@ -46,6 +47,8 @@ interface DataSourceBadgeProps {
   stateId: string;
   /** E.g. "Fee Schedule" or "Application Deadlines" */
   dataType?: string;
+  /** Show "Data last updated: {timestamp}" below the badge (default false) */
+  showLastUpdated?: boolean;
   className?: string;
 }
 
@@ -53,7 +56,12 @@ interface DataSourceBadgeProps {
  * Shows source agency, data type, verification date, and freshness indicator.
  * Green dot = fresh (<7d), amber = approaching stale (7-10d), red = stale (>10d).
  */
-export function DataSourceBadge({ stateId, dataType, className = "" }: DataSourceBadgeProps) {
+export function DataSourceBadge({
+  stateId,
+  dataType,
+  showLastUpdated = false,
+  className = "",
+}: DataSourceBadgeProps) {
   const state = STATES_MAP[stateId];
   if (!state) return null;
 
@@ -69,29 +77,50 @@ export function DataSourceBadge({ stateId, dataType, className = "" }: DataSourc
 
   const stateAgencyName = getAgencyName(stateId);
 
+  // Client-only relative time to avoid hydration flicker
+  const [relativeTime, setRelativeTime] = useState<string>("");
+  useEffect(() => {
+    if (!state.lastScrapedAt) return;
+    const days = Math.floor(
+      (Date.now() - new Date(state.lastScrapedAt).getTime()) /
+        (1000 * 60 * 60 * 24),
+    );
+    if (days === 0) setRelativeTime("(today)");
+    else if (days === 1) setRelativeTime("(yesterday)");
+    else if (days < 30) setRelativeTime(`(${days}d ago)`);
+    else setRelativeTime(`(${Math.floor(days / 30)}mo ago)`);
+  }, [state.lastScrapedAt]);
+
   return (
-    <div className={`flex items-center gap-1.5 text-[9px] text-muted-foreground/60 ${className}`}>
-      {/* Freshness dot */}
-      <span
-        className={`w-1.5 h-1.5 rounded-full shrink-0 ${FRESHNESS_DOT[freshness]}`}
-        title={`${FRESHNESS_LABEL[freshness]}${lastScraped ? ` — ${lastScraped}` : ""}`}
-      />
-      <Info className="w-2.5 h-2.5 shrink-0" />
-      <span>
-        Source: {stateAgencyName}
-        {dataType ? ` · ${dataType}` : ""}
-        {" · "}
-        {lastScraped ? `${FRESHNESS_LABEL[freshness]} ${lastScraped}` : "Unverified"}
-      </span>
-      {state.fgUrl && (
-        <a
-          href={state.fgUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-primary/50 hover:text-primary underline-offset-2 hover:underline"
-        >
-          Verify
-        </a>
+    <div className={className}>
+      <div className="flex items-center gap-1.5 text-[9px] text-muted-foreground/60">
+        {/* Freshness dot */}
+        <span
+          className={`w-1.5 h-1.5 rounded-full shrink-0 ${FRESHNESS_DOT[freshness]}`}
+          title={`${FRESHNESS_LABEL[freshness]}${lastScraped ? ` — ${lastScraped}` : ""}`}
+        />
+        <Info className="w-2.5 h-2.5 shrink-0" />
+        <span>
+          Source: {stateAgencyName}
+          {dataType ? ` · ${dataType}` : ""}
+          {" · "}
+          {lastScraped ? `${FRESHNESS_LABEL[freshness]} ${lastScraped}` : "Unverified"}
+        </span>
+        {state.fgUrl && (
+          <a
+            href={state.fgUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary/50 hover:text-primary underline-offset-2 hover:underline"
+          >
+            Verify
+          </a>
+        )}
+      </div>
+      {showLastUpdated && lastScraped && (
+        <div className="text-[8px] text-muted-foreground/40 mt-0.5">
+          Data last updated: {lastScraped} {relativeTime}
+        </div>
       )}
     </div>
   );
