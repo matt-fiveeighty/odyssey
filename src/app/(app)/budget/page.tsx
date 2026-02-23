@@ -4,6 +4,7 @@ import { DollarSign } from "lucide-react";
 import { AnnualBudgetPlanner } from "@/components/budget/AnnualBudgetPlanner";
 import { YearByYearBreakdown } from "@/components/budget/YearByYearBreakdown";
 import { SavingsGoalsSection } from "@/components/budget/SavingsGoalCard";
+import { AnnualSpendForecast } from "@/components/budget/AnnualSpendForecast";
 import { useAppStore } from "@/lib/store";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
 
@@ -55,6 +56,9 @@ export default function BudgetPage() {
 
       {/* Dream Hunt Savings Goals */}
       <SavingsGoalsSection />
+
+      {/* Annual Spend Forecast (SAV-07) */}
+      <AnnualSpendForecast />
     </div>
   );
 }
