@@ -92,39 +92,23 @@ export default function PortfolioPage() {
   };
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <PieChart className="w-5 h-5 text-primary" />
-        <h1 className="text-lg font-semibold">Portfolio</h1>
-      </div>
-
-      {/* KPI Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <KpiCard
-          icon={<MapPin className="w-4 h-4 text-info" />}
-          label="Active States"
-          value={String(stateCount)}
-        />
-        <KpiCard
-          icon={<DollarSign className="w-4 h-4 text-success" />}
-          label="Annual Cost"
-          value={`$${Math.round(totalCost).toLocaleString()}`}
-        />
-        <KpiCard
-          icon={<TrendingUp className="w-4 h-4 text-primary" />}
-          label="Year One"
-          value={`$${Math.round(yearOne).toLocaleString()}`}
-        />
-        <KpiCard
-          icon={<Crosshair className="w-4 h-4 text-warning" />}
-          label="Species"
-          value={String(speciesMatrix.length)}
-        />
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
+      {/* Header + inline KPIs */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <PieChart className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Portfolio</h1>
+        </div>
+        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+          <span><span className="font-bold text-foreground text-sm">{stateCount}</span> states</span>
+          <span><span className="font-bold text-success text-sm">${Math.round(totalCost).toLocaleString()}</span>/yr</span>
+          <span><span className="font-bold text-primary text-sm">${Math.round(yearOne).toLocaleString()}</span> yr 1</span>
+          <span><span className="font-bold text-warning text-sm">{speciesMatrix.length}</span> species</span>
+        </div>
       </div>
 
       {/* Main grid: Left = allocation, Right = analytics */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         {/* LEFT: Allocation Breakdown */}
         <Card className="border-border/50">
           <CardHeader className="pb-3">

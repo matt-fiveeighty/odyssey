@@ -497,19 +497,19 @@ export default function GoalsPage() {
   const hasMilestones = milestones.length > 0;
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Target className="w-6 h-6 text-primary" />
-            {hasMilestones ? `${currentYear} Action Plan` : "Goals & Roadmap"}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">
+            {hasMilestones ? `Goals — ${currentYear}` : "Goals"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {hasMilestones
-              ? `${completedCount} of ${milestones.length} completed · $${Math.round(completedCost).toLocaleString()} of $${Math.round(totalCost).toLocaleString()} spent`
-              : "Set hunt goals and visualize your strategic roadmap"}
-          </p>
+          {hasMilestones && (
+            <span className="text-xs text-muted-foreground ml-2">
+              {completedCount}/{milestones.length} done · ${Math.round(completedCost).toLocaleString()} of ${Math.round(totalCost).toLocaleString()}
+            </span>
+          )}
         </div>
         <div className="flex gap-2">
           {!hasMilestones && (

@@ -14,15 +14,10 @@ export default function BudgetPage() {
 
   if (!confirmedAssessment) {
     return (
-      <div className="p-6 space-y-6 fade-in-up">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-primary" />
-            Hunt Budget
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Plan your annual hunting expenses and save for dream hunts
-          </p>
+      <div className="p-4 md:p-6 space-y-3 fade-in-up">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Budget</h1>
         </div>
         <NoPlanGate
           icon={DollarSign}
@@ -34,18 +29,11 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <DollarSign className="w-6 h-6 text-primary" />
-            Hunt Budget — {currentYear}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Plan your annual hunting expenses and save for dream hunts
-          </p>
-        </div>
+      <div className="flex items-center gap-2">
+        <DollarSign className="w-5 h-5 text-primary" />
+        <h1 className="text-lg font-bold tracking-tight">Budget — {currentYear}</h1>
       </div>
 
       {/* Annual Budget Overview + Point Subscription */}

@@ -111,86 +111,53 @@ export default function PointsPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Wallet className="w-6 h-6 text-primary" />
-            Points Portfolio
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track your <HuntingTerm term="preference points">preference</HuntingTerm> and <HuntingTerm term="bonus points">bonus points</HuntingTerm> across all states
-          </p>
+        <div className="flex items-center gap-2">
+          <Wallet className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Points Portfolio</h1>
         </div>
         <Button
           onClick={() => setShowAddModal(true)}
-          className="gap-2"
+          className="gap-1.5 text-xs"
           size="sm"
         >
-          <Plus className="w-4 h-4" />
+          <Plus className="w-3.5 h-3.5" />
           Add Points
         </Button>
       </div>
 
       {/* Stats Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                <TrendingUp className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Points</p>
-                <p className="text-2xl font-bold">{totalPoints}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
-                <DollarSign className="w-5 h-5 text-chart-2" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Total Invested</p>
-                <p className="text-2xl font-bold">
-                  ${Math.round(totalInvested).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-3/15 flex items-center justify-center">
-                <Wallet className="w-5 h-5 text-chart-3" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Active States</p>
-                <p className="text-2xl font-bold">{totalStates}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-chart-4/15 flex items-center justify-center">
-                <Calendar className="w-5 h-5 text-chart-4" />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Species</p>
-                <p className="text-2xl font-bold">
-                  {new Set(userPoints.map((p) => p.speciesId)).size}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+          <TrendingUp className="w-4 h-4 text-primary" />
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Points</p>
+            <p className="text-lg font-bold">{totalPoints}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+          <DollarSign className="w-4 h-4 text-chart-2" />
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Invested</p>
+            <p className="text-lg font-bold">${Math.round(totalInvested).toLocaleString()}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+          <Wallet className="w-4 h-4 text-chart-3" />
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">States</p>
+            <p className="text-lg font-bold">{totalStates}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+          <Calendar className="w-4 h-4 text-chart-4" />
+          <div>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Species</p>
+            <p className="text-lg font-bold">{new Set(userPoints.map((p) => p.speciesId)).size}</p>
+          </div>
+        </div>
       </div>
 
       {/* Points by State */}
@@ -201,7 +168,7 @@ export default function PointsPage() {
           description="Complete a strategic assessment in the Plan Builder to get started, then track your preference and bonus point balances here."
         />
       ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           {Object.entries(pointsByState).map(([stateId, points]) => {
             const state = STATES_MAP[stateId];
             if (!state) return null;

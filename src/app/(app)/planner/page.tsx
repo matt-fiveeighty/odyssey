@@ -94,15 +94,10 @@ export default function PlannerPage() {
   // --- Early return: gate for no plan ---
   if (!confirmedAssessment) {
     return (
-      <div className="p-6 space-y-6 fade-in-up">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Compass className="w-6 h-6 text-primary" />
-            My Year
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Plan your hunts, applications, scouting trips, and deadlines
-          </p>
+      <div className="p-4 md:p-6 space-y-3 fade-in-up">
+        <div className="flex items-center gap-2">
+          <Compass className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Planner</h1>
         </div>
         <NoPlanGate
           icon={Compass}
@@ -143,71 +138,37 @@ export default function PlannerPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Compass className="w-6 h-6 text-primary" />
-            Planner — {selectedYear}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Plan your hunts, applications, scouting trips, and deadlines
-          </p>
-        </div>
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedYear((y) => y - 1)}
-          >
-            &larr;
-          </Button>
-          <span className="text-sm font-mono font-bold w-12 text-center">
-            {selectedYear}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setSelectedYear((y) => y + 1)}
-          >
-            &rarr;
-          </Button>
+          <Compass className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Planner</h1>
+          <div className="flex items-center gap-1 ml-2">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedYear((y) => y - 1)}>&larr;</Button>
+            <span className="text-xs font-mono font-bold w-10 text-center">{selectedYear}</span>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedYear((y) => y + 1)}>&rarr;</Button>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
           <SharePlanDialog items={items} year={selectedYear} />
           <AutoFillButton
             selectedYear={selectedYear}
             existingItems={items}
             onAutoFill={handleAutoFill}
           />
-          <Button size="sm" className="gap-2 ml-2" onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4" />
-            Add Item
+          <Button size="sm" className="gap-1.5 text-xs" onClick={() => setShowAddModal(true)}>
+            <Plus className="w-3.5 h-3.5" />
+            Add
           </Button>
         </div>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{items.length}</p>
-            <p className="text-xs text-muted-foreground">Planned Items</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-success">{completedCount}</p>
-            <p className="text-xs text-muted-foreground">Completed</p>
-          </CardContent>
-        </Card>
-        <Card className="bg-card border-border">
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-chart-2">
-              ${Math.round(totalPlannedCost).toLocaleString()}
-            </p>
-            <p className="text-xs text-muted-foreground">Est. Cost</p>
-          </CardContent>
-        </Card>
+      {/* Inline summary stats */}
+      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+        <span><span className="font-bold text-foreground text-sm">{items.length}</span> items</span>
+        <span><span className="font-bold text-success text-sm">{completedCount}</span> done</span>
+        <span><span className="font-bold text-chart-2 text-sm">${Math.round(totalPlannedCost).toLocaleString()}</span> est.</span>
       </div>
 
       {/* Calendar Grid */}

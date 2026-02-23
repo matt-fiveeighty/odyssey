@@ -224,35 +224,32 @@ export default function DashboardPage() {
   const timelinePreview = confirmedAssessment?.roadmap.slice(0, 5) ?? [];
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
       {/* Page Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {hasPlan
-              ? "Your strategic plan at a glance"
-              : "Start building your western big game strategy"}
-          </p>
+        <div className="flex items-center gap-2">
+          <Target className="w-5 h-5 text-primary" />
+          <h1 className="text-lg font-bold tracking-tight">Dashboard</h1>
         </div>
         <div className="flex items-center gap-2">
           {!hasPlan && (
             <Button
               variant="outline"
-              className="gap-1.5"
+              size="sm"
+              className="gap-1.5 text-xs"
               onClick={() => {
                 useWizardStore.getState().reset();
                 useWizardStore.getState().setExpressMode(true);
                 router.push("/plan-builder");
               }}
             >
-              <Zap className="w-4 h-4 text-chart-2" />
+              <Zap className="w-3.5 h-3.5 text-chart-2" />
               <span className="hidden sm:inline">Quick Plan</span>
             </Button>
           )}
           <Link href="/plan-builder">
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
+            <Button size="sm" className="gap-1.5 text-xs">
+              <Plus className="w-3.5 h-3.5" />
               {hasPlan ? "Adjust Plan" : "New Plan"}
             </Button>
           </Link>
@@ -391,12 +388,12 @@ export default function DashboardPage() {
       {/* STRATEGIC METRICS — Above the Fold                               */}
       {/* ================================================================ */}
       {hasPlan && metrics && health ? (
-        <div className="grid md:grid-cols-2 gap-4">
+        <div className="grid md:grid-cols-2 gap-3">
           {/* LEFT COLUMN */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Portfolio Health Score */}
-            <Card className="bg-card border-border card-lift">
-              <CardContent className="p-4">
+            <Card className="bg-card border-border/50">
+              <CardContent className="p-3">
                 <div className="flex items-center gap-4">
                   <div
                     className={`w-16 h-16 rounded-xl ${healthBg(health.score)} flex items-center justify-center`}
@@ -441,96 +438,51 @@ export default function DashboardPage() {
             </Card>
 
             {/* Next Projected Draw + Hunt Frequency */}
-            <div className="grid grid-cols-2 gap-4">
-              <Card className="bg-card border-border card-lift">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                      <Crosshair className="w-5 h-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {metrics.nextHighProbabilityDrawYear
-                          ? `Yr ${metrics.nextHighProbabilityDrawYear}`
-                          : "\u2014"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Next Draw Year
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border card-lift">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
-                      <Activity className="w-5 h-5 text-chart-2" />
-                    </div>
-                    <div>
-                      <p className="text-2xl font-bold">
-                        {metrics.huntFrequencyRange}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Hunts/Year
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+                <Crosshair className="w-4 h-4 text-primary" />
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Next Draw</p>
+                  <p className="text-lg font-bold">
+                    {metrics.nextHighProbabilityDrawYear
+                      ? `Yr ${metrics.nextHighProbabilityDrawYear}`
+                      : "\u2014"}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+                <Activity className="w-4 h-4 text-chart-2" />
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Hunts/Year</p>
+                  <p className="text-lg font-bold">{metrics.huntFrequencyRange}</p>
+                </div>
+              </div>
             </div>
           </div>
 
           {/* RIGHT COLUMN */}
-          <div className="space-y-4">
+          <div className="space-y-3">
             {/* Spend metrics */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="bg-card border-border card-lift">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter
-                      value={metrics.annualApplicationSpend}
-                      prefix="$"
-                    />
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Annual Spend
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border card-lift">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter
-                      value={metrics.projected10YearSpend}
-                      prefix="$"
-                    />
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    10-Year Spend
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border card-lift">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter
-                      value={metrics.projected20YearSpend}
-                      prefix="$"
-                    />
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    20-Year Spend
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={metrics.annualApplicationSpend} prefix="$" /></p>
+                <p className="text-[9px] text-muted-foreground">Annual</p>
+              </div>
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={metrics.projected10YearSpend} prefix="$" /></p>
+                <p className="text-[9px] text-muted-foreground">10-Year</p>
+              </div>
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={metrics.projected20YearSpend} prefix="$" /></p>
+                <p className="text-[9px] text-muted-foreground">20-Year</p>
+              </div>
             </div>
 
             {/* Active Alerts */}
             <Card
-              className={`bg-card border-border ${activeAlerts > 0 ? "border-chart-4/20" : ""}`}
+              className={`bg-card border-border/50 ${activeAlerts > 0 ? "border-chart-4/20" : ""}`}
             >
-              <CardContent className="p-4">
+              <CardContent className="p-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div
@@ -565,120 +517,53 @@ export default function DashboardPage() {
             </Card>
 
             {/* Quick stats row */}
-            <div className="grid grid-cols-3 gap-3">
-              <Card className="bg-card border-border">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter value={totalPoints} />
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    <HuntingTerm term="preference points">
-                      Total Points
-                    </HuntingTerm>
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter
-                      value={completedMilestones}
-                    />
-                    /{milestones.length}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    Milestones
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="bg-card border-border">
-                <CardContent className="p-3">
-                  <p className="text-lg font-bold">
-                    <AnimatedCounter
-                      value={
-                        confirmedAssessment?.stateRecommendations.length ??
-                        activeStates
-                      }
-                    />
-                  </p>
-                  <p className="text-[10px] text-muted-foreground">
-                    States Active
-                  </p>
-                </CardContent>
-              </Card>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={totalPoints} /></p>
+                <p className="text-[9px] text-muted-foreground">Points</p>
+              </div>
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={completedMilestones} />/{milestones.length}</p>
+                <p className="text-[9px] text-muted-foreground">Milestones</p>
+              </div>
+              <div className="px-3 py-2 rounded-lg bg-card border border-border/50">
+                <p className="text-base font-bold"><AnimatedCounter value={confirmedAssessment?.stateRecommendations.length ?? activeStates} /></p>
+                <p className="text-[9px] text-muted-foreground">States</p>
+              </div>
             </div>
           </div>
         </div>
       ) : (
         /* Fallback stats row for users without a plan */
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card className="bg-card border-border count-up card-lift hover:glow-primary">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-primary/15 flex items-center justify-center">
-                  <Wallet className="w-5 h-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    <AnimatedCounter value={totalPoints} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    <HuntingTerm term="preference points">
-                      Total Points
-                    </HuntingTerm>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border count-up-delay-1 card-lift hover:glow-amber">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-chart-2/15 flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-chart-2" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    <AnimatedCounter value={0} prefix="$" />
-                  </p>
-                  <p className="text-xs text-muted-foreground">Year 1 Cost</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border count-up-delay-2 card-lift hover:glow-orange">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-chart-4/15 flex items-center justify-center">
-                  <Target className="w-5 h-5 text-chart-4" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    <AnimatedCounter value={completedMilestones} />/
-                    {milestones.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Milestones</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-card border-border count-up-delay-3 card-lift hover:glow-blue">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-chart-5/15 flex items-center justify-center">
-                  <MapPin className="w-5 h-5 text-chart-5" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    <AnimatedCounter value={activeStates} />
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    States Active
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+            <Wallet className="w-4 h-4 text-primary" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Points</p>
+              <p className="text-lg font-bold"><AnimatedCounter value={totalPoints} /></p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+            <TrendingUp className="w-4 h-4 text-chart-2" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Year 1</p>
+              <p className="text-lg font-bold"><AnimatedCounter value={0} prefix="$" /></p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+            <Target className="w-4 h-4 text-chart-4" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Milestones</p>
+              <p className="text-lg font-bold"><AnimatedCounter value={completedMilestones} />/{milestones.length}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg bg-card border border-border/50">
+            <MapPin className="w-4 h-4 text-chart-5" />
+            <div>
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wider">States</p>
+              <p className="text-lg font-bold"><AnimatedCounter value={activeStates} /></p>
+            </div>
+          </div>
         </div>
       )}
 
@@ -717,14 +602,14 @@ export default function DashboardPage() {
       {/* ================================================================ */}
       {/* ACTION PLAN / GETTING STARTED                                    */}
       {/* ================================================================ */}
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-3">
         <div className="md:col-span-2">
           {hasPlan ? (
-            <Card className="bg-card border-border overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-chart-4" />
-              <CardHeader className="pb-3">
+            <Card className="bg-card border-border/50 overflow-hidden">
+              <div className="h-0.5 bg-gradient-to-r from-primary via-chart-2 to-chart-4" />
+              <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Your Action Plan</CardTitle>
+                  <CardTitle className="text-sm font-bold">Action Plan</CardTitle>
                   <Badge
                     variant="secondary"
                     className="bg-chart-2/15 text-chart-2 border-0"
@@ -807,11 +692,11 @@ export default function DashboardPage() {
               </CardContent>
             </Card>
           ) : (
-            <Card className="bg-card border-border overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-primary via-chart-2 to-chart-4" />
-              <CardHeader className="pb-3">
+            <Card className="bg-card border-border/50 overflow-hidden">
+              <div className="h-0.5 bg-gradient-to-r from-primary via-chart-2 to-chart-4" />
+              <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg">Getting Started</CardTitle>
+                  <CardTitle className="text-sm font-bold">Getting Started</CardTitle>
                   <Badge
                     variant="secondary"
                     className="bg-primary/15 text-primary border-0"
@@ -907,11 +792,11 @@ export default function DashboardPage() {
         </div>
 
         {/* Deadline Timeline */}
-        <Card className="bg-card border-border">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-primary" />
-              Deadline Timeline
+        <Card className="bg-card border-border/50">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+              <Calendar className="w-4 h-4 text-primary" />
+              Deadlines
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -1067,12 +952,12 @@ export default function DashboardPage() {
           if (applyItems.length === 0) return null;
 
           return (
-            <Card className="bg-card border-border overflow-hidden">
-              <div className="h-1 bg-gradient-to-r from-chart-2 to-primary" />
-              <CardHeader className="pb-3">
+            <Card className="bg-card border-border/50 overflow-hidden">
+              <div className="h-0.5 bg-gradient-to-r from-chart-2 to-primary" />
+              <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Crosshair className="w-5 h-5 text-chart-2" />
+                  <CardTitle className="text-sm font-bold flex items-center gap-1.5">
+                    <Crosshair className="w-4 h-4 text-chart-2" />
                     Apply This Year ({currentYear})
                   </CardTitle>
                   <Badge
@@ -1152,12 +1037,9 @@ export default function DashboardPage() {
       {!hasPlan && userGoals.length === 0 && <BeginnerGuide />}
 
       {/* State Investment Overview */}
-      <Card className="bg-card border-border">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">State Investment Overview</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Annual point costs and draw system types across all states
-          </p>
+      <Card className="bg-card border-border/50">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm font-bold">State Overview</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
