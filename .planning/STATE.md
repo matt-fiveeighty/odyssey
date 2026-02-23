@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-21)
 
 **Core value:** Every number is real, every recommendation is specific to you, and the system actively works for you between visits -- like a fiduciary managing your hunting portfolio, not a spreadsheet you maintain yourself.
-**Current focus:** Phase 7 in progress -- Scraper Enrichment & Data Freshness.
+**Current focus:** Phase 7 complete -- Scraper Enrichment & Data Freshness. Ready for Phase 8.
 
 ## Current Position
 
 Phase: 7 of 10 (Scraper Enrichment & Data Freshness)
-Plan: 4 of 5 complete
-Status: Plan 07-03 complete -- validateBatch on all 9 remaining state scrapers
-Last activity: 2026-02-22 -- Plans 07-01 through 07-04 complete (scraper enrichment + data-loader + validation)
+Plan: 5 of 5 complete
+Status: Phase 7 complete -- all 5 plans done
+Last activity: 2026-02-22 -- Plan 07-05 complete (UI freshness badges + scraper data-loss guards)
 
-Progress: [█████████████░] 66%
+Progress: [██████████████░] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 7 min
-- Total execution time: 2.15 hours
+- Total execution time: 2.28 hours
 
 **By Phase:**
 
@@ -33,11 +33,11 @@ Progress: [█████████████░] 66%
 | 04-calendar-subscription | 2 | 30 min | 15 min |
 | 05-advisor-voice | 4 | 11 min | 3 min |
 | 06-api-integrations | 3 | 8 min | 3 min |
-| 07-scraper-enrichment-data-freshness | 4 | 16 min | 4 min |
+| 07-scraper-enrichment-data-freshness | 5 | 24 min | 5 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-01 (4 min), 07-02 (4 min), 07-03 (12 min), 07-04 (4 min)
-- Trend: 07-03 longer due to 9-state scraper validation rollout across 2 tasks
+- Last 5 plans: 07-01 (4 min), 07-02 (4 min), 07-03 (12 min), 07-04 (4 min), 07-05 (8 min)
+- Trend: 07-05 moderate due to 4-component FreshnessBadge wiring + base-scraper guard integration
 
 *Updated after each plan completion*
 
@@ -112,6 +112,9 @@ Recent decisions affecting current work:
 - [07-01]: Plausibility schema pattern: base schema for structure, Plausible*Schema for domain guards -- callers choose which to pass to validateBatch()
 - [07-03]: validateBatch as return guard pattern: every scrape method returns validateBatch() instead of raw array
 - [07-03]: Cheerio migration prioritized for CO/WY (most complex regex); other states retain regex in non-critical paths
+- [07-05]: estimated() wrappers at render boundary (not full VerifiedDatum plumbing through engine) -- deliberate incremental approach
+- [07-05]: Draw history guard skipped because ref_unit_draw_history has no state_id column (uses unit_id FK)
+- [07-05]: FreshnessBadge showLabel=false for all inline annotations to preserve compact layout
 
 ### Pending Todos
 
@@ -125,5 +128,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-22
-Stopped at: Completed 07-03-PLAN.md (plausibility validation on all 9 remaining state scrapers)
+Stopped at: Completed 07-05-PLAN.md (Phase 7 complete -- UI freshness badges + scraper data-loss guards)
 Resume file: None
