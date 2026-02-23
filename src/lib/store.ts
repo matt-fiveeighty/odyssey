@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import type {
   HuntStyle, UserPoints, UserGoal, Milestone, DreamHunt, StrategicAssessment,
   StateScoreBreakdown, BoardState, DisciplineViolation, LockedAnchor, PortfolioMandate,
-  ExperienceLevel, TrophyVsMeat,
+  ExperienceLevel, TrophyVsMeat, SavingsGoal,
 } from "@/lib/types";
 import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
 
@@ -271,6 +271,13 @@ interface AppState {
   uncompleteMilestone: (id: string) => void;
   setDrawOutcome: (id: string, outcome: "drew" | "didnt_draw" | null) => void;
 
+  // Savings goals (Phase 8)
+  savingsGoals: SavingsGoal[];
+  addSavingsGoal: (goal: SavingsGoal) => void;
+  updateSavingsGoal: (id: string, updates: Partial<Pick<SavingsGoal, 'currentSaved' | 'monthlySavings'>>) => void;
+  removeSavingsGoal: (id: string) => void;
+  addContribution: (goalId: string, amount: number, note?: string) => void;
+
   setConfirmedAssessment: (assessment: StrategicAssessment) => void;
   clearConfirmedAssessment: () => void;
 }
@@ -321,6 +328,7 @@ export const useAppStore = create<AppState>()(
       userGoals: [],
       milestones: [],
       confirmedAssessment: null,
+      savingsGoals: [],
 
       // Temporal context (Phase 5 Advisor Voice)
       lastVisitAt: null,
@@ -474,6 +482,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           userGoals: state.userGoals.filter((g) => g.id !== id),
           milestones: state.milestones.filter((m) => m.planId !== id),
+          savingsGoals: state.savingsGoals.filter((sg) => sg.goalId !== id),
         })),
 
       setMilestones: (milestones) =>
@@ -504,6 +513,31 @@ export const useAppStore = create<AppState>()(
             m.id === id
               ? { ...m, drawOutcome: outcome, drawOutcomeAt: outcome ? new Date().toISOString() : undefined }
               : m
+          ),
+        })),
+
+      // Savings goals (Phase 8)
+      addSavingsGoal: (goal) =>
+        set((state) => ({ savingsGoals: [...state.savingsGoals, goal] })),
+      updateSavingsGoal: (id, updates) =>
+        set((state) => ({
+          savingsGoals: state.savingsGoals.map((sg) =>
+            sg.id === id ? { ...sg, ...updates, updatedAt: new Date().toISOString() } : sg
+          ),
+        })),
+      removeSavingsGoal: (id) =>
+        set((state) => ({ savingsGoals: state.savingsGoals.filter((sg) => sg.id !== id) })),
+      addContribution: (goalId, amount, note) =>
+        set((state) => ({
+          savingsGoals: state.savingsGoals.map((sg) =>
+            sg.id !== goalId
+              ? sg
+              : {
+                  ...sg,
+                  currentSaved: sg.currentSaved + amount,
+                  contributions: [...sg.contributions, { amount, date: new Date().toISOString(), note }],
+                  updatedAt: new Date().toISOString(),
+                }
           ),
         })),
 
