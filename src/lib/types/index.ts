@@ -49,7 +49,8 @@ export type AdvisorInsightCategory =
   | "milestone"
   | "temporal"
   | "calendar"
-  | "savings";    // Phase 8
+  | "savings"     // Phase 8
+  | "scouting";   // Phase 10
 
 /** CTA target -- where the user should go */
 export interface AdvisorCTA {
@@ -93,6 +94,18 @@ export interface DiffItem {
   delta: number;                       // Change magnitude (for sorting)
   previousValue: string | number;      // What it was at last visit
   currentValue: string | number;       // What it is now
+}
+
+// ============================================================================
+// Scouting Strategy (Phase 10)
+// ============================================================================
+
+export interface ScoutingTarget {
+  targetStateId: string;
+  targetSpeciesId: string;
+  targetUnitCode: string;
+  targetYearsAway: number;
+  strategicReason: string;
 }
 
 // ============================================================================

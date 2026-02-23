@@ -10,6 +10,7 @@ import {
   RefreshCw,
   Calendar,
   PiggyBank,
+  Binoculars,
   ArrowRight,
   ExternalLink,
 } from "lucide-react";
@@ -62,6 +63,7 @@ const CATEGORY_ICONS: Record<AdvisorInsightCategory, React.ComponentType<{ class
   temporal: RefreshCw,
   calendar: Calendar,
   savings: PiggyBank,
+  scouting: Binoculars,
 };
 
 // --- Component ---
