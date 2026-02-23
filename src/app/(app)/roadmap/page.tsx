@@ -12,7 +12,7 @@ import { RoadmapTimeline } from "@/components/roadmap/RoadmapTimeline";
 import { PlanManager } from "@/components/roadmap/PlanManager";
 import { InteractiveMap } from "@/components/journey/InteractiveMap";
 import { YearTimeline } from "@/components/journey/YearTimeline";
-import { MapLegend } from "@/components/journey/MapLegend";
+
 import { StateDetailModal } from "@/components/journey/StateDetailModal";
 import { buildJourneyData } from "@/lib/engine/journey-data";
 import { computeBoardState } from "@/lib/engine/board-state";
@@ -80,7 +80,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
+    <div className="p-4 md:p-6 space-y-4 fade-in-up">
       {/* Top bar: plan switcher + plan actions */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <PlanManager />
@@ -106,13 +106,22 @@ export default function RoadmapPage() {
       {/* Discipline Alerts — surface issues early */}
       <DisciplineAlerts violations={violations} />
 
-      {/* Interactive State Map — click a state for details, year selector on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_80px] gap-4">
-        <InteractiveMap
-          yearData={selectedYearData}
-          onStateClick={setSelectedStateId}
-          selectedYear={selectedYear}
-        />
+      {/* Interactive State Map + Year Selector */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_72px] gap-3">
+        <div className="relative">
+          <InteractiveMap
+            yearData={selectedYearData}
+            onStateClick={setSelectedStateId}
+            selectedYear={selectedYear}
+          />
+          {/* Inline legend overlaid on map */}
+          <div className="absolute bottom-1 left-2 flex gap-3 text-[9px] text-muted-foreground/70 uppercase tracking-wider pointer-events-none">
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-success" />Hunt</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-info" />Apply</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-warning" />OTC</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-chart-2" />Points</span>
+          </div>
+        </div>
         <YearTimeline
           years={journeyData.years}
           selectedYear={selectedYear}
@@ -120,7 +129,6 @@ export default function RoadmapPage() {
           currentYear={currentYear}
         />
       </div>
-      <MapLegend />
 
       {/* Two-column dashboard: Applications (left) + Roadmap Timeline (right) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

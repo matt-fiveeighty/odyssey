@@ -24,7 +24,7 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
   }, []);
 
   return (
-    <div className="lg:flex lg:flex-col lg:gap-1 lg:max-h-[550px] lg:overflow-y-auto flex flex-row gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-thin">
+    <div className="lg:flex lg:flex-col lg:gap-1 lg:max-h-[340px] lg:overflow-y-auto flex flex-row gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-thin">
       {years.map((yearData) => {
         const isSelected = yearData.year === selectedYear;
         const isCurrent = yearData.year === currentYear;

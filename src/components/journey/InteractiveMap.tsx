@@ -94,7 +94,7 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
     <div ref={containerRef} className="relative">
       <svg
         viewBox="-10 -10 560 480"
-        className="w-full h-auto max-h-[500px] lg:max-h-[550px]"
+        className="w-full h-auto max-h-[340px]"
         preserveAspectRatio="xMidYMid meet"
         role="img"
         aria-label={`Interactive hunt plan map for ${selectedYear}`}

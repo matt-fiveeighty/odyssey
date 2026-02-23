@@ -91,34 +91,29 @@ export default function CalculatorPage() {
     : huntYearCost; // 0 points needed = hunt this year
 
   return (
-    <div className="p-6 space-y-6 fade-in-up">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Calculator className="w-6 h-6 text-primary" />
-          Investment Calculator
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Calculate your point investment and total hunt costs per state
-        </p>
+    <div className="p-4 md:p-6 space-y-3 fade-in-up">
+      <div className="flex items-center gap-2">
+        <Calculator className="w-5 h-5 text-primary" />
+        <h1 className="text-lg font-bold tracking-tight">Investment Calculator</h1>
       </div>
 
-      {/* Species Selector */}
-      <div className="flex flex-wrap gap-2">
+      {/* Species Selector — horizontal scroll strip */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-thin -mx-1 px-1">
         {SPECIES.map((sp) => {
           const img = SPECIES_IMAGES[sp.id];
           return (
             <button
               key={sp.id}
               onClick={() => setSelectedSpecies(sp.id)}
-              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+              className={`group shrink-0 flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium transition-all duration-200 ${
                 selectedSpecies === sp.id
-                  ? "bg-primary text-primary-foreground glow-primary"
-                  : "bg-secondary text-secondary-foreground hover:bg-accent hover:scale-105 hover:shadow-[0_0_12px_oklch(0.65_0.18_145/0.15)]"
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-secondary text-secondary-foreground hover:bg-accent"
               }`}
             >
               {img && (
-                <div className="relative w-5 h-5 rounded-full overflow-hidden shrink-0 transition-transform duration-200 group-hover:scale-125">
-                  <Image src={img.src} alt={img.alt} width={20} height={20} className="object-cover w-full h-full" />
+                <div className="relative w-4 h-4 rounded-full overflow-hidden shrink-0">
+                  <Image src={img.src} alt={img.alt} width={16} height={16} className="object-cover w-full h-full" />
                 </div>
               )}
               {sp.name}
@@ -127,15 +122,11 @@ export default function CalculatorPage() {
         })}
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid md:grid-cols-3 gap-4">
         {/* State Grid + Point Inputs */}
         <div className="md:col-span-2 order-2 md:order-1">
-          <Card className="bg-card border-border">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">Select a State</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <div className="rounded-xl border border-border bg-card p-3">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2">
                 {STATES.map((s) => {
                   const sFees = resolveFees(s, homeState);
                   const cost = sFees.pointCost[selectedSpecies] ?? 0;
@@ -147,7 +138,7 @@ export default function CalculatorPage() {
                     <button
                       key={s.id}
                       onClick={() => setSelectedState(s.id)}
-                      className={`group relative p-4 rounded-xl border text-left overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
+                      className={`group relative p-3 rounded-xl border text-left overflow-hidden transition-all duration-200 hover:scale-[1.02] hover:shadow-lg ${
                         isSelected
                           ? "border-primary ring-1 ring-primary"
                           : hasSpecies
@@ -160,31 +151,31 @@ export default function CalculatorPage() {
                       <div className="relative z-10">
                         {isSelected && (
                           <div className="absolute top-0 right-0">
-                            <Check className="w-4 h-4 text-primary" />
+                            <Check className="w-3.5 h-3.5 text-primary" />
                           </div>
                         )}
-                        <div className="flex items-center gap-2 mb-2">
+                        <div className="flex items-center gap-1.5 mb-1.5">
                           <StateOutline
                             stateId={s.id}
-                            size={24}
+                            size={20}
                             strokeColor="white"
                             strokeWidth={3}
                             fillColor="rgba(255,255,255,0.15)"
                           />
-                          <span className="text-xs font-bold text-primary">{s.abbreviation}</span>
+                          <span className="text-[10px] font-bold text-primary">{s.abbreviation}</span>
                         </div>
                         {hasSpecies ? (
                           <>
-                            <p className="text-lg font-bold">
+                            <p className="text-base font-bold">
                               {fmt(sTagCost)}
-                              <span className="text-[9px] text-muted-foreground font-normal ml-0.5">tag</span>
+                              <span className="text-[8px] text-muted-foreground font-normal ml-0.5">tag</span>
                             </p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                            <p className="text-[9px] text-muted-foreground mt-0.5">
                               {cost > 0 ? `${fmt(cost)}/pt` : "No points"}
                             </p>
                           </>
                         ) : (
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
+                          <p className="text-[9px] text-muted-foreground mt-0.5">
                             Not available
                           </p>
                         )}
@@ -193,8 +184,7 @@ export default function CalculatorPage() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
+          </div>
 
           {/* Point Inputs — +/- buttons + direct text entry */}
           {selectedState && (

@@ -1,11 +1,12 @@
 "use client";
 
 import { useMemo } from "react";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
 import { formatSpeciesName } from "@/lib/utils";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 import type { Milestone, StrategicAssessment } from "@/lib/types";
 import {
   ClipboardCheck,
@@ -140,8 +141,51 @@ const PHASE_LABELS: Record<StatusPhase, string> = {
   hunt_complete: "Hunt Complete",
 };
 
+/** Build a one-line fee summary for an action */
+function buildFeeSummary(
+  stateId: string,
+  speciesId: string,
+  actionType: string,
+  homeState: string,
+): string | null {
+  const state = STATES_MAP[stateId];
+  if (!state) return null;
+  const fees = resolveFees(state, homeState);
+  const parts: string[] = [];
+
+  if (actionType === "apply") {
+    // Non-refundable app fee
+    if (fees.appFee > 0) {
+      parts.push(`$${Math.round(fees.appFee)} app (non-refundable)`);
+    }
+    // Tag cost if drawn
+    const tagCost = fees.tagCosts[speciesId] ?? 0;
+    if (tagCost > 0) {
+      parts.push(`If drawn: $${Math.round(tagCost).toLocaleString()} tag`);
+    }
+  } else if (actionType === "buy_points") {
+    const ptCost = fees.pointCost[speciesId] ?? 0;
+    if (ptCost > 0) {
+      parts.push(`$${Math.round(ptCost)} point fee`);
+    }
+    // Check if license is refundable
+    const licNote = fees.feeSchedule.find(
+      (f) => f.name.toLowerCase().includes("license") || f.name.toLowerCase().includes("qualifying"),
+    );
+    if (fees.qualifyingLicense > 0) {
+      const refundable = licNote?.notes?.toLowerCase().includes("refund") ?? false;
+      parts.push(
+        `$${Math.round(fees.qualifyingLicense)} license${refundable ? " (refundable if no draw)" : ""}`,
+      );
+    }
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardProps) {
   const milestones = useAppStore((s) => s.milestones);
+  const homeState = useWizardStore((s) => s.homeState);
   const currentYear = new Date().getFullYear();
 
   const entries = useMemo(() => {
@@ -294,6 +338,16 @@ export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardPro
                           <ArrowRight className="w-2.5 h-2.5 shrink-0" />
                           <span>{entry.nextAction}</span>
                         </div>
+                        {/* Fee breakdown / refund info */}
+                        {(() => {
+                          const summary = buildFeeSummary(m.stateId, m.speciesId, m.type, homeState);
+                          if (!summary) return null;
+                          return (
+                            <p className="text-[9px] text-muted-foreground/50 mt-0.5 leading-relaxed">
+                              {summary}
+                            </p>
+                          );
+                        })()}
                       </div>
 
                       {/* Cost */}

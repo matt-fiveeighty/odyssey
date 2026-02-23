@@ -10,7 +10,8 @@ import { YEAR_TYPE_LABELS, migratePhaseToYearType } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { formatSpeciesName, cn } from "@/lib/utils";
 import { exportDeadline } from "@/lib/calendar-export";
-import { useAppStore } from "@/lib/store";
+import { resolveFees } from "@/lib/engine/fee-resolver";
+import { useAppStore, useWizardStore } from "@/lib/store";
 
 import { YEAR_TYPE_COLORS } from "@/lib/constants/phase-colors";
 
@@ -67,11 +68,35 @@ function ActionStatusBadge({ milestone }: { milestone: Milestone | undefined }) 
   return null;
 }
 
+/** Fee sub-line for an action */
+function actionFeeSummary(
+  stateId: string,
+  speciesId: string,
+  type: string,
+  homeState: string,
+): string | null {
+  const state = STATES_MAP[stateId];
+  if (!state) return null;
+  const fees = resolveFees(state, homeState);
+  const parts: string[] = [];
+  if (type === "apply") {
+    if (fees.appFee > 0) parts.push(`$${Math.round(fees.appFee)} app (non-refundable)`);
+    const tag = fees.tagCosts[speciesId] ?? 0;
+    if (tag > 0) parts.push(`If drawn: $${Math.round(tag).toLocaleString()} tag`);
+  } else if (type === "buy_points") {
+    const pt = fees.pointCost[speciesId] ?? 0;
+    if (pt > 0) parts.push(`$${Math.round(pt)} point fee`);
+    if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+  }
+  return parts.length > 0 ? parts.join(" · ") : null;
+}
+
 export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
   const currentYear = new Date().getFullYear();
   const [expandedYear, setExpandedYear] = useState<number | null>(currentYear);
   const expandedRef = useRef<HTMLDivElement>(null);
   const milestones = useAppStore((s) => s.milestones);
+  const homeState = useWizardStore((s) => s.homeState);
 
   // Scroll expanded detail into view
   useEffect(() => {
@@ -326,6 +351,16 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
                                   </button>
                                 )}
                               </div>
+                              {/* Fee breakdown / refund info */}
+                              {(() => {
+                                const feeLine = actionFeeSummary(action.stateId, action.speciesId, action.type, homeState);
+                                if (!feeLine) return null;
+                                return (
+                                  <p className="text-[9px] text-muted-foreground/50 mt-0.5">
+                                    {feeLine}
+                                  </p>
+                                );
+                              })()}
                             </div>
                             {action.url && (
                               <a
