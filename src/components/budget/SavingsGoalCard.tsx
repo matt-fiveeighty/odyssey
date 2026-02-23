@@ -3,26 +3,12 @@
 import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { PiggyBank, Plus, X, Trash2, Mountain, Sparkles } from "lucide-react";
+import { PiggyBank, Plus, X, Trash2, Mountain, Sparkles, ChevronDown } from "lucide-react";
 import { useAppStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface SavingsGoal {
-  id: string;
-  title: string;
-  targetCost: number;
-  targetDate: string;
-  monthlySavings: number;
-  currentSaved: number;
-  stateId?: string;
-  speciesId?: string;
-}
+import type { SavingsGoal, UserGoal, Milestone } from "@/lib/types";
 
 // ============================================================================
 // Individual Card
@@ -30,29 +16,44 @@ export interface SavingsGoal {
 
 function SavingsGoalItem({
   goal,
-  onUpdateSaved,
+  userGoals,
+  milestones,
+  onAddContribution,
   onRemove,
 }: {
   goal: SavingsGoal;
-  onUpdateSaved: (goalId: string, amount: number) => void;
+  userGoals: UserGoal[];
+  milestones: Milestone[];
+  onAddContribution: (goalId: string, amount: number) => void;
   onRemove: (goalId: string) => void;
 }) {
+  // Derive title and targetCost from linked UserGoal + milestones
+  const linkedGoal = userGoals.find((g) => g.id === goal.goalId);
+  const title = linkedGoal?.title ?? "Unknown Goal";
+  const targetCost = milestones
+    .filter((m) => m.planId === goal.goalId)
+    .reduce((s, m) => s + m.totalCost, 0);
+
   const pct = Math.min(
     100,
-    goal.targetCost > 0 ? (goal.currentSaved / goal.targetCost) * 100 : 0
+    targetCost > 0 ? (goal.currentSaved / targetCost) * 100 : 0
   );
+  const remaining = Math.max(0, targetCost - goal.currentSaved);
   const monthsLeft = Math.max(
     0,
-    Math.ceil(
-      (goal.targetCost - goal.currentSaved) / (goal.monthlySavings || 1)
-    )
+    Math.ceil(remaining / (goal.monthlySavings || 1))
   );
 
   return (
     <Card className="bg-card border-border">
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm">{goal.title}</CardTitle>
+          <div className="flex items-center gap-2 min-w-0">
+            {linkedGoal && (
+              <SpeciesAvatar speciesId={linkedGoal.speciesId} size={20} />
+            )}
+            <CardTitle className="text-sm truncate">{title}</CardTitle>
+          </div>
           <button
             onClick={() => onRemove(goal.id)}
             aria-label="Remove savings goal"
@@ -70,7 +71,7 @@ function SavingsGoalItem({
               ${goal.currentSaved.toLocaleString()} saved
             </span>
             <span className="font-bold">
-              ${goal.targetCost.toLocaleString()}
+              ${targetCost.toLocaleString()}
             </span>
           </div>
           <div className="h-3 rounded-full bg-secondary overflow-hidden">
@@ -84,7 +85,9 @@ function SavingsGoalItem({
               {Math.round(pct)}% complete
             </span>
             <span className="text-[10px] text-muted-foreground">
-              ~{monthsLeft} months to go @ ${goal.monthlySavings}/mo
+              {remaining <= 0
+                ? "Goal reached!"
+                : `~${monthsLeft} months to go @ $${goal.monthlySavings}/mo`}
             </span>
           </div>
         </div>
@@ -95,7 +98,7 @@ function SavingsGoalItem({
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => onUpdateSaved(goal.id, goal.monthlySavings)}
+            onClick={() => onAddContribution(goal.id, goal.monthlySavings)}
           >
             + ${goal.monthlySavings}
           </Button>
@@ -103,7 +106,7 @@ function SavingsGoalItem({
             variant="outline"
             size="sm"
             className="flex-1 text-xs"
-            onClick={() => onUpdateSaved(goal.id, 100)}
+            onClick={() => onAddContribution(goal.id, 100)}
           >
             + $100
           </Button>
@@ -118,15 +121,35 @@ function SavingsGoalItem({
 // ============================================================================
 
 export function SavingsGoalsSection() {
-  const { userGoals, milestones: allMilestones } = useAppStore();
-  const [savingsGoals, setSavingsGoals] = useState<SavingsGoal[]>([]);
+  const {
+    userGoals,
+    milestones: allMilestones,
+    savingsGoals,
+    addSavingsGoal,
+    removeSavingsGoal,
+    addContribution,
+  } = useAppStore();
+
   const [showAddGoal, setShowAddGoal] = useState(false);
-  const [newGoalTitle, setNewGoalTitle] = useState("");
-  const [newGoalTarget, setNewGoalTarget] = useState(5000);
+  const [selectedGoalId, setSelectedGoalId] = useState<string>("");
   const [newGoalMonthly, setNewGoalMonthly] = useState(200);
   const [dismissedSuggestions, setDismissedSuggestions] = useState<Set<string>>(new Set());
 
   const currentYear = new Date().getFullYear();
+
+  // UserGoals that don't already have a linked savings goal
+  const availableGoals = useMemo(() => {
+    const linkedGoalIds = new Set(savingsGoals.map((sg) => sg.goalId));
+    return userGoals.filter(
+      (g) => g.status === "active" && !linkedGoalIds.has(g.id)
+    );
+  }, [userGoals, savingsGoals]);
+
+  // Derive target cost for a given goalId from milestones
+  const getTargetCost = (goalId: string) =>
+    allMilestones
+      .filter((m) => m.planId === goalId)
+      .reduce((s, m) => s + m.totalCost, 0);
 
   // Auto-generate savings suggestions from active goals
   const suggestedSavings = useMemo(() => {
@@ -146,70 +169,53 @@ export function SavingsGoalsSection() {
         (s) =>
           s.totalCost > 500 &&
           !dismissedSuggestions.has(s.goal.id) &&
-          !savingsGoals.some(
-            (sg) => sg.stateId === s.goal.stateId && sg.speciesId === s.goal.speciesId
-          )
+          !savingsGoals.some((sg) => sg.goalId === s.goal.id)
       );
   }, [userGoals, allMilestones, currentYear, dismissedSuggestions, savingsGoals]);
 
   function activateSuggestion(suggestion: (typeof suggestedSavings)[number]) {
-    const months = Math.ceil(suggestion.totalCost / (suggestion.monthlySavings || 1));
-    const targetDate = new Date();
-    targetDate.setMonth(targetDate.getMonth() + months);
-
-    setSavingsGoals((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        title: suggestion.goal.title,
-        targetCost: suggestion.totalCost,
-        targetDate: targetDate.toISOString().split("T")[0],
-        monthlySavings: suggestion.monthlySavings,
-        currentSaved: 0,
-        stateId: suggestion.goal.stateId,
-        speciesId: suggestion.goal.speciesId,
-      },
-    ]);
+    const now = new Date().toISOString();
+    addSavingsGoal({
+      id: crypto.randomUUID(),
+      goalId: suggestion.goal.id,
+      currentSaved: 0,
+      monthlySavings: suggestion.monthlySavings,
+      contributions: [],
+      createdAt: now,
+      updatedAt: now,
+    });
   }
 
-  function addSavingsGoal() {
-    if (!newGoalTitle.trim()) return;
-    const months = Math.ceil(newGoalTarget / (newGoalMonthly || 1));
-    const targetDate = new Date();
-    targetDate.setMonth(targetDate.getMonth() + months);
-
-    setSavingsGoals((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        title: newGoalTitle.trim(),
-        targetCost: newGoalTarget,
-        targetDate: targetDate.toISOString().split("T")[0],
-        monthlySavings: newGoalMonthly,
-        currentSaved: 0,
-      },
-    ]);
+  function handleCreateGoal() {
+    if (!selectedGoalId) return;
+    const now = new Date().toISOString();
+    addSavingsGoal({
+      id: crypto.randomUUID(),
+      goalId: selectedGoalId,
+      currentSaved: 0,
+      monthlySavings: newGoalMonthly,
+      contributions: [],
+      createdAt: now,
+      updatedAt: now,
+    });
     setShowAddGoal(false);
-    setNewGoalTitle("");
-    setNewGoalTarget(5000);
+    setSelectedGoalId("");
     setNewGoalMonthly(200);
   }
 
-  function updateSaved(goalId: string, amount: number) {
-    setSavingsGoals((prev) =>
-      prev.map((g) =>
-        g.id === goalId
-          ? { ...g, currentSaved: Math.max(0, g.currentSaved + amount) }
-          : g
-      )
-    );
+  function handleAddContribution(goalId: string, amount: number) {
+    addContribution(goalId, amount);
   }
 
-  function removeGoal(goalId: string) {
+  function handleRemoveGoal(goalId: string) {
     if (window.confirm("Delete this savings goal? This cannot be undone.")) {
-      setSavingsGoals((prev) => prev.filter((g) => g.id !== goalId));
+      removeSavingsGoal(goalId);
     }
   }
+
+  // Selected goal info for the dialog
+  const selectedGoal = userGoals.find((g) => g.id === selectedGoalId);
+  const selectedTargetCost = selectedGoalId ? getTargetCost(selectedGoalId) : 0;
 
   return (
     <div className="space-y-4">
@@ -218,7 +224,13 @@ export function SavingsGoalsSection() {
           <PiggyBank className="w-5 h-5 text-warning" />
           Dream Hunt Savings
         </h2>
-        <Button size="sm" className="gap-2" onClick={() => setShowAddGoal(true)}>
+        <Button
+          size="sm"
+          className="gap-2"
+          onClick={() => setShowAddGoal(true)}
+          disabled={availableGoals.length === 0}
+          title={availableGoals.length === 0 ? "All goals already have savings plans" : undefined}
+        >
           <Plus className="w-4 h-4" />
           New Goal
         </Button>
@@ -233,10 +245,16 @@ export function SavingsGoalsSection() {
               Start saving for that dream Yukon moose hunt, Dall sheep adventure, or
               any big hunt on your bucket list.
             </p>
-            <Button onClick={() => setShowAddGoal(true)} variant="outline">
-              <Plus className="w-4 h-4 mr-2" />
-              Set a Savings Goal
-            </Button>
+            {availableGoals.length > 0 ? (
+              <Button onClick={() => setShowAddGoal(true)} variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Set a Savings Goal
+              </Button>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Add hunt goals first, then create savings plans for them.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (
@@ -245,8 +263,10 @@ export function SavingsGoalsSection() {
             <SavingsGoalItem
               key={goal.id}
               goal={goal}
-              onUpdateSaved={updateSaved}
-              onRemove={removeGoal}
+              userGoals={userGoals}
+              milestones={allMilestones}
+              onAddContribution={handleAddContribution}
+              onRemove={handleRemoveGoal}
             />
           ))}
         </div>
@@ -330,29 +350,45 @@ export function SavingsGoalsSection() {
               </button>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Goal selector */}
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Hunt Name
+                  Link to Hunt Goal
                 </label>
-                <input
-                  type="text"
-                  value={newGoalTitle}
-                  onChange={(e) => setNewGoalTitle(e.target.value)}
-                  placeholder="e.g., Yukon Moose Adventure"
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
-                />
+                <div className="relative">
+                  <select
+                    value={selectedGoalId}
+                    onChange={(e) => setSelectedGoalId(e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none appearance-none pr-8"
+                  >
+                    <option value="">Select a goal...</option>
+                    {availableGoals.map((g) => {
+                      const state = STATES_MAP[g.stateId];
+                      const species = SPECIES_MAP[g.speciesId];
+                      return (
+                        <option key={g.id} value={g.id}>
+                          {g.title} ({species?.name} in {state?.name})
+                        </option>
+                      );
+                    })}
+                  </select>
+                  <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                  Total Cost ($)
-                </label>
-                <input
-                  type="number"
-                  value={newGoalTarget}
-                  onChange={(e) => setNewGoalTarget(Number(e.target.value))}
-                  className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
-                />
-              </div>
+
+              {/* Show derived target cost */}
+              {selectedGoal && (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-secondary/50">
+                  <SpeciesAvatar speciesId={selectedGoal.speciesId} size={24} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate">{selectedGoal.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Estimated cost: <span className="font-bold">${selectedTargetCost.toLocaleString()}</span>
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="text-sm font-medium text-muted-foreground mb-2 block">
                   Monthly Savings ($)
@@ -363,18 +399,18 @@ export function SavingsGoalsSection() {
                   onChange={(e) => setNewGoalMonthly(Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-lg bg-secondary border border-border text-sm focus:border-primary focus:outline-none"
                 />
-                {newGoalMonthly > 0 && newGoalTarget > 0 && (
+                {newGoalMonthly > 0 && selectedTargetCost > 0 && (
                   <p className="text-[10px] text-muted-foreground mt-1">
                     Reach your goal in ~
-                    {Math.ceil(newGoalTarget / newGoalMonthly)} months (
-                    {(newGoalTarget / newGoalMonthly / 12).toFixed(1)} years)
+                    {Math.ceil(selectedTargetCost / newGoalMonthly)} months (
+                    {(selectedTargetCost / newGoalMonthly / 12).toFixed(1)} years)
                   </p>
                 )}
               </div>
               <Button
-                onClick={addSavingsGoal}
+                onClick={handleCreateGoal}
                 className="w-full"
-                disabled={!newGoalTitle.trim()}
+                disabled={!selectedGoalId}
               >
                 Create Savings Goal
               </Button>
