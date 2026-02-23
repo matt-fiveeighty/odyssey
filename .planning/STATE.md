@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-21)
 ## Current Position
 
 Phase: 8 of 10 (Savings & Budget Tracker)
-Plan: 1 of 5 complete
+Plan: 2 of 5 complete
 Status: Executing Phase 8
-Last activity: 2026-02-23 -- Plan 08-01 complete (SavingsGoal types + Zustand store + SavingsGoalCard refactor)
+Last activity: 2026-02-23 -- Plan 08-02 complete (savings calculator engine TDD -- 6 pure functions, 44 tests)
 
-Progress: [███████████████░] 73%
+Progress: [███████████████░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
+- Total plans completed: 23
 - Average duration: 7 min
-- Total execution time: 2.33 hours
+- Total execution time: 2.38 hours
 
 **By Phase:**
 
@@ -34,11 +34,11 @@ Progress: [███████████████░] 73%
 | 05-advisor-voice | 4 | 11 min | 3 min |
 | 06-api-integrations | 3 | 8 min | 3 min |
 | 07-scraper-enrichment-data-freshness | 5 | 24 min | 5 min |
-| 08-savings-budget-tracker | 1 | 3 min | 3 min |
+| 08-savings-budget-tracker | 2 | 6 min | 3 min |
 
 **Recent Trend:**
-- Last 5 plans: 07-03 (12 min), 07-04 (4 min), 07-05 (8 min), 08-01 (3 min)
-- Trend: 08-01 fast -- types + store slice + component refactor, no new dependencies
+- Last 5 plans: 07-04 (4 min), 07-05 (8 min), 08-01 (3 min), 08-02 (3 min)
+- Trend: 08-02 fast -- pure function TDD, no new dependencies, clean RED-GREEN cycle
 
 *Updated after each plan completion*
 
@@ -120,6 +120,10 @@ Recent decisions affecting current work:
 - [08-01]: Manual savings goal creation requires linking to a UserGoal via dropdown selector
 - [08-01]: dismissedSuggestions kept as ephemeral useState (session-only, not persisted)
 - [08-01]: Persist key unchanged at hunt-planner-app-v2 (shallow merge handles existing users)
+- [08-02]: Date math uses 30.44 days/month average for ms-to-months conversion (no date library dependency)
+- [08-02]: Traffic light thresholds: green = on time, amber = 1-3 months late, red = >3 months or $0/mo
+- [08-02]: Composable calculator: calculateSavingsStatus calls calculateFundedDate, calculateCatchUpDelta calls calculateMonthlySavingsTarget
+- [08-02]: Engine __tests__ directory established at src/lib/engine/__tests__/ for co-located engine tests
 
 ### Pending Todos
 
@@ -133,5 +137,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-23
-Stopped at: Completed 08-01-PLAN.md (SavingsGoal types + Zustand store + SavingsGoalCard refactor)
+Stopped at: Completed 08-02-PLAN.md (savings calculator engine TDD -- 6 pure functions, 44 tests)
 Resume file: None
