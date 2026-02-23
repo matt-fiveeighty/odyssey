@@ -74,6 +74,28 @@ export interface AdvisorInsight {
 }
 
 // ============================================================================
+// Diff Engine (Phase 9)
+// ============================================================================
+
+export type DiffSource = 'deadline_proximity' | 'draw_result' | 'point_creep' | 'new_opportunity';
+export type DiffCategory = 'action_required' | 'opportunity' | 'status_update' | 'warning';
+
+export interface DiffItem {
+  id: string;                          // Stable, deterministic: "diff-deadline-CO-elk"
+  source: DiffSource;
+  category: DiffCategory;
+  stateId: string;
+  speciesId: string;
+  headline: string;                    // Short: "CO Elk deadline now urgent"
+  interpretation: string;              // Advisor voice with temporal context
+  recommendation: string;              // Actionable next step
+  cta: AdvisorCTA;                     // Reuse existing AdvisorCTA type
+  delta: number;                       // Change magnitude (for sorting)
+  previousValue: string | number;      // What it was at last visit
+  currentValue: string | number;       // What it is now
+}
+
+// ============================================================================
 // Savings & Budget Tracker (Phase 8)
 // ============================================================================
 

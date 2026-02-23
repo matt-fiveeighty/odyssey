@@ -278,6 +278,12 @@ interface AppState {
   removeSavingsGoal: (id: string) => void;
   addContribution: (goalId: string, amount: number, note?: string) => void;
 
+  // Diff tracking (Phase 9)
+  seenDiffIds: string[];
+  lastDiffComputedAt: string | null;
+  markDiffSeen: (id: string) => void;
+  markAllDiffsSeen: (ids: string[]) => void;
+
   setConfirmedAssessment: (assessment: StrategicAssessment) => void;
   clearConfirmedAssessment: () => void;
 }
@@ -329,6 +335,10 @@ export const useAppStore = create<AppState>()(
       milestones: [],
       confirmedAssessment: null,
       savingsGoals: [],
+
+      // Diff tracking (Phase 9)
+      seenDiffIds: [],
+      lastDiffComputedAt: null,
 
       // Temporal context (Phase 5 Advisor Voice)
       lastVisitAt: null,
@@ -539,6 +549,19 @@ export const useAppStore = create<AppState>()(
                   updatedAt: new Date().toISOString(),
                 }
           ),
+        })),
+
+      // Diff tracking (Phase 9)
+      markDiffSeen: (id) =>
+        set((state) => ({
+          seenDiffIds: state.seenDiffIds.includes(id)
+            ? state.seenDiffIds
+            : [...state.seenDiffIds, id],
+        })),
+      markAllDiffsSeen: (ids) =>
+        set((state) => ({
+          seenDiffIds: [...new Set([...state.seenDiffIds, ...ids])],
+          lastDiffComputedAt: new Date().toISOString(),
         })),
 
       setConfirmedAssessment: (assessment) => {
