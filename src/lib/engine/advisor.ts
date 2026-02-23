@@ -26,6 +26,8 @@ import type {
   AdvisorInsight,
   AdvisorUrgency,
   DisciplineRuleId,
+  SavingsGoal,
+  UserGoal,
 } from "@/lib/types";
 import type { PortfolioHealthResult } from "@/lib/engine/portfolio-health";
 import type { StrategyMetrics } from "@/lib/engine/strategy-metrics";
@@ -33,6 +35,7 @@ import type { TemporalContext } from "@/lib/engine/advisor-temporal";
 import { getUrgencyLevel, daysUntilDate } from "@/lib/engine/urgency";
 import { formatTemporalPrefix } from "@/lib/engine/advisor-temporal";
 import { generatePointCreepInsights } from "@/lib/engine/advisor-creep";
+import { generateSavingsInsights } from "@/lib/engine/advisor-savings";
 import { STATES_MAP } from "@/lib/constants/states";
 import { formatSpeciesName } from "@/lib/utils";
 
@@ -489,6 +492,8 @@ export function generateAdvisorInsights(
   userPoints: UserPoints[],
   temporal: TemporalContext,
   assessment: StrategicAssessment,
+  savingsGoals: SavingsGoal[] = [],
+  userGoals: UserGoal[] = [],
 ): AdvisorInsight[] {
   // Call all sub-generators
   const deadlineInsights = generateDeadlineInsights(milestones, assessment);
@@ -502,6 +507,7 @@ export function generateAdvisorInsights(
   const temporalInsights = generateTemporalInsights(temporal, milestones);
   const milestoneInsights = generateMilestoneInsights(milestones);
   const creepInsights = generatePointCreepInsights(assessment, userPoints);
+  const savingsInsights = generateSavingsInsights(savingsGoals, userGoals, milestones);
 
   // Flatten all insights
   const all: AdvisorInsight[] = [
@@ -511,6 +517,7 @@ export function generateAdvisorInsights(
     ...temporalInsights,
     ...milestoneInsights,
     ...creepInsights,
+    ...savingsInsights,
   ];
 
   // Sort by urgency priority (immediate > soon > informational > positive)

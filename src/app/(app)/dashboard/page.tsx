@@ -173,8 +173,10 @@ export default function DashboardPage() {
       userPoints,
       temporal,
       confirmedAssessment,
+      savingsGoals,
+      userGoals,
     );
-  }, [confirmedAssessment, boardState, health, metrics, violations, milestones, userPoints, temporal]);
+  }, [confirmedAssessment, boardState, health, metrics, violations, milestones, userPoints, temporal, savingsGoals, userGoals]);
 
   // Savings progress summaries
   const savingsSummary = useMemo(() => {
