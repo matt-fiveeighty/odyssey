@@ -47,6 +47,14 @@ export function SharePlanDialog({ items, year }: SharePlanDialogProps) {
       });
 
       if (!res.ok) {
+        if (res.status === 429) {
+          const retryAfter = res.headers.get("Retry-After");
+          throw new Error(
+            retryAfter
+              ? `Too many requests. Please wait ${retryAfter} seconds.`
+              : "Too many requests. Please try again in a moment.",
+          );
+        }
         const data = await res.json().catch(() => ({}));
         throw new Error(
           data.error ?? `Failed to create share link (${res.status})`,
@@ -82,19 +90,20 @@ export function SharePlanDialog({ items, year }: SharePlanDialogProps) {
     if (!shareUrl) return;
     try {
       await navigator.clipboard.writeText(shareUrl);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
-      const input = document.createElement("input");
-      input.value = shareUrl;
-      document.body.appendChild(input);
-      input.select();
-      document.execCommand("copy");
-      document.body.removeChild(input);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Fallback: use a temporary textarea (works in more contexts than input)
+      const ta = document.createElement("textarea");
+      ta.value = shareUrl;
+      ta.style.position = "fixed";
+      ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand("copy"); } catch { /* best-effort */ }
+      document.body.removeChild(ta);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   }, [shareUrl]);
 
   const calendarUrl = token ? `/api/planner/cal/${token}` : null;
@@ -144,6 +153,7 @@ export function SharePlanDialog({ items, year }: SharePlanDialogProps) {
                   <input
                     readOnly
                     value={shareUrl}
+                    aria-label="Share link URL"
                     className="flex-1 rounded-md border border-border bg-secondary/30 px-3 py-2 text-sm font-mono text-foreground truncate"
                     onClick={(e) => (e.target as HTMLInputElement).select()}
                   />

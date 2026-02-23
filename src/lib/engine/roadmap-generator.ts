@@ -1537,7 +1537,11 @@ function generateYearStateNarrative(
     } else {
       parts.push(`${abbr}: Year ${yearIndex + 1} of building. ~${accumulatedPts} points accumulated.`);
       if (bestUnit && !isRandom) {
-        parts.push(`Your top unit (${bestUnit.unitCode}) is still ${bestUnit.drawTimeline.replace("Year ", "~").replace(" with points", " years out")}.`);
+        // Summarize draw timeline defensively (format varies: "Drawable now", "Year 3 with points", etc.)
+        const timeline = bestUnit.drawTimeline;
+        const yearMatch = timeline.match(/Year\s+(\d+)/i);
+        const timelineSummary = yearMatch ? `~${yearMatch[1]} years out` : timeline.toLowerCase();
+        parts.push(`Your top unit (${bestUnit.unitCode}) is still ${timelineSummary}.`);
       }
     }
   } else if (phase === "positioning") {
