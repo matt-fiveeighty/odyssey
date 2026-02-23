@@ -503,6 +503,8 @@ export interface State {
   seasonDates?: Record<string, { start: string; end: string }>;
   // v3: Advisor personality narrative
   statePersonality?: string;
+  // Niche insider facts that affect strategy (e.g., "Draw elk? You auto-get a spring bear tag")
+  nicheFacts?: string[];
 }
 
 export interface Species {

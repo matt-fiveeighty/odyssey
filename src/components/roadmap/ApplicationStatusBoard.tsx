@@ -273,35 +273,38 @@ export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardPro
   }, [entries]);
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <ClipboardCheck className="w-4.5 h-4.5 text-primary" />
-          <h3 className="text-sm font-bold">Application Status</h3>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
-            {assessment.roadmap[0]?.year ?? currentYear}
-          </span>
-        </div>
-        <div className="flex items-center gap-3 text-[10px]">
-          {counts.drew > 0 && (
-            <span className="flex items-center gap-1 text-primary font-medium">
-              <Trophy className="w-3 h-3" /> {counts.drew} drew
+    <div className="rounded-xl border border-border/50 bg-card space-y-4">
+      <div className="sticky top-0 z-10 bg-card rounded-t-xl px-4 pt-4 pb-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <ClipboardCheck className="w-4.5 h-4.5 text-primary" />
+            <h3 className="text-sm font-bold">Application Status</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/15 text-primary font-medium">
+              {assessment.roadmap[0]?.year ?? currentYear}
             </span>
-          )}
-          {counts.awaitingDraw > 0 && (
-            <span className="flex items-center gap-1 text-warning font-medium">
-              <Hourglass className="w-3 h-3" /> {counts.awaitingDraw} pending
-            </span>
-          )}
-          {counts.pending > 0 && (
-            <span className="flex items-center gap-1 text-muted-foreground font-medium">
-              {counts.pending} to do
-            </span>
-          )}
+          </div>
+          <div className="flex items-center gap-3 text-[10px]">
+            {counts.drew > 0 && (
+              <span className="flex items-center gap-1 text-primary font-medium">
+                <Trophy className="w-3 h-3" /> {counts.drew} drew
+              </span>
+            )}
+            {counts.awaitingDraw > 0 && (
+              <span className="flex items-center gap-1 text-warning font-medium">
+                <Hourglass className="w-3 h-3" /> {counts.awaitingDraw} pending
+              </span>
+            )}
+            {counts.pending > 0 && (
+              <span className="flex items-center gap-1 text-muted-foreground font-medium">
+                {counts.pending} to do
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
       {/* State-by-state status */}
+      <div className="px-4 pb-4 space-y-4 -mt-2">
       <div className="space-y-2">
         {byState.map(([stateId, stateEntries]) => {
           const state = STATES_MAP[stateId];
@@ -382,6 +385,7 @@ export function ApplicationStatusBoard({ assessment }: ApplicationStatusBoardPro
       <p className="text-[9px] text-muted-foreground/50">
         Mark milestones complete and record draw results on the Goals page to keep this board updated.
       </p>
+      </div>
     </div>
   );
 }

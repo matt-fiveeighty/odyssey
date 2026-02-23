@@ -132,11 +132,23 @@ export function buildJourneyData(
         activeStatesSet.add(action.stateId);
 
         if (action.type === "hunt") {
-          hunts.push({
-            stateId: action.stateId,
-            speciesId: action.speciesId,
-            unitCode: action.unitCode,
-          });
+          const odds = action.estimatedDrawOdds ?? 0;
+          if (odds >= 0.51) {
+            hunts.push({
+              stateId: action.stateId,
+              speciesId: action.speciesId,
+              unitCode: action.unitCode,
+            });
+          } else {
+            // Low-odds "hunt" — show as application on map
+            const key = `${action.stateId}-${action.speciesId}`;
+            applications.push({
+              stateId: action.stateId,
+              speciesId: action.speciesId,
+              drawOdds: odds,
+              hasPoints: pointInvestedKeys.has(key),
+            });
+          }
         } else if (action.type === "apply") {
           const key = `${action.stateId}-${action.speciesId}`;
           applications.push({

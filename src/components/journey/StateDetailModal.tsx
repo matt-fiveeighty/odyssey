@@ -301,6 +301,14 @@ export function StateDetailModal({
                 Costs & Fees
               </button>
             )}
+            {state.nicheFacts && state.nicheFacts.length > 0 && (
+              <button
+                onClick={() => document.getElementById("section-insider")?.scrollIntoView({ behavior: "smooth", block: "start" })}
+                className="text-[10px] px-2.5 py-1 rounded-full bg-secondary/50 text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors cursor-pointer"
+              >
+                <Star className="w-3 h-3 inline mr-0.5" /> Insider
+              </button>
+            )}
           </div>
 
           {/* ============================================================ */}
@@ -616,12 +624,30 @@ export function StateDetailModal({
                       </span>
                     </div>
                   ))}
-                  {state.feeSchedule.length > 1 && (
-                    <div className="flex justify-between text-xs gap-2 pt-1.5 mt-1.5 border-t border-border font-semibold">
-                      <span>Total</span>
-                      <span>${state.feeSchedule.reduce((s, f) => s + f.amount, 0)}</span>
-                    </div>
-                  )}
+                  {state.feeSchedule.length > 1 && (() => {
+                    const definiteTotal = state.feeSchedule.filter(f => f.required).reduce((s, f) => s + f.amount, 0);
+                    const maxTotal = state.feeSchedule.reduce((s, f) => s + f.amount, 0);
+                    const hasDrawFees = maxTotal > definiteTotal;
+                    return (
+                      <>
+                        <div className="flex justify-between text-xs gap-2 pt-1.5 mt-1.5 border-t border-border font-semibold">
+                          <span>Total</span>
+                          <span>
+                            {hasDrawFees ? (
+                              <span>${Math.round(definiteTotal).toLocaleString()} <span className="text-muted-foreground font-normal">&ndash;</span> ${Math.round(maxTotal).toLocaleString()}</span>
+                            ) : (
+                              <span>${Math.round(maxTotal).toLocaleString()}</span>
+                            )}
+                          </span>
+                        </div>
+                        {hasDrawFees && (
+                          <p className="text-[9px] text-muted-foreground/50 mt-1">
+                            Low: no tags drawn &middot; High: all tags drawn
+                          </p>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 {/* NR point costs for user's species */}
                 {filteredPointCosts.length > 0 && (
@@ -681,28 +707,41 @@ export function StateDetailModal({
                 Important Deadlines
               </h3>
               <div className="grid gap-1.5">
-                {filteredDeadlines.map(([speciesId, dl]) => (
-                  <div
-                    key={speciesId}
-                    className="flex justify-between items-center p-2 rounded-lg bg-secondary/20 text-xs"
-                  >
-                    <div className="flex items-center gap-2">
-                      <SpeciesAvatar speciesId={speciesId} size={18} />
-                      <span className="capitalize">
-                        {speciesId.replace(/_/g, " ")}
-                      </span>
+                {filteredDeadlines.map(([speciesId, dl]) => {
+                  const now = new Date();
+                  const closeDate = new Date(dl.close);
+                  const isPast = closeDate < now;
+
+                  return (
+                    <div
+                      key={speciesId}
+                      className={`flex justify-between items-center p-2 rounded-lg text-xs ${isPast ? "bg-destructive/5 border border-destructive/15" : "bg-secondary/20"}`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <SpeciesAvatar speciesId={speciesId} size={18} />
+                        <span className={`capitalize ${isPast ? "text-destructive/70" : ""}`}>
+                          {speciesId.replace(/_/g, " ")}
+                        </span>
+                        {isPast && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-destructive/10 text-destructive font-medium">
+                            Missed
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <span className={isPast ? "text-destructive/50" : "text-muted-foreground"}>
+                          {formatDate(dl.open)}
+                        </span>
+                        <span className={`mx-1 ${isPast ? "text-destructive/30" : "text-muted-foreground/50"}`}>
+                          &rarr;
+                        </span>
+                        <span className={isPast ? "text-destructive/70 font-medium line-through" : "font-medium"}>
+                          {formatDate(dl.close)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <span className="text-muted-foreground">
-                        {formatDate(dl.open)}
-                      </span>
-                      <span className="mx-1 text-muted-foreground/50">
-                        &rarr;
-                      </span>
-                      <span className="font-medium">{formatDate(dl.close)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Draw result dates */}
@@ -735,7 +774,29 @@ export function StateDetailModal({
           )}
 
           {/* ============================================================ */}
-          {/* 9. Application Tips                                          */}
+          {/* 9. Insider Knowledge — niche facts                           */}
+          {/* ============================================================ */}
+          {state.nicheFacts && state.nicheFacts.length > 0 && (
+            <section id="section-insider">
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                <Star className="w-3.5 h-3.5 text-warning" /> Insider Knowledge
+              </h3>
+              <div className="space-y-1.5">
+                {state.nicheFacts.map((fact, i) => (
+                  <div
+                    key={i}
+                    className="flex items-start gap-2 p-2 rounded-lg bg-warning/5 border border-warning/10 text-xs text-muted-foreground leading-relaxed"
+                  >
+                    <span className="text-warning shrink-0 mt-0.5 text-[10px]">&#9672;</span>
+                    <span>{fact}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* ============================================================ */}
+          {/* 10. Application Tips                                         */}
           {/* ============================================================ */}
           {state.applicationTips && state.applicationTips.length > 0 && (
             <section>

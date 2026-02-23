@@ -24,7 +24,7 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
   }, []);
 
   return (
-    <div className="lg:flex lg:flex-col lg:gap-1 lg:max-h-[340px] lg:overflow-y-auto flex flex-row gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-thin">
+    <div className="lg:flex lg:flex-col lg:gap-1 lg:max-h-[340px] lg:overflow-y-auto lg:overflow-x-hidden flex flex-row gap-1.5 overflow-x-auto pb-2 lg:pb-0 scrollbar-thin">
       {years.map((yearData) => {
         const isSelected = yearData.year === selectedYear;
         const isCurrent = yearData.year === currentYear;
@@ -32,6 +32,15 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
         const hasApps = yearData.applications.length > 0;
         const hasPoints = yearData.pointPurchases.length > 0;
         const hasActivity = hasHunts || hasApps || hasPoints;
+        const isTrophyYear = yearData.isHuntYear;
+
+        // Determine label: HUNT (green) if hunts with good odds, APPLY (blue) if apps but no hunts, BUILD (muted) otherwise
+        const yearLabel = hasHunts ? "HUNT" : hasApps ? "APPLY" : hasPoints ? "BUILD" : null;
+        const labelColor = hasHunts
+          ? isSelected ? "text-primary-foreground/80" : "text-success"
+          : hasApps
+            ? isSelected ? "text-primary-foreground/80" : "text-info"
+            : isSelected ? "text-primary-foreground/50" : "text-muted-foreground";
 
         return (
           <button
@@ -50,11 +59,26 @@ export function YearTimeline({ years, selectedYear, onYearSelect, currentYear }:
                   : "text-muted-foreground/50 hover:text-muted-foreground hover:bg-secondary/30"
               }
               ${isCurrent && !isSelected ? "ring-1 ring-destructive/60" : ""}
+              ${isTrophyYear && !isSelected ? "ring-1 ring-amber-400/50" : ""}
             `}
-            aria-label={`${yearData.year}${isCurrent ? " (current year)" : ""}${hasHunts ? " — has hunts" : ""}${hasApps ? " — has applications" : ""}`}
+            aria-label={`${yearData.year}${isCurrent ? " (current year)" : ""}${hasHunts ? " — has hunts" : ""}${hasApps ? " — has applications" : ""}${isTrophyYear ? " — trophy year" : ""}`}
             aria-pressed={isSelected}
           >
+            {/* Trophy indicator for burn/hunt years */}
+            {isTrophyYear && (
+              <span className="absolute -top-1.5 -left-1 text-[10px] leading-none" aria-hidden="true">
+                ★
+              </span>
+            )}
+
             <span className="tabular-nums">{yearData.year}</span>
+
+            {/* Year type label */}
+            {yearLabel && (
+              <span className={`text-[8px] font-bold uppercase tracking-wider ${labelColor}`}>
+                {yearLabel}
+              </span>
+            )}
 
             {/* Activity dots */}
             <span className="flex gap-0.5">

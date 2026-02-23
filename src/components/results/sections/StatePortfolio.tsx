@@ -10,7 +10,8 @@ import { useWizardStore, useAppStore } from "@/lib/store";
 import { DataSourceInline, DataSourceBadge } from "@/components/shared/DataSourceBadge";
 import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
 import { estimated } from "@/lib/engine/verified-datum";
-import { ChevronDown, Target, Mountain, Eye, TrendingUp, Binoculars } from "lucide-react";
+import { ChevronDown, Target, Mountain, Eye, TrendingUp, Binoculars, Star } from "lucide-react";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 import { estimateCreepRate, projectPointCreep, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { formatSpeciesName } from "@/lib/utils";
 import type { AlsoConsideredState } from "@/lib/types";
@@ -69,7 +70,33 @@ function StateCard({ rec }: { rec: StateRecommendation }) {
               ))}
             </div>
           )}
+          {/* Fee breakdown */}
+          {(() => {
+            const homeState = useWizardStore.getState().homeState;
+            const fees = resolveFees(state, homeState);
+            const parts: string[] = [];
+            if (fees.qualifyingLicense > 0) parts.push(`$${Math.round(fees.qualifyingLicense)} license`);
+            const speciesCosts = rec.annualCostItems
+              .filter(item => item.speciesId && item.category !== "license")
+              .reduce<Record<string, number>>((acc, item) => {
+                const sp = item.speciesId!;
+                acc[sp] = (acc[sp] ?? 0) + item.amount;
+                return acc;
+              }, {});
+            for (const [sp, cost] of Object.entries(speciesCosts)) {
+              parts.push(`$${Math.round(cost)} ${formatSpeciesName(sp)}`);
+            }
+            return parts.length > 0 ? (
+              <p className="text-[9px] text-muted-foreground/50 mb-1">{parts.join(" + ")}</p>
+            ) : null;
+          })()}
           <p className="text-xs text-muted-foreground line-clamp-2">{rec.reason}</p>
+          {state.nicheFacts && state.nicheFacts.length > 0 && (
+            <p className="text-[9px] text-warning/60 flex items-start gap-1 mt-1">
+              <Star className="w-2.5 h-2.5 shrink-0 mt-px" />
+              {state.nicheFacts[0]}
+            </p>
+          )}
           <DataSourceBadge stateId={rec.stateId} showLastUpdated />
         </div>
         <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform duration-200 mt-1 ${expanded ? "rotate-180" : ""}`} />

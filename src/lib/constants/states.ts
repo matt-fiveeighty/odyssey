@@ -79,6 +79,14 @@ export const STATES: State[] = [
       { tier: "4th Rifle", dates: "Nov 17-21", notes: "Late season. Deep snow possible. Migration corridors are key. Dress warm, glass far.", bestFor: "truck_camp" },
     ],
     statePersonality: "Colorado is the workhorse of your portfolio. The preference point system is the most predictable in the West — you know exactly when you'll draw. The second choice tactic is your secret weapon: build a point AND hunt every year. NW Colorado units (3, 4, 11, 211) are great for truck hunters with high road density and strong public land access. OTC backup tags mean you can always go hunting even if you don't draw. At ~$151/year for elk points, it's one of the most efficient investments in western hunting.",
+    nicheFacts: [
+      "Points are per species — you build separate point balances for elk, deer, pronghorn, bear, moose, sheep, and goat.",
+      "Elk, deer, pronghorn, and bear points are FREE with your application. Only moose/sheep/goat points cost extra ($100 NR).",
+      "OTC 2nd and 3rd rifle elk tags are always available as a backup if you don't draw your preferred unit.",
+      "The 2nd-choice tactic is unique to CO: list point-only as 1st choice, your real unit as 2nd. You earn a point AND enter the leftover pool.",
+      "Moose, bighorn sheep, and mountain goat are once-in-a-lifetime — if you draw, you can never apply for that species again in CO.",
+      "CO has 6 separate rifle seasons plus archery and muzzleloader — more opportunity windows than any other state.",
+    ],
   },
   {
     id: "WY",
@@ -154,6 +162,14 @@ export const STATES: State[] = [
       { tier: "Late Season", dates: "Nov 1-15", notes: "Cold weather hunts. Migration corridors key. Desert elk units peak in November.", bestFor: "truck_camp" },
     ],
     statePersonality: "Wyoming is your quality play. The 75/25 hybrid system rewards patience with a clear preference path, but still gives you a random pool shot every year. Desert elk hunts (Area 100) are legendary — 80-90% success on mature bulls in sagebrush country, perfect for glassing from a truck camp. The Bighorns offer classic timber elk with no grizzly pressure. Mule deer in the Wyoming Range are exceptional during the late rut. WY requires longer drives and more logistical planning, but the payoff in animal quality per dollar is hard to beat.",
+    nicheFacts: [
+      "WY applies by hunt area (region), not individual unit — elk areas are grouped into Western, Southern, and Eastern regions.",
+      "Special species (moose, sheep, goat, bison) have SEPARATE preference point systems from elk/deer.",
+      "75% of tags go to highest point holders, 25% go to random draw — you always have a chance even with zero points.",
+      "NR elk licenses are capped annually — apply early to guarantee your spot in the draw.",
+      "The 'random' 25% pool is the secret: some hunters draw premium tags with zero points in the random allocation.",
+      "WY grizzly tags are extremely limited and managed by zone — check current regulations as seasons change year to year.",
+    ],
   },
   {
     id: "MT",
@@ -235,6 +251,14 @@ export const STATES: State[] = [
       { tier: "Whitetail Rut", dates: "Nov 10-25", notes: "Peak whitetail rut in river bottoms and coulees. Combo license includes a whitetail tag.", bestFor: "truck_camp" },
     ],
     statePersonality: "Montana is the best value in western hunting. One combo license gives you elk, deer, and whitetail — three hunts for the price of one. The preference point system means you'll draw every 2-3 years with discipline. Montana has massive public land, diverse terrain from prairie coulees to alpine basins, and the general season is 5+ weeks long. The catch: NR combo licenses are limited, so building preference points is essential. Spring bear is OTC and an excellent add-on trip. Montana rewards the persistent hunter who applies every year.",
+    nicheFacts: [
+      "The NR combo license is the best deal in the West — one draw gets you elk, deer, AND whitetail tags (3 hunts for 1 application).",
+      "Special permits (moose, sheep, goat, bear) are SEPARATE draws with their own bonus points (squared system).",
+      "Spring bear is OTC — no draw needed. Buy a license and go. Great add-on to a scouting or fishing trip.",
+      "MT bonus points are squared: 5 points = 25 chances vs 1 chance for zero-point applicants. Patience is exponentially rewarded.",
+      "The general season is 5+ weeks (Oct 22 - Nov 26) — more time to hunt than almost any other western state.",
+      "Wolf tags are available OTC in most districts — add a wolf tag for $50 and hunt during your elk/deer season.",
+    ],
   },
   {
     id: "NV",
@@ -300,6 +324,14 @@ export const STATES: State[] = [
       { tier: "Late Rifle", dates: "Oct 10 - Nov 15", notes: "Cooler temps. Mule deer rut. Animals moving to winter range. Prime glassing conditions.", bestFor: "truck_camp" },
     ],
     statePersonality: "Nevada is your trophy investment, built over years. The bonus squared system means your odds improve exponentially — 5 points gives you 36x the chances of a new applicant. Nevada produces some of the largest mule deer and elk in the West, but tags are extremely limited. This is a patience play: invest $157/year (license + app fee) and let the math compound. When you finally draw, expect the hunt of a lifetime with animals approaching trophy class. NV is remote, harsh, and wild — exactly what makes it special.",
+    nicheFacts: [
+      "Bonus squared: your odds grow exponentially. 5 points = 25 chances, 10 points = 100 chances vs 1 for a zero-point applicant.",
+      "Your hunting license ($142) IS your point entry. Just buying the license earns a bonus point — no separate point purchase needed.",
+      "NV tags are some of the most coveted in North America. A mule deer tag here is worth the 10+ year wait for serious trophy hunters.",
+      "Application period opens in March — one of the earliest deadlines. Mark it or you lose a year of compounding.",
+      "NV requires a guide for bighorn sheep hunts. Budget $5,000-8,000 for a guided sheep hunt if you draw.",
+      "Mountain lion hunts are available OTC in some units — a good way to experience NV while building points for deer/elk.",
+    ],
   },
   {
     id: "AZ",
@@ -370,6 +402,14 @@ export const STATES: State[] = [
       { tier: "Muzzleloader", dates: "Oct 3-16", notes: "Transition season. Good for patient hunters. Lower pressure.", bestFor: "any" },
     ],
     statePersonality: "Arizona is the sleeper trophy state. AZ bulls average larger body and antler size than nearly any other western state, and the limited tag allocation means low hunting pressure. The linear bonus point system is slower to compound than Nevada's squared system, but the hunt quality when you draw is exceptional. Kaibab (Unit 1) is legendary for both elk and mule deer. The Mogollon Rim offers accessible hunting with stunning scenery. AZ is worth investing points over years if you want a genuine trophy experience.",
+    nicheFacts: [
+      "AZ bonus points are NOT squared (unlike NV). Your odds grow linearly: 5 points = 5x a zero-point applicant.",
+      "Your hunting license ($160) IS your point entry. Just buying the license earns a bonus point each year.",
+      "Kaibab (Unit 1) is one of the most famous deer units in North America. Points build slowly but the payoff is iconic.",
+      "AZ has an early draw timeline — results are typically out by late April, letting you plan around other state draws.",
+      "Javelina hunts are available with good draw odds and make a great winter trip (January-February).",
+      "AZ elk can be hunted with archery OTC in some units — check current regs for opportunities while building points.",
+    ],
   },
   {
     id: "UT",
@@ -442,6 +482,14 @@ export const STATES: State[] = [
       { tier: "Limited Entry Rifle", dates: "Oct 7-20", notes: "Trophy units. Low tag numbers = low pressure. Premium experience.", bestFor: "any" },
     ],
     statePersonality: "Utah runs two separate systems. General season elk is accessible but competitive — high pressure on public land means you need to hike deeper than others or scout better. The real value is in limited entry units where preference and bonus points create a clear path to trophy hunts. The early archery opener (mid August) is unique and gives you a head start on the season. SLC airport makes logistics easy, and the state's diverse terrain — from Wasatch alpine to southern desert canyons — offers something for every hunting style. At $165/year (license + app fee), UT is a solid addition to any portfolio.",
+    nicheFacts: [
+      "Utah has TWO separate point systems: preference points for general season, bonus points for limited-entry and once-in-a-lifetime.",
+      "General season elk tags are relatively easy to draw (1-2 points), but limited-entry units require 10-20+ points for trophy quality.",
+      "Utah's archery season opens mid-August — the earliest opener in the West. Prime bugling elk in high alpine basins.",
+      "Once-in-a-lifetime species (moose, bison, muskox, rocky mountain goat) — if you draw, you can never apply for that species again.",
+      "The CWMU (Cooperative Wildlife Management Unit) program offers private-land hunts with separate tags — a backdoor to premium units.",
+      "SLC airport is the most convenient western hub — 1-2 hours to most hunting areas with cheap rental cars.",
+    ],
   },
   {
     id: "NM",
@@ -509,6 +557,14 @@ export const STATES: State[] = [
       { tier: "3rd Rifle (Youth/Mobility)", dates: "Nov 22-26", notes: "Late season. Limited entry. Great for Thanksgiving trip hunts.", bestFor: "truck_camp" },
     ],
     statePersonality: "New Mexico is your wild card lottery ticket. No points, no waiting — just $13 and pure luck. Apply every single year because it costs almost nothing and the quality is outstanding. Units like 34 (Valles Caldera) and 6 (Sangre de Cristos) produce bulls rivaling anywhere in the West. NM also has some of the earliest draw results, so if you draw here, you can adjust your other state plans accordingly. The terrain ranges from high desert to alpine meadows, and the Southwestern hunting culture is unique. NM is the ultimate bonus opportunity in any portfolio.",
+    nicheFacts: [
+      "Pure random draw — NO points system. A first-time applicant has the same odds as someone who has applied for 20 years.",
+      "At $13/species it's the cheapest application in the West. There is zero reason not to apply every single year.",
+      "NM draw results come out in late March/early April — among the earliest. Use this to adjust your plans for other states.",
+      "Each species is a SEPARATE application and draw. You can apply for elk, deer, pronghorn, bighorn sheep, and oryx independently.",
+      "Valles Caldera National Preserve (Unit 34) is one of the most famous elk hunting destinations in America — limited tags, incredible scenery.",
+      "NM offers unique species like Oryx (African gemsbok) on White Sands — available nowhere else in North America.",
+    ],
   },
   {
     id: "OR",
@@ -579,6 +635,14 @@ export const STATES: State[] = [
       { tier: "Late Rifle", dates: "Nov 5-11", notes: "Late season. Deer rut. Migration patterns.", bestFor: "truck_camp" },
     ],
     statePersonality: "Oregon is the sleeper value play. At just $8/species, it's the cheapest state to apply in — there's no reason NOT to have OR in your portfolio. The 75/25 hybrid system builds points predictably for eastern OR controlled hunts, while western OR Roosevelt elk hunts are often OTC. The late application deadline (May) is strategically perfect — you'll know your draw results from CO, WY, and AZ before you even need to apply. Oregon rewards the patient hunter who builds points quietly while taking OTC opportunities in the meantime.",
+    nicheFacts: [
+      "At $8/species, OR is the cheapest state to apply in — there's no financial reason not to have it in your portfolio.",
+      "Western OR Roosevelt elk hunts are often OTC (no draw needed). Buy a general tag and go hunt the Coast Range.",
+      "The May deadline is strategically perfect — you'll already know your CO, WY, and AZ draw results before committing.",
+      "75/25 hybrid system: 75% of controlled hunt tags go to highest point holders, 25% random. Always a chance with zero points.",
+      "Eastern OR mule deer units around Steens Mountain and Hart Mountain produce quality bucks in remote high-desert terrain.",
+      "OR has a unique 'controlled hunt tag' system — if you don't draw your controlled hunt, you can still buy an OTC general tag.",
+    ],
   },
   {
     id: "ID",
@@ -652,6 +716,14 @@ export const STATES: State[] = [
       { tier: "Spring Bear", dates: "Apr 15 - Jun 30", notes: "Excellent spring bear spot-and-stalk. Separate application. Green hillside glassing.", bestFor: "truck_camp" },
     ],
     statePersonality: "Idaho is the Swiss Army knife of western hunting states. Your NR hunting license ($185) IS your general elk and deer tag — no draw needed for general zones. That means you can hunt Idaho every single year, guaranteed. Controlled hunts for premium units are pure random draw with no points, so apply every year for a bonus shot. Idaho also has the earliest application deadline (December!) — set a calendar alarm or you'll miss it. The state offers elk, mule deer, whitetail, moose, bear, and wolf across terrain ranging from alpine wilderness to rolling prairie. Spring bear is an excellent add-on trip.",
+    nicheFacts: [
+      "Your NR hunting license ($185) IS your general elk and deer tag — no draw needed. Hunt Idaho every year, guaranteed.",
+      "If you draw a controlled elk tag, you automatically get a spring black bear tag at no additional cost. Two hunts for one draw.",
+      "Controlled hunts are pure random draw with NO points — a first-time applicant has the same odds as a 10-year applicant.",
+      "December application deadline is the earliest in the West (tied with AK). Miss it and you lose the entire year.",
+      "Wolf tags are $31.75 NR and available OTC. Add a wolf tag to any elk/deer hunt for minimal extra cost.",
+      "The Frank Church Wilderness (2.3 million acres) is the largest contiguous wilderness in the Lower 48 — unmatched backcountry elk hunting.",
+    ],
   },
   {
     id: "KS",
@@ -715,6 +787,14 @@ export const STATES: State[] = [
       { tier: "Peak Rut Whitetail", dates: "Nov 5-20", notes: "Peak rut. Bucks on their feet all day. Best chance at a giant.", bestFor: "any" },
     ],
     statePersonality: "Kansas is the whitetail wildcard in your western portfolio. While everyone else is chasing elk in the mountains, KS produces some of the biggest whitetail bucks in North America. The NR preference point system makes it predictable — build 1-2 points and you're drawing. November rut hunts in the eastern KS river bottoms are legendary. Western KS also offers mule deer on agricultural land. At $27.50/year, it's a cheap addition that diversifies your portfolio beyond mountain hunts. Perfect for a Thanksgiving-week hunt trip.",
+    nicheFacts: [
+      "KS produces some of the biggest whitetail bucks in North America — consistently in the top 5 states for B&C entries.",
+      "True preference system: 1-2 points guarantees you a tag. One of the easiest draws in the country for NR whitetail.",
+      "November rut hunts in eastern KS river bottoms are legendary — bucks are on their feet all day during peak rut.",
+      "KS is archery-only for NR whitetail in most units — plan on a bow hunt. Rifle is limited to muzzleloader.",
+      "Western KS offers mule deer on agricultural land — a different experience than mountain mule deer hunting.",
+      "At $27.50/year, it's one of the cheapest additions to your portfolio and diversifies beyond mountain hunts.",
+    ],
   },
   {
     id: "WA",
@@ -783,6 +863,14 @@ export const STATES: State[] = [
       { tier: "Late Season", dates: "Nov 15 - Dec 15", notes: "Late season in select units. Cold weather moves animals. Good for mule deer.", bestFor: "truck_camp" },
     ],
     statePersonality: "Washington is the Pacific Northwest sleeper. Your big game license gives you a general elk and deer tag — no draw needed, hunt every year. Special permits for premium units use a 75/25 preference system to reward patience. Western WA offers Roosevelt elk in old-growth rainforest, while eastern WA has classic Rocky Mountain elk in sage and timber. At just $7.10 to apply, WA is one of the cheapest states to add to your portfolio. The late deadline (May) means you'll know your other state results before committing.",
+    nicheFacts: [
+      "Your big game license includes general elk and deer tags — no draw needed for general season. Hunt WA every year.",
+      "At $7.10 to apply, WA is one of the cheapest states to add to your portfolio. Almost free point building.",
+      "Western WA has Roosevelt elk — a unique subspecies found only in the Pacific Northwest. Different hunting experience from Rocky Mountain elk.",
+      "75/25 preference system for special permits rewards patience but still gives random pool shot every year.",
+      "The May deadline is strategically perfect — you'll know CO, WY, AZ, and UT results before you need to apply.",
+      "Eastern WA offers classic Rocky Mountain elk in sage-and-timber country, closer in character to ID and MT hunting.",
+    ],
   },
   {
     id: "NE",
@@ -847,6 +935,14 @@ export const STATES: State[] = [
       { tier: "Pronghorn", dates: "Sep 20 - Oct 31", notes: "Sandhills and western NE. Good draw odds. Spot-and-stalk in open terrain.", bestFor: "truck_camp" },
     ],
     statePersonality: "Nebraska is the hidden gem of the plains. The Pine Ridge in NW Nebraska holds genuine trophy mule deer and a small but growing elk herd — most hunters don't even know NE has elk. Pronghorn in the Sandhills is easy to draw and offers classic spot-and-stalk hunting in vast open country. The true preference system means your draw is predictable — you know exactly when you'll get your tag. At $36/year for points, it's an affordable long-term play that most NR hunters overlook.",
+    nicheFacts: [
+      "Most hunters don't know NE has elk — the Pine Ridge in NW Nebraska holds a growing elk herd with very limited NR tags.",
+      "True preference system: your draw is 100% predictable. You know exactly when you'll draw based on point totals.",
+      "Sandhills pronghorn is easy to draw (often 0-1 points) and offers classic spot-and-stalk in America's largest sand dune system.",
+      "NE mule deer in the Pine Ridge and Wildcat Hills produce bucks that rival western mountain states — seriously underrated.",
+      "At $36/year, NE is an affordable long-term play most NR hunters completely overlook.",
+      "November whitetail rut along the Platte River bottoms produces giant bucks — eastern NE is world-class whitetail country.",
+    ],
   },
   {
     id: "SD",
@@ -914,6 +1010,14 @@ export const STATES: State[] = [
       { tier: "Pronghorn", dates: "Oct 1-31", notes: "Prairie pronghorn. Good draw odds. Spot-and-stalk in vast grasslands.", bestFor: "truck_camp" },
     ],
     statePersonality: "South Dakota punches above its weight. Black Hills elk is among the highest quality in the country — limited tags, unhunted animals, and ponderosa pine terrain that's gorgeous to hunt. The true preference system means you know exactly when you'll draw. Prairie pronghorn is easy to draw and a blast to hunt DIY. Badlands mule deer during the November rut produce big-bodied, heavy-antlered bucks. SD also has mountain goat and bighorn sheep permits for the ultra-patient. At $40/year for elk points, it's a worthwhile long-term investment in a state most hunters overlook.",
+    nicheFacts: [
+      "Black Hills elk is among the highest quality in the country — limited tags keep pressure extremely low.",
+      "True preference system: completely predictable draw timeline. You can calculate exactly when you'll draw your tag.",
+      "Prairie pronghorn often draws with 0-1 points — great for a first-year application or a quick plains hunt.",
+      "SD has mountain goat and bighorn sheep permits for the ultra-patient — extremely limited but world-class trophies.",
+      "Badlands mule deer in the November rut produce big-bodied bucks — Custer State Park area is the prime zone.",
+      "Custer State Park has a unique bison hunt — one of the few public bison hunts in the US.",
+    ],
   },
   {
     id: "ND",
@@ -980,6 +1084,14 @@ export const STATES: State[] = [
       { tier: "Pronghorn", dates: "Oct 1-31", notes: "Western ND grasslands. Good draw odds for NR. Classic spot-and-stalk.", bestFor: "truck_camp" },
     ],
     statePersonality: "North Dakota is the northern plains dark horse. Theodore Roosevelt's hunting grounds in the badlands still hold elk, mule deer, and moose — species most people don't associate with ND. NR elk tags are extremely limited, making this a serious long-term commitment, but the quality is exceptional. Badlands mule deer during the November rut are a trophy opportunity. Pronghorn draws easily and provides great DIY hunting. If you're willing to hunt in cold weather and open terrain, ND rewards you with uncrowded public land and quality animals at $40/year in point costs.",
+    nicheFacts: [
+      "Theodore Roosevelt National Park badlands still hold elk, mule deer, and moose — species most people don't associate with ND.",
+      "NR elk tags are extremely limited (single-digit allocations some years) — this is a serious 10+ year commitment.",
+      "Pronghorn draws easily (often 0-1 points) and provides great DIY spot-and-stalk on western ND grasslands.",
+      "ND moose permits are available but ultra-limited — a true once-in-a-lifetime opportunity if you draw.",
+      "The badlands mule deer rut in November is a hidden trophy opportunity — big bucks in dramatic terrain.",
+      "PLOTS program (Private Land Open To Sportsmen) gives access to millions of acres of private land for free — unique to ND.",
+    ],
   },
   {
     id: "AK",
@@ -1050,6 +1162,14 @@ export const STATES: State[] = [
       { tier: "Caribou", dates: "Aug 1 - Sep 30", notes: "Tundra caribou. DIY possible via bush plane drop. Migration herds.", bestFor: "backpack" },
     ],
     statePersonality: "Alaska is the ultimate hunting frontier. Most hunts require no draw — buy your license and locking tags, then go. Registration moose hunts during the September rut are a genuine bucket-list experience. Brown bear on the coast, Dall sheep in the Alaska Range, and caribou on the North Slope are all accessible to NR hunters (guide required for sheep, goat, and brown bear). AK is more expensive per trip ($3,000-15,000 including bush planes and guides) but offers experiences found nowhere else. The December draw deadline is the earliest in the West — set a reminder. Add AK as your ultimate adventure play.",
+    nicheFacts: [
+      "Most AK hunts require NO draw — buy your license and locking tags, then go. Registration permits are first-come, first-served.",
+      "NR hunters MUST use a registered guide for Dall sheep, mountain goat, and brown/grizzly bear. Budget $8,000-15,000+ for guided hunts.",
+      "Moose and caribou can be hunted DIY without a guide — but you still need bush plane access for most areas ($1,500-3,000 RT).",
+      "December draw deadline is the earliest in the West (tied with ID). Miss it and you lose the entire year.",
+      "Draw hunts in AK are pure random — no points system. Apply every year for premium areas.",
+      "AK locking tags for caribou ($650), moose ($800), and brown bear ($1,000) are purchased before your hunt — they're your 'tag insurance'.",
+    ],
   },
 ];
 

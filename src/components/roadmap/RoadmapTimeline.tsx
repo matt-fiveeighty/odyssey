@@ -128,13 +128,15 @@ export function RoadmapTimeline({ roadmap }: RoadmapTimelineProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          {roadmap.length}-Year Roadmap
-        </p>
-        <p className="text-xs text-muted-foreground">
-          ${Math.round(totalCost).toLocaleString()} total
-        </p>
+      <div className="sticky top-0 z-10 bg-background pb-2">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            {roadmap.length}-Year Roadmap
+          </p>
+          <p className="text-xs text-muted-foreground">
+            ${Math.round(totalCost).toLocaleString()} total
+          </p>
+        </div>
       </div>
 
       {/* Compact grid of year tiles */}

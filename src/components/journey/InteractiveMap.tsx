@@ -112,7 +112,13 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
             const cy = vy + vh / 2 + offset.dy;
 
             return (
-              <g key={stateId}>
+              <g
+                key={stateId}
+                style={isHovered
+                  ? { transform: `scale(1.06)`, transformOrigin: `${cx}px ${cy}px`, transition: 'transform 0.2s ease' }
+                  : { transition: 'transform 0.2s ease' }
+                }
+              >
                 <path
                   d={stateData.path}
                   fill={fill}
@@ -160,7 +166,13 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
           const isHovered = hoveredState === stateId;
 
           return (
-            <g transform="translate(-50, -120) scale(0.45)">
+            <g
+              transform="translate(-50, -120) scale(0.45)"
+              style={isHovered
+                ? { filter: "brightness(1.25)", transition: 'filter 0.2s ease' }
+                : { transition: 'filter 0.2s ease' }
+              }
+            >
               <path
                 d={stateData.path}
                 fill={fill}

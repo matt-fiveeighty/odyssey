@@ -1262,6 +1262,49 @@ function generateKeyYears(
   return keyYears;
 }
 
+/** Estimate actual draw odds for a unit (not harvest success rate) */
+function estimateDrawOdds(
+  stateId: string,
+  unitCode: string,
+  _speciesId: string,
+): number {
+  const state = _data.statesMap[stateId];
+  if (!state) return 0.1;
+
+  // General season states where license = tag (no draw needed)
+  // ID general zones, etc.
+  if (state.applicationApproach === "per_state" && state.pointSystem === "random") {
+    // Idaho: NR license IS your general tag. Controlled hunts are separate.
+    const unit = _data.units.find(u => u.stateId === stateId && u.unitCode === unitCode);
+    if (unit && unit.pointsRequiredNonresident === 0) {
+      // Could be general or controlled. Check tag quota.
+      if ((unit.tagQuotaNonresident ?? 0) > 100) return 1.0; // General season — guaranteed
+      if ((unit.tagQuotaNonresident ?? 0) > 50) return 0.7;
+      return Math.min(0.5, (unit.tagQuotaNonresident ?? 25) / 200);
+    }
+    return 0.5;
+  }
+
+  // Pure random draw states (NM, AK draw hunts)
+  if (state.pointSystem === "random") {
+    const unit = _data.units.find(u => u.stateId === stateId && u.unitCode === unitCode);
+    const tags = unit?.tagQuotaNonresident ?? 25;
+    // Most random draw units get 200-500+ applicants for limited tags
+    return Math.min(0.4, tags / 400);
+  }
+
+  // Preference/hybrid/bonus states where unit is drawable now (0 points required)
+  // If drawable now in a point state, odds are typically good
+  const unit = _data.units.find(u => u.stateId === stateId && u.unitCode === unitCode);
+  if (unit && unit.pointsRequiredNonresident === 0) {
+    // Zero-point unit in a point state = generally high draw odds
+    return 0.75;
+  }
+
+  // Default for point-based draws
+  return 0.6;
+}
+
 // --- Yearly Plan Generator
 
 function generateYearlyPlan(
@@ -1412,15 +1455,21 @@ function generateYearlyPlan(
           const arrival = tNotes?.bestArrivalDate ? ` ${tNotes.bestArrivalDate}.` : "";
           const length = tNotes?.typicalHuntLength ? ` ${tNotes.typicalHuntLength}.` : "";
 
+          const drawOdds = estimateDrawOdds(rec.stateId, immediateUnit.unitCode, sp);
+          const oddsNote = drawOdds >= 1.0
+            ? "Guaranteed with license."
+            : `~${Math.round(drawOdds * 100)}% draw odds.`;
+          const actionType = drawOdds >= 0.51 ? "hunt" : "apply";
+
           actions.push({
-            type: "hunt", stateId: rec.stateId, speciesId: sp, unitCode: immediateUnit.unitCode,
-            description: `${fmtSpecies(sp)} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flight}${season}${arrival}${length} ${Math.round(immediateUnit.successRate * 100)}% success rate.`,
-            estimatedDrawOdds: immediateUnit.successRate, cost: 600,
-            costs: [{ label: "Estimated tag + travel", amount: 600, category: "tag", stateId: rec.stateId, speciesId: sp }],
+            type: actionType, stateId: rec.stateId, speciesId: sp, unitCode: immediateUnit.unitCode,
+            description: `${fmtSpecies(sp)} in ${huntState?.abbreviation ?? rec.stateId} Unit ${immediateUnit.unitCode} (${immediateUnit.unitName}).${flight}${season}${arrival}${length} ${Math.round(immediateUnit.successRate * 100)}% success rate. ${oddsNote}`,
+            estimatedDrawOdds: drawOdds, cost: actionType === "hunt" ? 600 : 100,
+            costs: [{ label: actionType === "hunt" ? "Estimated tag + travel" : "Application cost", amount: actionType === "hunt" ? 600 : 100, category: actionType === "hunt" ? "tag" : "application", stateId: rec.stateId, speciesId: sp }],
             moveTag: "opportunity_play",
             locked: false,
           });
-          break;
+          if (actionType === "hunt") break; // Only break if we found a real hunt
         }
       }
     }

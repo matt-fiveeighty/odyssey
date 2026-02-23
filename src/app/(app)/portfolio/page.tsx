@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { useRoadmapStore } from "@/lib/store";
+import { useRoadmapStore, useWizardStore } from "@/lib/store";
+import { resolveFees } from "@/lib/engine/fee-resolver";
 import { STATES_MAP } from "@/lib/constants/states";
 import { SPECIES_MAP } from "@/lib/constants/species";
 import { StateOutline } from "@/components/shared/StateOutline";
@@ -16,6 +17,7 @@ import {
   AlertTriangle,
   Shield,
   Info,
+  Star,
 } from "lucide-react";
 
 export default function PortfolioPage() {
@@ -67,6 +69,8 @@ export default function PortfolioPage() {
 
     return { byState, topState, isConcentrated, roleDistribution };
   }, [activeAssessment]);
+
+  const homeState = useWizardStore((s) => s.homeState);
 
   if (!activeAssessment) {
     return (
@@ -131,7 +135,9 @@ export default function PortfolioPage() {
                         {rec.role.replace("_", " ")}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums">${Math.round(rec.annualCost).toLocaleString()}/yr</span>
+                    <span className="text-sm font-semibold tabular-nums">
+                      ${Math.round(rec.annualCost).toLocaleString()}/yr
+                    </span>
                   </div>
                   <div className="h-1.5 rounded-full bg-secondary overflow-hidden">
                     <div
@@ -139,35 +145,49 @@ export default function PortfolioPage() {
                       style={{ width: `${Math.min(100, pct)}%` }}
                     />
                   </div>
-                  {/* Info bullets — contextual state facts */}
-                  {state && (
-                    <div className="space-y-0.5 ml-0.5">
-                      {state.applicationApproachDescription && (
-                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
-                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
-                          {state.applicationApproachDescription}
-                        </p>
-                      )}
-                      {(state.licenseFees.qualifyingLicense ?? 0) > 0 && (
-                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
-                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
-                          Requires ${Math.round(state.licenseFees.qualifyingLicense!)} qualifying license
-                        </p>
-                      )}
-                      {state.pointSystem && (
-                        <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
-                          <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
-                          {state.pointSystemDetails.description}
-                        </p>
-                      )}
-                      {state.onceInALifetime && state.onceInALifetime.length > 0 && (
-                        <p className="text-[9px] text-warning/60 flex items-start gap-1">
-                          <AlertTriangle className="w-2.5 h-2.5 shrink-0 mt-px" />
-                          Once-in-a-lifetime: {state.onceInALifetime.map(s => SPECIES_MAP[s]?.name ?? s).join(", ")}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                  {/* Species-level fee breakdown */}
+                  {state && (() => {
+                    const fees = resolveFees(state, homeState);
+                    const stateSpecies = rec.annualCostItems.reduce<Record<string, number>>((acc, item) => {
+                      if (item.speciesId) {
+                        acc[item.speciesId] = (acc[item.speciesId] ?? 0) + item.amount;
+                      }
+                      return acc;
+                    }, {});
+                    return (
+                      <div className="space-y-0.5 ml-0.5">
+                        {/* License + species breakdown */}
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[9px] text-muted-foreground/60">
+                          {fees.qualifyingLicense > 0 && (
+                            <span>${Math.round(fees.qualifyingLicense)} license</span>
+                          )}
+                          {Object.entries(stateSpecies).map(([spId, cost]) => (
+                            <span key={spId}>
+                              ${Math.round(cost)} {SPECIES_MAP[spId]?.name ?? spId}
+                            </span>
+                          ))}
+                        </div>
+                        {state.applicationApproachDescription && (
+                          <p className="text-[9px] text-muted-foreground/50 flex items-start gap-1">
+                            <Info className="w-2.5 h-2.5 shrink-0 mt-px" />
+                            {state.applicationApproachDescription}
+                          </p>
+                        )}
+                        {state.onceInALifetime && state.onceInALifetime.length > 0 && (
+                          <p className="text-[9px] text-warning/60 flex items-start gap-1">
+                            <AlertTriangle className="w-2.5 h-2.5 shrink-0 mt-px" />
+                            Once-in-a-lifetime: {state.onceInALifetime.map(s => SPECIES_MAP[s]?.name ?? s).join(", ")}
+                          </p>
+                        )}
+                        {state.nicheFacts && state.nicheFacts.length > 0 && (
+                          <p className="text-[9px] text-warning/60 flex items-start gap-1">
+                            <Star className="w-2.5 h-2.5 shrink-0 mt-px" />
+                            {state.nicheFacts[0]}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               );
             })}
