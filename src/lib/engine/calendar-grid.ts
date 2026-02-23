@@ -17,6 +17,7 @@ import type {
   RoadmapAction,
   Milestone,
   State,
+  ScoutingTarget,
 } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { getUrgencyLevel } from "./urgency";
@@ -48,6 +49,7 @@ export interface CalendarSlotData {
   url?: string; // Direct link to F&G portal for this action
   unitCode?: string; // Hunt unit code (e.g., "Unit 61" for CO elk)
   advisorNote?: string; // Plain-text advisor interpretation for this slot
+  scoutingTarget?: ScoutingTarget; // Phase 10: scouting move metadata for tooltip
 }
 
 export interface CalendarRow {

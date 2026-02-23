@@ -36,6 +36,8 @@ import { getUrgencyLevel, daysUntilDate } from "@/lib/engine/urgency";
 import { formatTemporalPrefix } from "@/lib/engine/advisor-temporal";
 import { generatePointCreepInsights } from "@/lib/engine/advisor-creep";
 import { generateSavingsInsights } from "@/lib/engine/advisor-savings";
+import { generateScoutingInsights } from "@/lib/engine/advisor-scouting";
+import { detectScoutingOpportunities } from "@/lib/engine/scouting-engine";
 import { STATES_MAP } from "@/lib/constants/states";
 import { formatSpeciesName } from "@/lib/utils";
 
@@ -509,6 +511,8 @@ export function generateAdvisorInsights(
   const milestoneInsights = generateMilestoneInsights(milestones);
   const creepInsights = generatePointCreepInsights(assessment, userPoints);
   const savingsInsights = generateSavingsInsights(savingsGoals, userGoals, milestones);
+  const scoutingOpps = detectScoutingOpportunities(assessment);
+  const scoutingInsights = generateScoutingInsights(assessment, scoutingOpps);
 
   // Flatten all insights
   const all: AdvisorInsight[] = [
@@ -519,6 +523,7 @@ export function generateAdvisorInsights(
     ...milestoneInsights,
     ...creepInsights,
     ...savingsInsights,
+    ...scoutingInsights,
   ];
 
   // Sort by urgency priority (immediate > soon > informational > positive)
