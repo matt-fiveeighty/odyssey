@@ -49,14 +49,21 @@ interface CalendarSlotProps {
 }
 
 export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
-  const urgencyClasses = urgencyColorClass(slot.urgency);
+  const isScouting = !!slot.scoutingTarget;
+  const urgencyClasses = isScouting
+    ? "border-violet-500/30 bg-violet-500/5"
+    : urgencyColorClass(slot.urgency);
   const Icon = ITEM_TYPE_ICONS[slot.itemType];
   const tagConfig = TAG_TYPE_CONFIG[slot.tagType];
+
+  const titleText = isScouting
+    ? `Scouting for ${slot.scoutingTarget!.targetStateId} Unit ${slot.scoutingTarget!.targetUnitCode}: ${slot.scoutingTarget!.strategicReason}`
+    : (slot.advisorNote || slot.description);
 
   return (
     <div
       className={`flex items-center gap-1 px-1 py-0.5 rounded border-l-2 overflow-hidden ${urgencyClasses}`}
-      title={slot.advisorNote || slot.description}
+      title={titleText}
     >
       {/* Species avatar */}
       <SpeciesAvatar speciesId={slot.speciesId} size={16} className="shrink-0" />
@@ -76,9 +83,14 @@ export function CalendarSlot({ slot, showState }: CalendarSlotProps) {
           </span>
         </div>
 
-        {/* Bottom line: tag badge + cost */}
+        {/* Bottom line: tag badge + scout badge + cost */}
         <div className="flex items-center gap-1">
-          {tagConfig && (
+          {isScouting && (
+            <span className="text-[7px] px-1 rounded uppercase font-medium leading-tight bg-violet-500/15 text-violet-400">
+              SCOUT HUNT
+            </span>
+          )}
+          {!isScouting && tagConfig && (
             <span
               className={`text-[7px] px-1 rounded uppercase font-medium leading-tight ${tagConfig.className}`}
             >

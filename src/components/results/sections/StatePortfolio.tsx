@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, memo } from "react";
+import { useState, useMemo, memo } from "react";
 import type { StrategicAssessment, StateRecommendation } from "@/lib/types";
 import { AnimatedBar } from "../shared/AnimatedBar";
 import { STATES_MAP } from "@/lib/constants/states";
@@ -10,10 +10,12 @@ import { useWizardStore, useAppStore } from "@/lib/store";
 import { DataSourceInline, DataSourceBadge } from "@/components/shared/DataSourceBadge";
 import { FreshnessBadge } from "@/components/shared/FreshnessBadge";
 import { estimated } from "@/lib/engine/verified-datum";
-import { ChevronDown, Target, Mountain, Eye, TrendingUp } from "lucide-react";
+import { ChevronDown, Target, Mountain, Eye, TrendingUp, Binoculars } from "lucide-react";
 import { estimateCreepRate, projectPointCreep, yearsToDrawWithCreep } from "@/lib/engine/point-creep";
 import { formatSpeciesName } from "@/lib/utils";
 import type { AlsoConsideredState } from "@/lib/types";
+import { detectScoutingOpportunities } from "@/lib/engine/scouting-engine";
+import type { ScoutingOpportunity } from "@/lib/engine/scouting-engine";
 
 interface StatePortfolioProps {
   assessment: StrategicAssessment;
@@ -317,9 +319,66 @@ const AlsoConsideredCard = memo(function AlsoConsideredCard({ state: ac }: { sta
   );
 });
 
+const ScoutingMoveCard = memo(function ScoutingMoveCard({ opp }: { opp: ScoutingOpportunity }) {
+  const state = STATES_MAP[opp.scoutUnit.stateId];
+  const targetState = STATES_MAP[opp.targetUnit.stateId];
+
+  return (
+    <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4">
+      {/* Header badge */}
+      <div className="flex items-center gap-2 mb-2">
+        <Binoculars className="w-4 h-4 text-violet-400" />
+        <span className="text-xs font-semibold uppercase tracking-wider text-violet-400">
+          Scouting Move
+        </span>
+        {opp.distanceMiles != null && (
+          <span className="text-[10px] text-muted-foreground ml-auto">
+            ~{opp.distanceMiles} mi from target
+          </span>
+        )}
+      </div>
+
+      {/* Scout unit info */}
+      <h3 className="text-base font-semibold">
+        {state?.abbreviation ?? opp.scoutUnit.stateId} Unit {opp.scoutUnit.unitCode}
+        {opp.scoutUnit.unitName ? ` — ${opp.scoutUnit.unitName}` : ""}
+      </h3>
+      <p className="text-xs text-muted-foreground">
+        {formatSpeciesName(opp.scoutUnit.speciesId)} · {opp.scoutUnit.pointsRequiredNonresident === 0 ? "OTC" : "High-odds draw"} · {Math.round(opp.scoutUnit.successRate * 100)}% success
+      </p>
+
+      {/* Strategic connection */}
+      <p className="text-sm text-muted-foreground mt-2">
+        {opp.strategicReason}
+      </p>
+
+      {/* Target unit reference */}
+      <div className="mt-2 flex items-center gap-1 text-xs text-violet-400/80">
+        <Target className="w-3 h-3" />
+        <span>
+          Scouting for {targetState?.abbreviation ?? opp.targetUnit.stateId} Unit {opp.targetUnit.unitCode} ({opp.targetYearsAway}yr build)
+        </span>
+      </div>
+
+      {/* Score pills */}
+      <div className="flex flex-wrap gap-1 mt-2">
+        {opp.terrainOverlap.length > 0 && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300">
+            {opp.terrainOverlap.join(" · ")}
+          </span>
+        )}
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/10 text-violet-300">
+          Score: {opp.totalScore}/100
+        </span>
+      </div>
+    </div>
+  );
+});
+
 export function StatePortfolio({ assessment }: StatePortfolioProps) {
   const [showAlsoConsidered, setShowAlsoConsidered] = useState(false);
   const alsoConsidered = assessment.alsoConsidered ?? [];
+  const scoutingOpps = useMemo(() => detectScoutingOpportunities(assessment), [assessment]);
 
   return (
     <div className="space-y-4">
@@ -352,6 +411,23 @@ export function StatePortfolio({ assessment }: StatePortfolioProps) {
                 You can include these states by going back and toggling them on in the state selection step.
               </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scouting Opportunities */}
+      {scoutingOpps.length > 0 && (
+        <div className="mt-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <Binoculars className="w-4 h-4 text-violet-400" />
+            <h3 className="text-sm font-semibold text-violet-400 uppercase tracking-wider">
+              Scouting Opportunities
+            </h3>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {scoutingOpps.map((opp) => (
+              <ScoutingMoveCard key={`${opp.scoutUnitId}-${opp.targetUnit.unitCode}`} opp={opp} />
+            ))}
           </div>
         </div>
       )}
