@@ -1,0 +1,72 @@
+# Build Plan: 3 Month-9 Retention Features
+
+## Build 1: Post-Draw Rebalance Engine
+**File:** `src/app/(app)/rebalance/page.tsx` (replace empty placeholder)
+**Why:** Strategist (4/10), Purist (3/10), Dad (6/10) all need guidance after partial draw results
+
+**What it does:**
+- Reads `milestones` from appStore, filters to current year's `apply` type milestones
+- Groups by state, shows: Drew / Didn't Draw / Awaiting / Not Yet Applied
+- For each "didn't draw" state+species: computes rebalance options:
+  - **Stay the course** — show updated years-to-draw with point creep (using `yearsToDrawWithCreep`)
+  - **Burn consolation** — suggest lower-tier unit in same state where they could draw sooner
+  - **Pivot state** — flag alternative states with same species + better odds
+- Summary card at top: "You applied to X states. Drew Y. Didn't draw Z. Here's what changed."
+- Uses existing `estimateCreepRate`, `yearsToDrawWithCreep` from point-creep.ts
+- Reads `userPoints` to show actual position
+- Links to `/plan-builder` with "Rebuild Strategy" CTA
+
+**No new store fields needed** — reads from existing appStore milestones + userPoints + roadmapStore activeAssessment
+
+## Build 2: Welcome Back Dashboard Card
+**File:** `src/app/(app)/dashboard/page.tsx` (insert new card section)
+**Why:** Professional (5/10) comes back after months and is lost, all personas need context reinstatement
+
+**What it does:**
+- Detects returning user: `hasPlan && milestones.length > 0`
+- Computes "since you've been away" summary:
+  - Count milestones completed, draw outcomes recorded
+  - Find unrecorded draw results (milestones with `drawResultDate` in the past but no `drawOutcome`)
+  - Count upcoming deadlines within 60 days
+- Shows card between deadline banner and strategic metrics:
+  - "Welcome back! Here's your status:" headline
+  - Status chips: "2 drew · 1 didn't draw · 3 pending"
+  - Alert: "X draw results are in — record yours" (links to /goals)
+  - Alert: "Y deadlines in the next 60 days" (links to /deadlines)
+  - Cycle indicator: "You're in Year N of your plan" (computed from roadmap[0].year vs current year)
+- Auto-hides after user has visited 3+ times in current month (use sessionStorage counter)
+
+## Build 3: Quick Plan Express Mode
+**File:** `src/components/consultation/ConsultationShell.tsx` (modify step navigation)
+**File:** `src/app/(app)/dashboard/page.tsx` (add Express CTA)
+**Why:** Casual Regional (6/10) and Professional (7/10) find 9 steps too long
+
+**What it does:**
+- Add `expressMode` boolean to wizard store
+- When expressMode = true:
+  - ConsultationShell shows only Steps 1, 2, 4 (About You, Species, Budget)
+  - Step labels update: "1 of 3", "2 of 3", "3 of 3"
+  - After Step 4, auto-fills sensible defaults for Steps 3, 5, 6, 7, 8, 9:
+    - trophyVsMeat: "balanced"
+    - huntStyle: "diy_truck"
+    - importantFactors: ["draw_odds", "cost"]
+    - huntFrequency: "every_year"
+    - timeAvailable: "full_week"
+    - travelWillingness: based on homeState (western state = "drive_only", else "short_flight")
+    - selectedStatesConfirmed: auto-select top 3 states from preview scores
+  - Jumps directly to generation (Step 9 → generate)
+- Dashboard gets "Quick Plan (60 seconds)" button alongside existing "New Plan" / "Adjust Plan"
+- Express CTA only shows when user has NO confirmed plan yet
+
+**Store change:** Add `expressMode: boolean` + `setExpressMode` to ConsultationState + initial state
+
+## Execution Order
+1. Rebalance Engine (standalone page, no dependencies)
+2. Welcome Back Card (standalone dashboard addition)
+3. Express Mode (touches wizard store + shell + dashboard)
+
+## Files touched
+- `src/app/(app)/rebalance/page.tsx` — full rewrite
+- `src/app/(app)/dashboard/page.tsx` — add Welcome Back card + Express CTA
+- `src/components/consultation/ConsultationShell.tsx` — express mode step logic
+- `src/lib/store.ts` — add expressMode field + action
