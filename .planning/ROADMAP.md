@@ -161,15 +161,14 @@ Plans:
   3. A projection shows the funded date at the current contribution rate, so the user knows exactly when they will have enough
   4. Traffic light status (green/amber/red) makes it immediately clear which hunts are on track and which need attention
   5. The advisor voice provides specific savings guidance -- e.g., "You're $400 behind on your CO elk fund -- increase by $50/mo to get back on track"
-**Plans**: 6 plans
+**Plans**: 5 plans
 
 Plans:
-- [ ] 08-01: Savings goal data model and Zustand store integration (linked to UserGoal)
-- [ ] 08-02: Monthly savings target calculator and funded-date projection engine
-- [ ] 08-03: Savings progress ring components on dashboard
-- [ ] 08-04: Traffic light status system (green/amber/red)
-- [ ] 08-05: Advisor voice savings insights (behind/on-track/ahead commentary)
-- [ ] 08-06: Annual spend forecast summarizing all upcoming hunt costs
+- [ ] 08-01-PLAN.md — Types, Zustand store integration, and SavingsGoalCard refactor to persistence
+- [ ] 08-02-PLAN.md — Savings calculator engine with TDD (monthly target, funded date, traffic light, catch-up delta, annual forecast)
+- [ ] 08-03-PLAN.md — SavingsProgressRing component and dashboard savings section
+- [ ] 08-04-PLAN.md — Advisor savings sub-generator and pipeline wiring
+- [ ] 08-05-PLAN.md — Annual spend forecast UI component on budget page
 
 ### Phase 9: Diff View
 **Goal**: Returning users see a structured summary of what changed since their last visit -- deadline shifts, draw results, point creep, new opportunities -- filtered to only show changes that matter
@@ -223,6 +222,6 @@ Phases execute in numeric order: 1 > 2 > 3 > 4 > 5 > 6 > 7 > 8 > 9 > 10
 | 5. Advisor Voice | 4/4 | Complete | 2026-02-22 |
 | 6. API Integrations | 0/3 | Complete    | 2026-02-22 |
 | 7. Scraper Enrichment & Data Freshness | 0/8 | Not started | - |
-| 8. Savings & Budget Tracker | 0/6 | Not started | - |
+| 8. Savings & Budget Tracker | 0/5 | Not started | - |
 | 9. Diff View | 0/5 | Not started | - |
 | 10. Scouting Strategy | 0/5 | Not started | - |
