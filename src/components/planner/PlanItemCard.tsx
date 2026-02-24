@@ -21,6 +21,10 @@ export interface PlanItem {
   endMonth?: number; // if event spans months (e.g. Sep 25 → Oct 5)
   estimatedCost?: number;
   completed: boolean;
+  // Collaborative calendar fields
+  planColor?: string;  // hex color for plan source overlay
+  planName?: string;   // name of the plan/person this item belongs to
+  planId?: string;     // ID of the source plan
 }
 
 export const ITEM_TYPE_CONFIG: Record<ItemType, { label: string; icon: typeof Target; color: string }> = {

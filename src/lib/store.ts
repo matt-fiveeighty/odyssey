@@ -231,6 +231,55 @@ export interface SavedPlan {
   updatedAt: string;
 }
 
+// ── Collaborative Calendar Types ──────────────────────────────────────────
+
+/** Plan color palette for multi-plan calendar overlay */
+export const PLAN_PALETTE = [
+  { bg: "rgba(239, 68, 68, 0.15)", border: "#ef4444", text: "#fca5a5", dot: "#ef4444", label: "Red" },
+  { bg: "rgba(59, 130, 246, 0.15)", border: "#3b82f6", text: "#93c5fd", dot: "#3b82f6", label: "Blue" },
+  { bg: "rgba(34, 197, 94, 0.15)", border: "#22c55e", text: "#86efac", dot: "#22c55e", label: "Green" },
+  { bg: "rgba(245, 158, 11, 0.15)", border: "#f59e0b", text: "#fcd34d", dot: "#f59e0b", label: "Amber" },
+  { bg: "rgba(139, 92, 246, 0.15)", border: "#8b5cf6", text: "#c4b5fd", dot: "#8b5cf6", label: "Violet" },
+  { bg: "rgba(236, 72, 153, 0.15)", border: "#ec4899", text: "#f9a8d4", dot: "#ec4899", label: "Pink" },
+  { bg: "rgba(20, 184, 166, 0.15)", border: "#14b8a6", text: "#5eead4", dot: "#14b8a6", label: "Teal" },
+  { bg: "rgba(249, 115, 22, 0.15)", border: "#f97316", text: "#fdba74", dot: "#f97316", label: "Orange" },
+] as const;
+
+/** An imported friend/peer plan for calendar overlay */
+export interface FriendPlan {
+  id: string;
+  name: string;       // Friend's name
+  color: string;      // hex color from palette
+  items: Array<{
+    id: string;
+    type: string;
+    title: string;
+    description?: string;
+    stateId?: string;
+    speciesId?: string;
+    month: number;
+    day?: number;
+    endDay?: number;
+    endMonth?: number;
+    estimatedCost?: number;
+  }>;
+  importedAt: string;
+}
+
+/** A proposed hunt date range to share with peers */
+export interface DateProposal {
+  id: string;
+  stateId: string;
+  speciesId: string;
+  startMonth: number;
+  startDay: number;
+  endMonth: number;
+  endDay: number;
+  year: number;
+  notes: string;
+  createdAt: string;
+}
+
 interface AppState {
   userPoints: UserPoints[];
   userGoals: UserGoal[];
@@ -283,6 +332,17 @@ interface AppState {
   lastDiffComputedAt: string | null;
   markDiffSeen: (id: string) => void;
   markAllDiffsSeen: (ids: string[]) => void;
+
+  // Collaborative calendar
+  friendPlans: FriendPlan[];
+  planVisibility: Record<string, boolean>; // planId → visible (true = shown)
+  dateProposals: DateProposal[];
+  addFriendPlan: (plan: FriendPlan) => void;
+  removeFriendPlan: (id: string) => void;
+  togglePlanVisibility: (id: string) => void;
+  setPlanVisibility: (id: string, visible: boolean) => void;
+  addDateProposal: (proposal: DateProposal) => void;
+  removeProposal: (id: string) => void;
 
   setConfirmedAssessment: (assessment: StrategicAssessment) => void;
   clearConfirmedAssessment: () => void;
@@ -589,6 +649,37 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           seenDiffIds: [...new Set([...state.seenDiffIds, ...ids])],
           lastDiffComputedAt: new Date().toISOString(),
+        })),
+
+      // Collaborative calendar
+      friendPlans: [],
+      planVisibility: {},
+      dateProposals: [],
+      addFriendPlan: (plan) =>
+        set((state) => ({ friendPlans: [...state.friendPlans, plan] })),
+      removeFriendPlan: (id) =>
+        set((state) => ({
+          friendPlans: state.friendPlans.filter((p) => p.id !== id),
+          planVisibility: Object.fromEntries(
+            Object.entries(state.planVisibility).filter(([k]) => k !== id)
+          ),
+        })),
+      togglePlanVisibility: (id) =>
+        set((state) => ({
+          planVisibility: {
+            ...state.planVisibility,
+            [id]: !(state.planVisibility[id] ?? true),
+          },
+        })),
+      setPlanVisibility: (id, visible) =>
+        set((state) => ({
+          planVisibility: { ...state.planVisibility, [id]: visible },
+        })),
+      addDateProposal: (proposal) =>
+        set((state) => ({ dateProposals: [...state.dateProposals, proposal] })),
+      removeProposal: (id) =>
+        set((state) => ({
+          dateProposals: state.dateProposals.filter((p) => p.id !== id),
         })),
 
       setConfirmedAssessment: (assessment) => {

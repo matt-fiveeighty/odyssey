@@ -17,6 +17,7 @@ import {
   PieChart,
   RefreshCw,
   Calendar,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -36,6 +37,7 @@ const navSections = [
     items: [
       { href: "/this-year", label: "Planner", icon: Compass },
       { href: "/deadlines", label: "Deadlines", icon: Calendar },
+      { href: "/groups", label: "Hunt Plans", icon: Users },
     ],
   },
   {

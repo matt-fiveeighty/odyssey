@@ -308,6 +308,10 @@ export function YearCalendar({
                     );
                     const hasOther = dayItems.length > 0 && !hasHuntDay && !hasDeadlineDay;
 
+                    // Multi-plan: check if day has items from different plans
+                    const planColors = [...new Set(dayItems.filter(it => it.planColor).map(it => it.planColor!))];
+                    const hasMultiplePlans = planColors.length > 1;
+
                     return (
                       <button
                         key={day}
@@ -343,10 +347,9 @@ export function YearCalendar({
                   })}
                 </div>
 
-                {/* Outlook-style event labels below the day grid */}
+                {/* Event labels below the day grid — color-coded by plan source */}
                 {items.length > 0 && (
                   <div className="mt-1.5 space-y-0.5 max-h-[52px] overflow-hidden">
-                    {/* Deduplicate: show each unique item once per month */}
                     {(() => {
                       const seen = new Set<string>();
                       const unique = items.filter((item) => {
@@ -356,6 +359,8 @@ export function YearCalendar({
                       });
                       return unique.slice(0, 3).map((item) => {
                         const cfg = ITEM_TYPE_CONFIG[item.type];
+                        // If item has a planColor, use it for the event chip (Google Calendar style)
+                        const hasPlanColor = !!item.planColor;
                         const typeColors: Record<string, string> = {
                           hunt: "bg-destructive/15 text-destructive border-destructive/20",
                           deadline: "bg-warning/15 text-warning border-warning/20",
@@ -364,14 +369,32 @@ export function YearCalendar({
                           scout: "bg-info/15 text-info border-info/20",
                           prep: "bg-success/15 text-success border-success/20",
                         };
+                        const defaultClasses = typeColors[item.type] ?? "bg-secondary/30 text-muted-foreground border-border/30";
+
+                        // Plan-colored style override
+                        const planStyle = hasPlanColor
+                          ? {
+                              backgroundColor: `${item.planColor}20`,
+                              borderColor: `${item.planColor}40`,
+                              color: item.planColor,
+                            }
+                          : undefined;
+
+                        const prefix = item.planName
+                          ? `${item.planName.split(" ")[0].slice(0, 6)} · `
+                          : item.stateId
+                          ? `${item.stateId} `
+                          : "";
+
                         return (
                           <button
                             key={item.id}
                             data-day-btn
                             onClick={() => setSelectedCell({ month, day: item.day ?? 1 })}
-                            className={`w-full text-left px-1 py-0.5 rounded text-[7px] xl:text-[6px] font-medium truncate border cursor-pointer hover:opacity-80 transition-opacity ${typeColors[item.type] ?? "bg-secondary/30 text-muted-foreground border-border/30"}`}
+                            className={`w-full text-left px-1 py-0.5 rounded text-[7px] xl:text-[6px] font-medium truncate border cursor-pointer hover:opacity-80 transition-opacity ${!hasPlanColor ? defaultClasses : ""}`}
+                            style={planStyle}
                           >
-                            {item.stateId ? `${item.stateId} ` : ""}{cfg.label}{item.day ? ` · ${item.day}` : ""}
+                            {prefix}{cfg.label}{item.day ? ` · ${item.day}` : ""}
                           </button>
                         );
                       });
@@ -428,12 +451,25 @@ export function YearCalendar({
                         <div
                           key={item.id}
                           className="p-2 rounded-md bg-secondary/10 border border-border/50"
+                          style={item.planColor ? { borderLeftColor: item.planColor, borderLeftWidth: "3px" } : undefined}
                         >
+                          {/* Plan source badge */}
+                          {item.planName && (
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <div
+                                className="w-2 h-2 rounded-full shrink-0"
+                                style={{ backgroundColor: item.planColor }}
+                              />
+                              <span className="text-[8px] font-medium" style={{ color: item.planColor }}>
+                                {item.planName}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex items-start gap-2">
                             <div className="flex-1 min-w-0">
                               <PlanItemCard
                                 item={item}
-                                expanded={true}
+                                expanded={!item.planId} // Only show edit/remove for own items
                                 onToggleComplete={onToggleComplete}
                                 onRemove={onRemove}
                               />
