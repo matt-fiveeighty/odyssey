@@ -117,6 +117,12 @@ export interface ConsultationInput {
   planForAge?: number;
   /** Planning horizon in years (10, 15, 20, 25). Defaults to 10. */
   planningHorizon?: number;
+  /** Primary weapon: archery/rifle/muzzleloader. Affects point requirements and season selection. */
+  weaponType?: import("@/lib/types").WeaponType;
+  /** Party size (1 = solo). Group applications affect point averaging in some states. */
+  partySize?: number;
+  /** Years willing to do extreme backcountry. Caps draw strategy timelines for demanding hunts. */
+  physicalHorizon?: number;
 }
 
 // --- Shared Helpers ---

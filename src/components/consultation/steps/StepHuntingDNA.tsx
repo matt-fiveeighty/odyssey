@@ -5,9 +5,9 @@ import { OptionCard } from "../shared/OptionCard";
 import { ToggleChip } from "../shared/ToggleChip";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
-import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin, Shield } from "lucide-react";
+import { Tent, Users, Footprints, Mountain, TreePine, Snowflake, Eye, MapPin, Shield, Target, Crosshair, Flame } from "lucide-react";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
-import type { HuntStyle } from "@/lib/types";
+import type { HuntStyle, WeaponType } from "@/lib/types";
 import { formatSpeciesName } from "@/lib/utils";
 
 const STYLE_OPTIONS: { id: HuntStyle; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
@@ -22,6 +22,18 @@ const STYLE_INSIGHTS: Record<string, string> = {
   diy_truck: "Truck camping is the most flexible approach. You can cover more ground, run back to camp for lunch, and change plans mid-hunt without moving your whole setup.",
   guided: "Guided hunts maximize your odds on premium tags. When you have waited 5+ years for a draw, having a local expert is the smart play.",
   drop_camp: "Drop camp gives you both sides — someone gets you into elk country with a camp setup, then you hunt on your own terms.",
+};
+
+const WEAPON_OPTIONS: { id: WeaponType; label: string; desc: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  { id: "rifle", label: "Rifle", desc: "Most versatile — highest success rates across units", icon: Crosshair },
+  { id: "archery", label: "Archery", desc: "Lower point requirements, longer seasons, lower success", icon: Target },
+  { id: "muzzleloader", label: "Muzzleloader", desc: "Middle ground — unique seasons with moderate odds", icon: Flame },
+];
+
+const WEAPON_INSIGHTS: Record<string, string> = {
+  rifle: "Rifle seasons have the highest success rates but also the highest point requirements. Most competitive draw categories are rifle hunts.",
+  archery: "Archery opens earlier seasons with fewer applicants. Point requirements are often 50–70% lower than rifle for the same unit. Trade-off: lower success rates require more skill and time in the field.",
+  muzzleloader: "Muzzleloader seasons sit between archery and rifle in both timing and competition. Some states offer dedicated muzzleloader draws with favorable odds.",
 };
 
 const TERRAIN_OPTIONS = [
@@ -81,6 +93,28 @@ export function StepHuntingDNA() {
             text={`At ${wizard.planForAge}, truck-camp hunts with a parent or mentor are the way to start. Accessible terrain, high-success units, and established campsites build confidence and create memories. Solo backcountry comes later.`}
             icon={Shield}
           />
+        )}
+
+        {/* Weapon Choice */}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-3 block">Primary weapon?</label>
+          <div className="grid grid-cols-3 gap-3">
+            {WEAPON_OPTIONS.map((opt) => (
+              <OptionCard
+                key={opt.id}
+                selected={wizard.weaponType === opt.id}
+                onClick={() => wizard.setField("weaponType", opt.id)}
+                icon={opt.icon}
+                title={opt.label}
+                description={opt.desc}
+                compact
+              />
+            ))}
+          </div>
+        </div>
+
+        {wizard.weaponType && WEAPON_INSIGHTS[wizard.weaponType] && (
+          <AdvisorInsight text={WEAPON_INSIGHTS[wizard.weaponType]} />
         )}
 
         {wizard.huntStylePrimary && wizard.huntStylePrimary !== "guided" && (

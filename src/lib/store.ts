@@ -55,12 +55,15 @@ interface ConsultationState {
   guidedForSpecies: string[];
   preferredTerrain: string[];
   importantFactors: string[];
+  weaponType: import("@/lib/types").WeaponType | null;       // archery/rifle/muzzleloader
 
   // Step 6: Travel reality
   huntFrequency: HuntFrequency | null;
   timeAvailable: TimeAvailable | null;
   travelWillingness: TravelWillingness | null;
   huntDaysPerYear: number; // PTO / available hunt days per year
+  partySize: number;                       // 1 = solo, 2+ = group application
+  physicalHorizon: number | null;          // Years willing to do extreme backcountry
 
   // Step 7: Point portfolio
   hasExistingPoints: boolean;
@@ -132,10 +135,13 @@ const consultationInitial: Omit<ConsultationState,
   guidedForSpecies: [],
   preferredTerrain: [],
   importantFactors: [],
+  weaponType: null,
   huntFrequency: null,
   timeAvailable: null,
   travelWillingness: null,
   huntDaysPerYear: 0,
+  partySize: 1,
+  physicalHorizon: null,
   hasExistingPoints: false,
   existingPoints: {},
   previewScores: [],

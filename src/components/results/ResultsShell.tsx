@@ -1,25 +1,29 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { StrategicAssessment, RoadmapAction } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
-import { HeroSummary } from "./sections/HeroSummary";
-import { YearOneActionPlan } from "./sections/YearOneActionPlan";
+import { StrategyToggle } from "./dashboard/StrategyToggle";
+import { StatusTicker } from "./dashboard/StatusTicker";
+import { KPIStrip } from "./dashboard/KPIStrip";
+import { BurnRateMatrix } from "./dashboard/BurnRateMatrix";
+import { ContextualAlerts } from "./dashboard/ContextualAlerts";
+import { ActionTabs, type ActionTabValue } from "./dashboard/ActionTabs";
+import { ActionList, type ActionItem } from "./dashboard/ActionList";
+import { ActionDetail } from "./dashboard/ActionDetail";
 import { PlanExport } from "@/components/shared/PlanExport";
 import { SubscribeCalendar } from "./SubscribeCalendar";
 import { ShareButton } from "./ShareButton";
 import { Button } from "@/components/ui/button";
-import { BarChart3, MapPin, Clock, Plane, Check, RotateCcw, GitCompareArrows, Pencil } from "lucide-react";
+import { Check, RotateCcw, Pencil, Clock, Plane, GitCompareArrows, ChevronDown } from "lucide-react";
 
 export interface EditableAction extends RoadmapAction {
   _edited?: boolean;
 }
 
-// Lazy load tab content — only HeroSummary is above the fold
-const PortfolioOverview = dynamic(() => import("./sections/PortfolioOverview").then(m => ({ default: m.PortfolioOverview })));
-const StatePortfolio = dynamic(() => import("./sections/StatePortfolio").then(m => ({ default: m.StatePortfolio })));
+// Lazy load deep-dive sections (below the fold)
 const TimelineRoadmap = dynamic(() => import("./sections/TimelineRoadmap").then(m => ({ default: m.TimelineRoadmap })));
 const LogisticsTab = dynamic(() => import("./sections/LogisticsTab").then(m => ({ default: m.LogisticsTab })));
 const StrategyComparison = dynamic(() => import("./sections/StrategyComparison").then(m => ({ default: m.StrategyComparison })));
@@ -28,23 +32,25 @@ interface ResultsShellProps {
   assessment: StrategicAssessment;
 }
 
-const TABS = [
-  { id: "overview", label: "Overview", icon: BarChart3 },
-  { id: "states", label: "States", icon: MapPin },
+const DEEP_SECTIONS = [
   { id: "timeline", label: "Timeline", icon: Clock },
   { id: "logistics", label: "Logistics", icon: Plane },
   { id: "compare", label: "Compare", icon: GitCompareArrows },
 ] as const;
 
-type TabId = (typeof TABS)[number]["id"];
+type DeepSectionId = (typeof DEEP_SECTIONS)[number]["id"];
 
 export function ResultsShell({ assessment }: ResultsShellProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("overview");
+  const [actionTab, setActionTab] = useState<ActionTabValue>("all");
+  const [selectedActionIndex, setSelectedActionIndex] = useState<number | null>(0);
+  const [openSection, setOpenSection] = useState<DeepSectionId | null>(null);
   const wizard = useWizardStore();
   const appStore = useAppStore();
   const router = useRouter();
 
-  // Lift timeline edits to survive tab switches (dynamic imports unmount children)
+  const currentYear = new Date().getFullYear();
+
+  // Lift timeline edits to survive dynamic imports unmounting children
   const [timelineEdits, setTimelineEdits] = useState<Record<number, EditableAction[]>>(() => {
     const map: Record<number, EditableAction[]> = {};
     for (const yr of assessment.roadmap) {
@@ -56,6 +62,51 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
     setTimelineEdits(edits);
   }, []);
 
+  // Flatten all roadmap actions into a single list (like "Unpaid Invoices")
+  const allActions: ActionItem[] = useMemo(() => {
+    const items: ActionItem[] = [];
+    for (const yr of assessment.roadmap) {
+      for (const a of yr.actions) {
+        items.push({ ...a, year: yr.year, isHuntYear: yr.isHuntYear });
+      }
+    }
+    // Sort: current year first, then by deadline
+    items.sort((a, b) => {
+      const aIsCurrent = a.year === currentYear ? 0 : 1;
+      const bIsCurrent = b.year === currentYear ? 0 : 1;
+      if (aIsCurrent !== bIsCurrent) return aIsCurrent - bIsCurrent;
+      if (a.year !== b.year) return a.year - b.year;
+      if (a.dueDate && b.dueDate) return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+      if (a.dueDate) return -1;
+      if (b.dueDate) return 1;
+      return 0;
+    });
+    return items;
+  }, [assessment.roadmap, currentYear]);
+
+  // Filter actions by tab
+  const filteredActions = useMemo(() => {
+    switch (actionTab) {
+      case "point_year":
+        return allActions.filter((a) => a.type === "buy_points");
+      case "draw_year":
+        return allActions.filter((a) => a.type === "apply");
+      case "hunt":
+        return allActions.filter((a) => a.type === "hunt" || a.type === "scout");
+      default:
+        return allActions;
+    }
+  }, [allActions, actionTab]);
+
+  // Keep selection in bounds when filter changes
+  const effectiveIndex = useMemo(() => {
+    if (selectedActionIndex === null) return filteredActions.length > 0 ? 0 : null;
+    if (selectedActionIndex >= filteredActions.length) return filteredActions.length > 0 ? 0 : null;
+    return selectedActionIndex;
+  }, [selectedActionIndex, filteredActions.length]);
+
+  const selectedAction = effectiveIndex !== null ? filteredActions[effectiveIndex] : null;
+
   function handleConfirmPlan() {
     wizard.confirmPlan(assessment);
     appStore.setConfirmedAssessment(assessment);
@@ -64,7 +115,6 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
   }
 
   function handleEditPlan() {
-    // Go back to step 1 with all answers preserved so user can adjust
     wizard.setStep(1);
   }
 
@@ -72,58 +122,86 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
     wizard.reset();
   }
 
-  const handleTabKeyDown = useCallback((e: React.KeyboardEvent) => {
-    const idx = TABS.findIndex((t) => t.id === activeTab);
-    if (e.key === "ArrowRight") {
-      e.preventDefault();
-      const next = TABS[(idx + 1) % TABS.length];
-      setActiveTab(next.id);
-      document.getElementById(`tab-${next.id}`)?.focus();
-    } else if (e.key === "ArrowLeft") {
-      e.preventDefault();
-      const prev = TABS[(idx - 1 + TABS.length) % TABS.length];
-      setActiveTab(prev.id);
-      document.getElementById(`tab-${prev.id}`)?.focus();
-    }
-  }, [activeTab]);
+  function toggleSection(id: DeepSectionId) {
+    setOpenSection((prev) => (prev === id ? null : id));
+  }
 
   return (
-    <div className="space-y-6">
-      <HeroSummary assessment={assessment} />
+    <div className="space-y-4">
+      {/* ROW 1: Strategy Toggle — toggleable header */}
+      <StrategyToggle assessment={assessment} />
 
-      {/* Year 1 Action Plan — "just tell me what to do this year" */}
-      <YearOneActionPlan assessment={assessment} />
+      {/* ROW 2: Status Ticker — color-coded annual status bar */}
+      <StatusTicker assessment={assessment} />
 
-      {/* Tab bar */}
-      <div role="tablist" aria-label="Results sections" className="flex gap-1 p-1 bg-secondary/50 rounded-xl" onKeyDown={handleTabKeyDown}>
-        {TABS.map((tab) => (
-          <button
-            key={tab.id}
-            role="tab"
-            aria-selected={activeTab === tab.id}
-            aria-controls={`tabpanel-${tab.id}`}
-            id={`tab-${tab.id}`}
-            tabIndex={activeTab === tab.id ? 0 : -1}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors duration-200 cursor-pointer ${
-              activeTab === tab.id
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <tab.icon className="w-4 h-4" />
-            <span className="hidden sm:inline">{tab.label}</span>
-          </button>
-        ))}
+      {/* ROW 3: KPI Strip — sunk/floated capital + first hunt + 10-year total */}
+      <KPIStrip assessment={assessment} />
+
+      {/* ROW 4: Burn Rate Matrix — per-species point position vs requirements */}
+      <BurnRateMatrix assessment={assessment} />
+
+      {/* ROW 5: Contextual Alerts — lottery badges, dead assets, physical horizon */}
+      <ContextualAlerts assessment={assessment} />
+
+      {/* ROW 6: Action Tabs — "All Actions / Point Year / Draw Year / Hunt" */}
+      <ActionTabs
+        actions={allActions}
+        value={actionTab}
+        onChange={(v) => { setActionTab(v); setSelectedActionIndex(0); }}
+        currentYear={currentYear}
+      />
+
+      {/* ROW 4: Master-Detail — Action List (left) + Action Detail (right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-0 min-h-[520px] rounded-xl border border-border/50 overflow-hidden bg-background/30">
+        {/* Left: Action List */}
+        <div className="lg:border-r border-border/30 lg:max-h-[600px] lg:overflow-y-auto scrollbar-thin">
+          <div className="p-3 border-b border-border/30">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+              {actionTab === "all" ? "All Actions" : actionTab === "point_year" ? "Point Year Actions" : actionTab === "draw_year" ? "Draw Year Actions" : "Hunts"}{" "}
+              <span className="text-muted-foreground/50">({filteredActions.length})</span>
+            </p>
+          </div>
+          <ActionList
+            actions={filteredActions}
+            selectedIndex={effectiveIndex}
+            onSelect={setSelectedActionIndex}
+          />
+        </div>
+
+        {/* Right: Action Detail — the detail card */}
+        <div className="min-w-0">
+          {selectedAction ? (
+            <ActionDetail action={selectedAction} assessment={assessment} />
+          ) : (
+            <div className="flex items-center justify-center h-full text-sm text-muted-foreground/60">
+              Select an action to view details
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Tab content */}
-      <div role="tabpanel" id={`tabpanel-${activeTab}`} aria-labelledby={`tab-${activeTab}`} className="fade-in-up">
-        {activeTab === "overview" && <PortfolioOverview assessment={assessment} />}
-        {activeTab === "states" && <StatePortfolio assessment={assessment} />}
-        {activeTab === "timeline" && <TimelineRoadmap assessment={assessment} editedActions={timelineEdits} onEditedActionsChange={handleTimelineEditsChange} />}
-        {activeTab === "logistics" && <LogisticsTab assessment={assessment} />}
-        {activeTab === "compare" && <StrategyComparison assessment={assessment} />}
+      {/* Deep-Dive Sections (below the fold, collapsible) */}
+      <div className="space-y-2 pt-4 border-t border-border/50">
+        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Deep Dive</p>
+        {DEEP_SECTIONS.map((section) => (
+          <div key={section.id} className="rounded-xl border border-border/50 overflow-hidden">
+            <button
+              onClick={() => toggleSection(section.id)}
+              className="w-full flex items-center gap-2 p-3.5 hover:bg-secondary/20 transition-colors cursor-pointer"
+            >
+              <section.icon className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium">{section.label}</span>
+              <ChevronDown className={`w-4 h-4 text-muted-foreground ml-auto transition-transform duration-200 ${openSection === section.id ? "rotate-180" : ""}`} />
+            </button>
+            {openSection === section.id && (
+              <div className="p-4 pt-0 fade-in-up">
+                {section.id === "timeline" && <TimelineRoadmap assessment={assessment} editedActions={timelineEdits} onEditedActionsChange={handleTimelineEditsChange} />}
+                {section.id === "logistics" && <LogisticsTab assessment={assessment} />}
+                {section.id === "compare" && <StrategyComparison assessment={assessment} />}
+              </div>
+            )}
+          </div>
+        ))}
       </div>
 
       {/* Action buttons */}

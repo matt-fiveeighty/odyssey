@@ -25,5 +25,8 @@ export function buildConsultationInput(wizard: ReturnType<typeof useWizardStore.
     preferredTerrain: wizard.preferredTerrain,
     importantFactors: wizard.importantFactors,
     selectedStatesConfirmed: wizard.selectedStatesConfirmed,
+    weaponType: wizard.weaponType ?? undefined,
+    partySize: wizard.partySize,
+    physicalHorizon: wizard.physicalHorizon ?? undefined,
   };
 }

@@ -741,6 +741,90 @@ export interface DrawHistoryEntry {
 }
 
 // ============================================================================
+// Capital Allocator Types (Master Allocator Blueprint)
+// ============================================================================
+
+/** Point Creep Velocity — average annual inflation of point requirements */
+export interface PCVResult {
+  pcv: number;                         // Points per year inflation rate
+  isDeadAsset: boolean;                // PCV >= earnRate → can never draw
+  trend: "accelerating" | "stable" | "decelerating";
+  dataPoints: number;                  // How many years of history were used
+  confidence: "high" | "medium" | "low"; // Based on data availability
+}
+
+/** Dynamic Time-To-Draw incorporating PCV */
+export interface TTDResult {
+  years: number;                       // Years until drawable (Infinity if dead asset)
+  targetYear: number;                  // Calendar year of expected draw
+  isReachable: boolean;                // False if PCV >= earn rate
+  projectedPointsAtDraw: number;       // What you'll have when you draw
+  projectedRequiredAtDraw: number;     // What will be required when you draw
+}
+
+/** Monte Carlo cumulative probability over a time horizon */
+export interface MonteCarloResult {
+  singleYearOdds: number;             // p: single-year draw probability (0-1)
+  cumulativeOdds: number;             // C = 1 - (1-p)^n over the full horizon
+  yearByYear: { year: number; cumulative: number }[]; // Running cumulative
+  medianDrawYear: number | null;       // Year at which cumulative > 50%, null if never
+  horizonYears: number;                // n: how many years projected
+}
+
+/** Capital classification for a fee/cost item */
+export type CapitalType = "sunk" | "floated" | "contingent";
+
+/** Fee with refund classification */
+export interface ClassifiedFee {
+  label: string;
+  amount: number;
+  stateId: string;
+  speciesId?: string;
+  capitalType: CapitalType;           // sunk = non-refundable, floated = refundable if unsuccessful
+  refundPolicy?: string;              // "Full refund if not drawn", "Non-refundable"
+}
+
+/** Capital summary for the entire portfolio */
+export interface CapitalSummary {
+  sunkCapital: number;                 // Total non-refundable (app fees, points, licenses)
+  floatedCapital: number;              // Total refundable-if-unsuccessful (upfront tag fees)
+  contingentCapital: number;           // Tag costs IF drawn (not yet committed)
+  totalDeployed: number;               // sunk + floated
+  totalExposure: number;               // sunk + floated + contingent
+  byState: { stateId: string; sunk: number; floated: number; contingent: number }[];
+  classifiedFees: ClassifiedFee[];
+}
+
+/** Burn Rate row — per state/species point position snapshot */
+export interface BurnRateEntry {
+  stateId: string;
+  speciesId: string;
+  currentPoints: number;
+  requiredPoints: number;
+  pcv: number;                         // Point Creep Velocity
+  pcvTrend: "accelerating" | "stable" | "decelerating";
+  etaYear: number;                     // Projected draw year
+  isDeadAsset: boolean;                // True if PCV >= earn rate
+  drawType: "preference" | "lottery" | "bonus";  // Simplified draw mechanism
+  cumulativeOdds?: number;             // For lottery states: 10-year cumulative
+}
+
+/** Annual status classification for the status ticker */
+export type AnnualStatusTag = "build" | "lottery" | "dividend" | "burn" | "recovery";
+
+export interface AnnualStatusEntry {
+  stateId: string;
+  tag: AnnualStatusTag;
+  label: string;                       // "WY" or "CO Elk"
+}
+
+export interface YearStatusTicker {
+  year: number;
+  entries: AnnualStatusEntry[];
+  summary: string;                     // "BUILD (WY, CO) + LOTTERY (NM) + DIVIDEND (MT OTC)"
+}
+
+// ============================================================================
 // Strategic Assessment Types (Roadmap Generator Output)
 // ============================================================================
 

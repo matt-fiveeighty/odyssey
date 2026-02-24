@@ -104,6 +104,81 @@ export function StepTravelReality() {
           </div>
         )}
 
+        {/* Party Size */}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            Do you apply solo or with a group?
+          </label>
+          <p className="text-xs text-muted-foreground/60 mb-3">
+            Some states average group points (lowest common denominator). Applying with a buddy who has 0 points changes your entire strategy.
+          </p>
+          <div className="flex items-center gap-4 justify-center">
+            <button
+              onClick={() => wizard.setField("partySize", Math.max(1, wizard.partySize - 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >-</button>
+            <div className="text-center">
+              <span className="text-3xl font-bold font-mono w-12 inline-block">{wizard.partySize}</span>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{wizard.partySize === 1 ? "solo" : `${wizard.partySize} hunters`}</p>
+            </div>
+            <button
+              onClick={() => wizard.setField("partySize", Math.min(6, wizard.partySize + 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >+</button>
+          </div>
+          {wizard.partySize > 1 && (
+            <AdvisorInsight
+              text={`Applying as a party of ${wizard.partySize}: States like Wyoming and Colorado average your group's points. If anyone in your group has significantly fewer points, it drags down your draw odds. Consider having low-point members buy points solo until they catch up.`}
+              icon={Users}
+            />
+          )}
+        </div>
+
+        {/* Physical Horizon */}
+        <div>
+          <label className="text-sm font-medium text-muted-foreground mb-2 block">
+            How many more years of extreme backcountry hunting?
+          </label>
+          <p className="text-xs text-muted-foreground/60 mb-3">
+            Be honest — this caps how far out we&apos;ll plan demanding hunts like sheep, goat, or wilderness elk.
+          </p>
+          <div className="flex items-center gap-4 justify-center">
+            <button
+              onClick={() => wizard.setField("physicalHorizon", Math.max(1, (wizard.physicalHorizon ?? 10) - 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >-</button>
+            <div className="text-center">
+              <span className="text-3xl font-bold font-mono w-12 inline-block">{wizard.physicalHorizon ?? "—"}</span>
+              <p className="text-[10px] text-muted-foreground mt-0.5">years</p>
+            </div>
+            <button
+              onClick={() => wizard.setField("physicalHorizon", Math.min(30, (wizard.physicalHorizon ?? 10) + 1))}
+              className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-lg font-bold hover:bg-accent transition-colors"
+            >+</button>
+          </div>
+          <div className="flex justify-center gap-2 mt-3">
+            {[5, 10, 15, 20].map((y) => (
+              <button
+                key={y}
+                onClick={() => wizard.setField("physicalHorizon", y)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                  wizard.physicalHorizon === y
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-secondary text-secondary-foreground hover:bg-accent"
+                }`}
+              >
+                {y} yrs
+              </button>
+            ))}
+          </div>
+          {wizard.physicalHorizon !== null && wizard.physicalHorizon <= 5 && (
+            <AdvisorInsight
+              text="With a 5-year physical window, we'll front-load the demanding hunts and avoid putting you on a 15-year sheep draw. Accessible truck-camp hunts take priority for the later years."
+              icon={Mountain}
+            />
+          )}
+        </div>
+
         {/* PTO / Hunt days per year */}
         <div>
           <label className="text-sm font-medium text-muted-foreground mb-2 block">

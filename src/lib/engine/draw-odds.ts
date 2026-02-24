@@ -3,10 +3,13 @@
  *
  * Calculates probability of drawing a tag based on each state's unique
  * point system, the user's current points, and historical draw data.
+ *
+ * v2: Added Monte Carlo cumulative probability for lottery states
+ *     and draw type classification per the Master Allocator Blueprint.
  */
 
 import { STATES_MAP } from "@/lib/constants/states";
-import type { Unit } from "@/lib/types";
+import type { Unit, MonteCarloResult, PointSystemType } from "@/lib/types";
 
 interface DrawOddsInput {
   stateId: string;
@@ -210,4 +213,79 @@ export function calculateDrawOdds(input: DrawOddsInput): DrawOddsResult {
         explanation: "Unknown point system",
       };
   }
+}
+
+// ============================================================================
+// Monte Carlo Cumulative Probability — Master Allocator Blueprint
+// ============================================================================
+
+/**
+ * For lottery/random-draw states, compute the cumulative probability of
+ * drawing at least once over an n-year horizon.
+ *
+ *   C = 1 - (1 - p)^n
+ *
+ * Also produces a year-by-year running cumulative and the median draw year
+ * (the year at which cumulative probability crosses 50%).
+ *
+ * For non-random states, singleYearOdds should be the random-pool odds
+ * or estimated draw probability from calculateDrawOdds().
+ */
+export function computeMonteCarloOdds(
+  singleYearOdds: number,
+  horizonYears: number = 10,
+): MonteCarloResult {
+  const p = Math.max(0, Math.min(1, singleYearOdds));
+  const yearByYear: MonteCarloResult["yearByYear"] = [];
+  let medianDrawYear: number | null = null;
+  const currentYear = new Date().getFullYear();
+
+  for (let i = 1; i <= horizonYears; i++) {
+    const cumulative = 1 - Math.pow(1 - p, i);
+    yearByYear.push({ year: currentYear + i, cumulative: Math.round(cumulative * 1000) / 1000 });
+    if (medianDrawYear === null && cumulative >= 0.5) {
+      medianDrawYear = currentYear + i;
+    }
+  }
+
+  const cumulativeOdds = 1 - Math.pow(1 - p, horizonYears);
+
+  return {
+    singleYearOdds: Math.round(p * 1000) / 1000,
+    cumulativeOdds: Math.round(cumulativeOdds * 1000) / 1000,
+    yearByYear,
+    medianDrawYear,
+    horizonYears,
+  };
+}
+
+/**
+ * Classify a state's draw mechanism into simplified categories
+ * for UI display (Lottery Play badge, etc.).
+ */
+export type SimplifiedDrawType = "preference" | "lottery" | "bonus";
+
+export function classifyDrawType(pointSystem: PointSystemType): SimplifiedDrawType {
+  switch (pointSystem) {
+    case "random":
+      return "lottery";
+    case "bonus":
+    case "bonus_squared":
+      return "bonus";
+    case "preference":
+    case "hybrid":
+    case "dual":
+    case "preference_nr":
+    default:
+      return "preference";
+  }
+}
+
+/**
+ * Determine if a state is a "lottery play" (pure random, no point advantage).
+ * These states should never trigger "plateau" warnings — 9 consecutive years
+ * without drawing a 2% odds tag is a statistical certainty, not a plateau.
+ */
+export function isLotteryPlay(pointSystem: PointSystemType): boolean {
+  return pointSystem === "random";
 }
