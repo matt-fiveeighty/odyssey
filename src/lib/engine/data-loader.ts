@@ -184,19 +184,22 @@ async function _tryLoadFromSupabase(): Promise<boolean> {
       .from("scraped_deadlines")
       .select("*")
       .in("year", [currentYear, currentYear + 1])
+      .eq("status", "approved")
       .limit(1000);
 
-    // --- Fetch scraped fees for merging into state data ---
+    // --- Fetch scraped fees for merging into state data (airlock-approved only) ---
     const { data: dbFees } = await supabase
       .from("scraped_fees")
       .select("*")
+      .eq("status", "approved")
       .limit(2000);
 
-    // --- Fetch scraped seasons for current + next year ---
+    // --- Fetch scraped seasons for current + next year (airlock-approved only) ---
     const { data: dbSeasons } = await supabase
       .from("scraped_seasons")
       .select("*")
       .in("year", [currentYear, currentYear + 1])
+      .eq("status", "approved")
       .limit(3000);
 
     // --- Merge DB units with hardcoded constants ---

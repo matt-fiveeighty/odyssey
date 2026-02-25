@@ -442,6 +442,54 @@ export function scoreStateForHunter(
   }
   factors.push({ label: "Hunt Style Match", score: styleScore, maxScore: 10, explanation: styleExplanation });
 
+  // --- Factor 6.5: Weapon Fit (max 5) ---
+  // Archery = lower point requirements, longer seasons, lower success
+  // Rifle = most competitive, highest success, highest point cost
+  // Muzzleloader = middle ground, unique seasons
+  let weaponScore = 3;
+  let weaponExplanation = "";
+  if (input.weaponType) {
+    const hasArcherySeasons = state.seasonTiers?.some((t) =>
+      t.tier.toLowerCase().includes("archery") || t.tier.toLowerCase().includes("bow"),
+    );
+    const hasMuzzleSeasons = state.seasonTiers?.some((t) =>
+      t.tier.toLowerCase().includes("muzzle") || t.tier.toLowerCase().includes("muzzy"),
+    );
+
+    if (input.weaponType === "archery") {
+      if (hasArcherySeasons) {
+        weaponScore = 5;
+        weaponExplanation = "Dedicated archery seasons with lower point requirements";
+      } else {
+        weaponScore = 3;
+        weaponExplanation = "Limited archery-specific seasons";
+      }
+      // Archery bonus for states with early seasons (CO, MT, ID)
+      if (["CO", "MT", "ID", "WY", "OR"].includes(stateId)) {
+        weaponScore = Math.min(5, weaponScore + 1);
+        weaponExplanation += ". Strong archery tradition with early September seasons";
+      }
+    } else if (input.weaponType === "muzzleloader") {
+      if (hasMuzzleSeasons) {
+        weaponScore = 5;
+        weaponExplanation = "Dedicated muzzleloader seasons — less competition than rifle";
+      } else {
+        weaponScore = 2;
+        weaponExplanation = "No dedicated muzzleloader seasons";
+      }
+    } else {
+      // Rifle — baseline, competitive everywhere
+      weaponScore = 3;
+      weaponExplanation = "Rifle: most competitive draw categories";
+      // States where rifle is especially dominant
+      if (["CO", "WY", "MT"].includes(stateId)) {
+        weaponScore = 4;
+        weaponExplanation = "Strong rifle state with proven success rates";
+      }
+    }
+  }
+  factors.push({ label: "Weapon Fit", score: weaponScore, maxScore: 5, explanation: weaponExplanation || "Weapon not specified" });
+
   // --- Factor 7: Terrain & Factors Match (max 10) ---
   let terrainScore = 5;
   let terrainExplanation = "";

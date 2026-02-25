@@ -1,17 +1,31 @@
 "use client";
 
 import { useMemo } from "react";
-import type { StrategicAssessment, BoardState, DisciplineViolation, UserPoints } from "@/lib/types";
+import type { StrategicAssessment, BoardState, DisciplineViolation } from "@/lib/types";
 import type { JourneyYearData } from "@/lib/engine/journey-data";
-import { YEAR_TYPE_LABELS, migratePhaseToYearType } from "@/lib/types";
-import { InteractiveMap } from "@/components/journey/InteractiveMap";
+import { InteractiveMap, type StateAllocatorData } from "@/components/journey/InteractiveMap";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
 import { detectCreepShifts } from "@/lib/engine/advisor-creep";
 import { formatSpeciesName } from "@/lib/utils";
 import { STATES_MAP } from "@/lib/constants/states";
-import { useAppStore } from "@/lib/store";
+import { useAppStore, useWizardStore } from "@/lib/store";
+import { computeCapitalSummary, computeBurnRateMatrix } from "@/lib/engine/capital-allocator";
+import { computeMonteCarloOdds } from "@/lib/engine/draw-odds";
 import { MAP_LEGEND } from "./action-colors";
-import { Maximize2 } from "lucide-react";
+import {
+  Lock,
+  Unlock,
+  Layers,
+  FileText,
+  TrendingUp,
+  Crosshair,
+  Dice5,
+  ShieldCheck,
+  Maximize2,
+  ArrowUp,
+  ArrowDown,
+  Minus,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface DashboardCardProps {
@@ -34,260 +48,251 @@ export function DashboardCard({
   onStateClick,
 }: DashboardCardProps) {
   const { financialSummary, roadmap, stateRecommendations } = assessment;
+  const userPoints = useAppStore((s) => s.userPoints);
+  const homeState = useWizardStore((s) => s.homeState);
+  const pointYearBudget = useWizardStore((s) => s.pointYearBudget);
+  const huntYearBudget = useWizardStore((s) => s.huntYearBudget);
 
+  const currentYear = new Date().getFullYear();
   const yearData_ = roadmap.find((yr) => yr.year === selectedYear);
-  const ifDrawnSpend = useMemo(() => {
-    if (!yearData_) return 0;
-    return yearData_.actions.reduce((s, a) => s + a.cost, 0);
+
+  // ── Capital classification ──
+  const capitalSummary = useMemo(
+    () => computeCapitalSummary(assessment, homeState),
+    [assessment, homeState],
+  );
+
+  // ── Portfolio value: total preference points across all states ──
+  const portfolioValue = useMemo(() => {
+    return userPoints.reduce((sum, p) => sum + p.points, 0);
+  }, [userPoints]);
+
+  // ── Active F&G applications: deadlines remaining this calendar year ──
+  const activeApps = useMemo(() => {
+    if (!yearData_) return { count: 0, nextDeadline: "" };
+    const apps = yearData_.actions.filter(
+      (a) => a.type === "apply" || a.type === "buy_points",
+    );
+    // Find the nearest upcoming deadline
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let nearest = "";
+    for (const a of apps) {
+      const state = STATES_MAP[a.stateId];
+      if (state?.applicationDeadlines) {
+        for (const dl of Object.values(state.applicationDeadlines)) {
+          const close = dl.close;
+          if (close > todayStr) {
+            if (!nearest || close < nearest) nearest = close;
+          }
+        }
+      }
+    }
+    return { count: apps.length, nextDeadline: nearest };
   }, [yearData_]);
 
-  const speciesCount = useMemo(() => {
-    const set = new Set<string>();
-    for (const yr of roadmap) for (const a of yr.actions) set.add(a.speciesId);
-    return set.size;
-  }, [roadmap]);
-
-  // ── Point Creep: detect timeline shifts across the portfolio ──
-  const userPoints = useAppStore((s) => s.userPoints);
+  // ── Creep Velocity: portfolio-wide inflation rate ──
   const creepShifts = useMemo(
     () => detectCreepShifts(assessment, userPoints),
     [assessment, userPoints],
   );
-  const hasCreep = creepShifts.length > 0;
-  const creepLines = useMemo(() => {
-    if (creepShifts.length === 0) return ["No shifts detected"];
-    // Each hunt that's slipping gets its own line
-    return creepShifts.slice(0, 3).map((s) => {
-      const abbr = STATES_MAP[s.stateId]?.abbreviation ?? s.stateId;
-      return `${abbr} ${formatSpeciesName(s.speciesId)} → +${s.shiftYears}yr`;
-    });
-  }, [creepShifts]);
-  // Plain-spoken TLDR: what point creep IS and what it means for YOU
-  // (informed by goHunt's definition — more applicants enter the pool each year
-  //  than tags available, so the points needed to draw keep climbing)
-  const creepNote = hasCreep
-    ? "More applicants than tags — points to draw rise each year, pushing your timeline back."
-    : "Your points are keeping pace with demand.";
+  const burnMatrix = useMemo(
+    () => computeBurnRateMatrix(assessment, {}),
+    [assessment],
+  );
+  const avgPCV = useMemo(() => {
+    if (burnMatrix.length === 0) return 0;
+    return burnMatrix.reduce((s, b) => s + b.pcv, 0) / burnMatrix.length;
+  }, [burnMatrix]);
 
-  // ── Portfolio status: phase label for selected year ──
-  const yearPhaseLabel = useMemo(() => {
-    if (!yearData_) return "Building";
-    if (yearData_.phaseLabel) return yearData_.phaseLabel;
-    const yt = migratePhaseToYearType(yearData_.phase);
-    return yt ? YEAR_TYPE_LABELS[yt] : "Building";
-  }, [yearData_]);
-
-  const portfolioStatus = boardState.status;
-  const isPortfolioHealthy = portfolioStatus === "on_track" || portfolioStatus === "position_strong";
-
-  // ── Portfolio lines: each action type on its own line ──
-  const portfolioLines = useMemo(() => {
-    if (!yearData_) return ["No actions planned"];
-    const apps = yearData_.actions.filter((a) => a.type === "apply").length;
-    const pts = yearData_.actions.filter((a) => a.type === "buy_points").length;
-    const hunts = yearData_.actions.filter((a) => a.type === "hunt").length;
-    const scouts = yearData_.actions.filter((a) => a.type === "scout").length;
-    const lines: string[] = [];
-    if (apps > 0) lines.push(`${apps} Draw${apps > 1 ? "s" : ""}`);
-    if (pts > 0) lines.push(`${pts} Point Buy${pts > 1 ? "s" : ""}`);
-    if (hunts > 0) lines.push(`${hunts} Hunt${hunts > 1 ? "s" : ""}`);
-    if (scouts > 0) lines.push(`${scouts} Scout${scouts > 1 ? "s" : ""}`);
-    return lines.length > 0 ? lines : ["No actions planned"];
-  }, [yearData_]);
-
-  // ── Burn Rate: points needed to draw vs points held ──
-  // In hunting, "burn rate" = how many preference points it takes to
-  // clear (guarantee) a tag. Low burn = easy draws. High burn = bucket
-  // list. Trend matters: stable means you're on pace, creeping means
-  // the goal line is moving away from you.
-  const burnAnalysis = useMemo(() => {
-    // Gather burn-related violations
-    const burnRuleIds = [
-      "budget_concentration",
-      "premium_overload",
-      "build_fatigue",
-      "cadence_below_target",
-      "plateau_detected",
-    ];
-    const burnViolations = violations.filter((v) =>
-      burnRuleIds.includes(v.ruleId),
-    );
-
-    // Per-state point holdings — what the user has built so far
-    // Each entry gets a trend arrow from creep shifts
-    const pointLines: string[] = [];
-    for (const pt of userPoints.slice(0, 3)) {
-      const abbr = STATES_MAP[pt.stateId]?.abbreviation ?? pt.stateId;
-      const species = formatSpeciesName(pt.speciesId);
-      // Check if this state/species has a creep shift (burn rate rising)
-      const shift = creepShifts.find(
-        (s) => s.stateId === pt.stateId && s.speciesId === pt.speciesId,
-      );
-      const trend = shift ? `↑ +${shift.shiftYears}yr` : "→ stable";
-      pointLines.push(`${abbr} ${species}: ${pt.points}pts ${trend}`);
-    }
-
-    // Parse cadence from boardState
-    const cadenceMatch = boardState.cadence?.match(
-      /([\d.]+)\s*hunts?\/yr.*target\s*([\d.]+)/i,
-    );
-    const actualCadence = cadenceMatch ? parseFloat(cadenceMatch[1]) : 0;
-    const targetCadence = cadenceMatch ? parseFloat(cadenceMatch[2]) : 1;
-
-    // How many creep shifts are rising (burn rate creeping)
-    const risingCount = creepShifts.length;
-    const hasConcern = burnViolations.length > 0 || risingCount > 0;
-
-    // ── Status ── (burn rate trend based)
-    let status: string;
-    let statusColor: string;
-
-    if (!hasConcern) {
-      status = "Stable";
-      statusColor = "text-success";
-    } else {
-      const hasFatigue = burnViolations.some((v) => v.ruleId === "build_fatigue");
-      const hasPlateau = burnViolations.some((v) => v.ruleId === "plateau_detected");
-      const hasBudgetConc = burnViolations.some((v) => v.ruleId === "budget_concentration");
-
-      if (hasFatigue) {
-        status = "Fatigued";
-        statusColor = "text-destructive";
-      } else if (risingCount >= 2) {
-        status = "Creeping";
-        statusColor = "text-destructive";
-      } else if (risingCount === 1) {
-        status = "Drifting";
-        statusColor = "text-warning";
-      } else if (hasPlateau) {
-        status = "Plateauing";
-        statusColor = "text-warning";
-      } else if (hasBudgetConc) {
-        status = "Over-indexed";
-        statusColor = "text-warning";
-      } else {
-        status = "Watch";
-        statusColor = "text-warning";
-      }
-    }
-
-    // ── TLDR note — plain language ──
-    let note: string;
-    if (!hasConcern) {
-      note = "Burn rate = points to draw a tag. Yours are stable — builds are clearing on schedule.";
-    } else if (status === "Creeping") {
-      note = "Burn rates rising across your portfolio. More hunters in the pool — it takes more points to draw each year.";
-    } else if (status === "Drifting") {
-      note = "One of your builds is slipping. The points needed to draw are climbing faster than you're earning.";
-    } else if (status === "Fatigued") {
-      note = "Years of buying points with no tags clearing. Building without burning is expensive patience.";
-    } else if (status === "Plateauing") {
-      note = "Points past the efficiency threshold. Marginal gains are minimal — consider cashing in.";
-    } else if (status === "Over-indexed") {
-      note = "Too much budget locked in high-burn-rate draws. Most annual spend may produce no hunt.";
-    } else {
-      note = "Review point builds and burn rate trends.";
-    }
-
-    // ── Detail lines ──
-    const lines: string[] = [];
-
-    // Per-state point status with trend arrows
-    lines.push(...pointLines);
-
-    // Cadence — hunts clearing vs goal
-    if (pointLines.length === 0 && (actualCadence > 0 || targetCadence > 0)) {
-      lines.push(`${actualCadence.toFixed(1)} hunts/yr → ${targetCadence} goal`);
-    }
-
-    // Violation-specific detail (only if we have room)
-    if (lines.length < 3) {
-      for (const v of burnViolations.slice(0, 1)) {
-        if (v.ruleId === "build_fatigue" && v.affectedYears?.length) {
-          lines.push(`${v.affectedYears.length}yr without clearing a tag`);
-        }
-      }
-    }
-
-    if (lines.length === 0) lines.push("No points building yet");
-
-    return { status, statusColor, note, lines };
-  }, [violations, boardState.cadence, financialSummary, roadmap, userPoints, creepShifts]);
-
-  // ── Dream hunt: closest hunt action in the roadmap ──
-  const dreamHunt = useMemo(() => {
+  // ── Next Milestone: nearest projected "burn" (hunt) ──
+  const nextMilestone = useMemo(() => {
     for (const yr of roadmap) {
+      if (yr.year < selectedYear) continue;
       const hunt = yr.actions.find((a) => a.type === "hunt");
       if (hunt) {
         return {
-          species: formatSpeciesName(hunt.speciesId),
-          state: STATES_MAP[hunt.stateId]?.name ?? hunt.stateId,
           year: yr.year,
+          species: formatSpeciesName(hunt.speciesId),
+          stateAbbr: STATES_MAP[hunt.stateId]?.abbreviation ?? hunt.stateId,
         };
       }
     }
     return null;
-  }, [roadmap]);
+  }, [roadmap, selectedYear]);
+
+  // ── Draw Probability: cumulative odds of drawing ≥1 tag this year ──
+  const drawProbability = useMemo(() => {
+    if (!yearData_) return 0;
+    const drawActions = yearData_.actions.filter((a) => a.type === "apply");
+    if (drawActions.length === 0) return 0;
+    // P(at least one) = 1 - P(none)
+    let pNone = 1;
+    for (const a of drawActions) {
+      const odds = a.estimatedDrawOdds ?? 0.15;
+      pNone *= 1 - odds;
+    }
+    return Math.round((1 - pNone) * 100);
+  }, [yearData_]);
+
+  // ── Budget Discipline: ON TRACK or BLEEDING ──
+  const budgetDiscipline = useMemo(() => {
+    const yearCost = yearData_
+      ? yearData_.actions.reduce((s, a) => s + a.cost, 0)
+      : 0;
+    // Use wizard budget or fall back to financial summary
+    const budgetCeiling = pointYearBudget || financialSummary.annualSubscription * 1.2;
+    const ratio = budgetCeiling > 0 ? yearCost / budgetCeiling : 0;
+
+    if (ratio <= 0.9) return { status: "On Track", color: "text-emerald-400", ratio };
+    if (ratio <= 1.1) return { status: "At Limit", color: "text-amber-400", ratio };
+    return { status: "Bleeding", color: "text-red-400", ratio };
+  }, [yearData_, pointYearBudget, financialSummary]);
+
+  // ── Deltas: year-over-year comparison ──
+  // ── Allocator data for map hover tooltips ──
+  const mapAllocatorData = useMemo<Record<string, StateAllocatorData>>(() => {
+    const result: Record<string, StateAllocatorData> = {};
+    for (const rec of stateRecommendations) {
+      const pts = userPoints
+        .filter((p) => p.stateId === rec.stateId)
+        .reduce((s, p) => s + p.points, 0);
+      const sunk = capitalSummary.byState.find((s) => s.stateId === rec.stateId)?.sunk ?? 0;
+      // Find earliest hunt year for this state
+      let targetDrawYear: number | null = null;
+      for (const yr of roadmap) {
+        const hunt = yr.actions.find((a) => a.stateId === rec.stateId && a.type === "hunt");
+        if (hunt) { targetDrawYear = yr.year; break; }
+      }
+      result[rec.stateId] = { points: pts, sunkCost: sunk, targetDrawYear };
+    }
+    return result;
+  }, [stateRecommendations, userPoints, capitalSummary, roadmap]);
+
+  const prevYear = roadmap.find((yr) => yr.year === selectedYear - 1);
+  const prevYearCost = prevYear
+    ? prevYear.actions.reduce((s, a) => s + a.cost, 0)
+    : 0;
+  const currentYearCost = yearData_
+    ? yearData_.actions.reduce((s, a) => s + a.cost, 0)
+    : 0;
+  const costDelta = currentYearCost - prevYearCost;
+
+  // ── Is this a burn (hunt) year? ──
+  const isBurnYear = yearData_?.actions.some((a) => a.type === "hunt") ?? false;
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-0 rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm">
-      {/* Left: 2 rows of 4 */}
+    <div className={cn(
+      "grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm",
+      isBurnYear && "glow-burn-year",
+    )}>
+      {/* Left: 2x4 Allocator KPI Grid */}
       <div className="p-5">
-        {/* Row 1: KPIs — colored label TOP, white value BOTTOM */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
-          <KPITile label="Annual Spend" labelColor="text-primary">
-            <AnimatedCounter value={Math.round(financialSummary.annualSubscription)} prefix="$" />
-          </KPITile>
-          <KPITile label={`(${selectedYear}) If Drawn Spend`} labelColor="text-chart-2">
-            <AnimatedCounter value={Math.round(ifDrawnSpend)} prefix="$" />
-          </KPITile>
-          <KPITile label="States" labelColor="text-chart-5" numeric>
-            {String(stateRecommendations.length).padStart(2, "0")}
-          </KPITile>
-          <KPITile label="Species" labelColor="text-chart-4" numeric>
-            {String(speciesCount).padStart(2, "0")}
-          </KPITile>
-        </div>
-
-        {/* Row 2: Status tiles — grid auto-equalizes height across all 4 */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatusTile
-            label="Point Creep"
-            status={hasCreep ? "Losing Ground" : "On Pace"}
-            statusColor={hasCreep ? "text-warning" : "text-success"}
-            note={creepNote}
-            lines={creepLines}
-          />
+          {/* 1. Sunk Capital */}
+          <KPITile
+            icon={Lock}
+            iconColor="text-red-400"
+            label="Sunk Capital"
+            sublabel="Non-refundable"
+            glowClass="glow-danger"
+          >
+            <AnimatedCounter value={capitalSummary.sunkCapital} prefix="$" />
+          </KPITile>
 
-          <StatusTile
-            label="Portfolio"
-            status={yearPhaseLabel}
-            statusColor={isPortfolioHealthy ? "text-success" : "text-warning"}
-            lines={portfolioLines}
-          />
+          {/* 2. Floated Capital */}
+          <KPITile
+            icon={Unlock}
+            iconColor="text-chart-2"
+            label="Floated Capital"
+            sublabel="Recoverable"
+            glowClass="glow-success"
+          >
+            <AnimatedCounter value={capitalSummary.floatedCapital} prefix="$" />
+          </KPITile>
 
-          <StatusTile
-            label="Burn Rate"
-            status={burnAnalysis.status}
-            statusColor={burnAnalysis.statusColor}
-            note={burnAnalysis.note}
-            lines={burnAnalysis.lines}
-          />
+          {/* 3. Portfolio Value */}
+          <KPITile
+            icon={Layers}
+            iconColor="text-blue-400"
+            label="Portfolio Value"
+            sublabel={`${stateRecommendations.length} states`}
+            glowClass="glow-equity"
+          >
+            <span className="font-financial">{portfolioValue} pts</span>
+          </KPITile>
 
-          <StatusTile
-            label="Dream Hunt"
-            status={dreamHunt ? `${dreamHunt.year}` : "—"}
-            statusColor="text-info"
-            lines={dreamHunt
-              ? [dreamHunt.species, dreamHunt.state]
-              : ["Build points to unlock"]
-            }
-          />
+          {/* 4. Active F&G Apps — hidden on mobile for condensed 2×2 */}
+          <KPITile
+            icon={FileText}
+            iconColor="text-amber-400"
+            label="Active F&G Apps"
+            sublabel={activeApps.nextDeadline ? `Next: ${formatShortDate(activeApps.nextDeadline)}` : selectedYear.toString()}
+            className="hidden md:flex"
+          >
+            <span className="font-financial">{String(activeApps.count).padStart(2, "0")}</span>
+          </KPITile>
+
+          {/* 5. Creep Velocity — hidden on mobile for condensed 2×2 */}
+          <KPITile
+            icon={TrendingUp}
+            iconColor={avgPCV >= 1.0 ? "text-red-400" : avgPCV > 0.5 ? "text-amber-400" : "text-emerald-400"}
+            label="Creep Velocity"
+            sublabel={avgPCV >= 1.0 ? "Dead asset risk" : "Portfolio avg"}
+            delta={avgPCV > 0 ? { direction: "up" as const, label: `${avgPCV.toFixed(1)} pts/yr` } : undefined}
+            glowClass={avgPCV >= 1.0 ? "glow-danger" : undefined}
+            className="hidden md:flex"
+          >
+            <span className={cn("font-financial", avgPCV >= 1.0 && "text-red-400")}>
+              {avgPCV >= 1.0 ? "▲ " : ""}{avgPCV.toFixed(1)}
+            </span>
+          </KPITile>
+
+          {/* 6. Next Milestone */}
+          <KPITile
+            icon={Crosshair}
+            iconColor="text-chart-3"
+            label="Next Milestone"
+            sublabel={nextMilestone ? `${nextMilestone.species} · ${nextMilestone.stateAbbr}` : "No hunts yet"}
+            glowClass={isBurnYear ? "glow-success" : undefined}
+          >
+            <span className="font-financial text-chart-3">{nextMilestone?.year ?? "—"}</span>
+          </KPITile>
+
+          {/* 7. Draw Probability — hidden on mobile for condensed 2×2 */}
+          <KPITile
+            icon={Dice5}
+            iconColor="text-purple-400"
+            label="Draw Probability"
+            sublabel={`${selectedYear} cumulative`}
+            className="hidden md:flex"
+          >
+            <span className={cn(
+              "font-financial",
+              drawProbability >= 50 ? "text-emerald-400" : drawProbability >= 25 ? "text-amber-400" : "text-red-400",
+            )}>
+              {drawProbability}%
+            </span>
+          </KPITile>
+
+          {/* 8. Budget Discipline — hidden on mobile for condensed 2×2 */}
+          <KPITile
+            icon={ShieldCheck}
+            iconColor={budgetDiscipline.color}
+            label="Budget Discipline"
+            sublabel={`${Math.round(budgetDiscipline.ratio * 100)}% of cap`}
+            delta={costDelta !== 0 ? {
+              direction: costDelta > 0 ? "up" as const : "down" as const,
+              label: `$${Math.abs(costDelta).toLocaleString()} vs ${selectedYear - 1}`,
+            } : undefined}
+            className="hidden md:flex"
+          >
+            <span className={cn("font-financial", budgetDiscipline.color)}>{budgetDiscipline.status}</span>
+          </KPITile>
         </div>
       </div>
 
-      {/* Right: Mini Map */}
-      <div className="lg:border-l border-border/50 bg-secondary/50 relative">
+      {/* Right: Mini Map — hidden on mobile (available via SegmentedToggle) */}
+      <div className="hidden lg:block lg:border-l border-border/50 bg-secondary/50 relative">
         <div className="p-4">
           <div className="flex items-center justify-between mb-2.5">
             <div>
@@ -309,6 +314,7 @@ export function DashboardCard({
               yearData={yearData}
               onStateClick={onStateClick}
               selectedYear={selectedYear}
+              allocatorData={mapAllocatorData}
             />
           </div>
           {/* Legend — shared MAP_LEGEND with hover tooltips */}
@@ -329,76 +335,68 @@ export function DashboardCard({
   );
 }
 
-/* ─── KPI Tile ────────────────────────────────────────────────── */
+/* ─── Helper: short date formatting ─────────────────────────── */
+
+function formatShortDate(dateStr: string): string {
+  const d = new Date(dateStr + "T00:00:00");
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
+/* ─── KPI Tile ────────────────────────────────────────────────
+ * Pure-number micro-card with icon, 3-word label, optional delta.
+ */
 
 function KPITile({
+  icon: Icon,
+  iconColor,
   label,
-  labelColor,
-  numeric,
+  sublabel,
+  delta,
+  glowClass,
+  className,
   children,
 }: {
+  icon: React.ComponentType<{ className?: string }>;
+  iconColor: string;
   label: string;
-  labelColor: string;
-  numeric?: boolean;
+  sublabel: string;
+  delta?: { direction: "up" | "down" | "flat"; label: string };
+  glowClass?: string;
+  className?: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col justify-between p-3 rounded-lg bg-secondary/40 border border-border/40 min-h-[88px]">
-      <p className={cn("text-[9px] uppercase tracking-wider font-medium", labelColor)}>
-        {label}
-      </p>
-      <p className={cn("text-xl font-bold tracking-tight text-foreground mt-auto", numeric && "tabular-nums")}>
+    <div className={cn(
+      "flex flex-col justify-between p-3 rounded-lg bg-secondary/40 border border-border/40 min-h-[100px] transition-all duration-300",
+      "hover:border-border/60 hover:bg-secondary/50",
+      glowClass,
+      className,
+    )}>
+      {/* Header: icon + label */}
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className={cn("w-3.5 h-3.5", iconColor)} />
+        <p className="label-uppercase">{label}</p>
+      </div>
+
+      {/* Value — stark white, monospace */}
+      <p className="text-xl font-bold tracking-tight text-foreground mt-auto">
         {children}
       </p>
-    </div>
-  );
-}
 
-/* ─── Status Tile ─────────────────────────────────────────────
- * Auto-expands vertically. Grid equalizes all tiles in the row.
- * - label: muted category (POINT CREEP, PORTFOLIO, etc.)
- * - status: colored verdict (SHIFTING, BUILD YEAR, HEALTHY, 2028)
- * - note: optional TLDR explaining the status
- * - lines: each sentiment on its own line
- */
-
-function StatusTile({
-  label,
-  status,
-  statusColor,
-  note,
-  lines,
-}: {
-  label: string;
-  status: string;
-  statusColor: string;
-  note?: string;
-  lines: string[];
-}) {
-  return (
-    <div className="flex flex-col p-3 rounded-lg bg-secondary/40 border border-border/40">
-      {/* Top: category label + colored status */}
-      <p className="text-[8px] uppercase tracking-wider font-medium text-muted-foreground/50 mb-0.5">
-        {label}
-      </p>
-      <p className={cn("text-[10px] uppercase tracking-wider font-bold mb-1.5", statusColor)}>
-        {status}
-      </p>
-
-      {/* Optional TLDR note */}
-      {note && (
-        <p className="text-[10px] text-muted-foreground/50 leading-snug mb-1.5 italic">
-          {note}
-        </p>
-      )}
-
-      {/* Stacked lines — each sentiment on its own row */}
-      <div className="mt-auto space-y-0.5">
-        {lines.map((line, i) => (
-          <p key={i} className="text-[11px] text-foreground/80 leading-snug">
-            {line}
-          </p>
-        ))}
+      {/* Sub-label + optional delta */}
+      <div className="flex items-center justify-between mt-1">
+        <p className="text-[9px] text-muted-foreground/50 truncate">{sublabel}</p>
+        {delta && (
+          <span className={cn(
+            "flex items-center gap-0.5 text-[9px] font-medium font-financial",
+            delta.direction === "up" ? "text-red-400" : delta.direction === "down" ? "text-emerald-400" : "text-muted-foreground",
+          )}>
+            {delta.direction === "up" ? <ArrowUp className="w-2.5 h-2.5" /> :
+             delta.direction === "down" ? <ArrowDown className="w-2.5 h-2.5" /> :
+             <Minus className="w-2.5 h-2.5" />}
+            {delta.label}
+          </span>
+        )}
       </div>
     </div>
   );

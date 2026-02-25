@@ -135,7 +135,7 @@ export default function PortfolioPage() {
                         {rec.role.replace("_", " ")}
                       </span>
                     </div>
-                    <span className="text-sm font-semibold tabular-nums">
+                    <span className="text-sm font-semibold font-financial">
                       ${Math.round(rec.annualCost).toLocaleString()}/yr
                     </span>
                   </div>

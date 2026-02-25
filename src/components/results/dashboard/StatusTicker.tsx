@@ -29,7 +29,7 @@ export function StatusTicker({ assessment }: StatusTickerProps) {
   return (
     <div className="w-full rounded-xl border border-border/50 bg-gradient-to-r from-secondary/60 via-secondary/30 to-transparent p-3 flex items-center gap-3 overflow-x-auto">
       {/* Year badge */}
-      <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold text-sm tabular-nums">
+      <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground font-bold text-sm font-financial">
         {currentTicker.year}
       </div>
 

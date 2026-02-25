@@ -3,7 +3,7 @@
 import { useWizardStore } from "@/lib/store";
 import { AdvisorInsight } from "../shared/AdvisorInsight";
 import { Card, CardContent } from "@/components/ui/card";
-import { DollarSign, TrendingUp } from "lucide-react";
+import { DollarSign, TrendingUp, Banknote } from "lucide-react";
 import { HuntingTerm } from "@/components/shared/HuntingTerm";
 
 const BUDGET_TIERS: Record<string, string> = {
@@ -54,6 +54,33 @@ export function StepLetsTalkMoney() {
             <div className="flex justify-between text-[10px] text-muted-foreground">
               <span>$2,000</span><span>$15,000</span><span>$30,000</span>
             </div>
+          </div>
+          <div>
+            <label htmlFor="capital-float" className="text-sm font-medium text-muted-foreground mb-1 block">
+              <HuntingTerm term="front-loaded capital">Front-Loaded Capital Tolerance</HuntingTerm>
+            </label>
+            <p className="text-xs text-muted-foreground mb-3">
+              Some states (NM, ID, WY) charge <HuntingTerm term="tag fee">tag fees</HuntingTerm> upfront at application — you pay before the draw and get refunded if you don&apos;t draw. How much are you comfortable floating?
+            </p>
+            <div className="flex items-center gap-4 mb-2">
+              <input id="capital-float" type="range" min={0} max={10000} step={250} value={wizard.capitalFloatTolerance} onChange={(e) => wizard.setField("capitalFloatTolerance", Number(e.target.value))} className="flex-1 accent-primary" />
+              <span className="text-2xl font-bold text-amber-400 w-28 text-right">${Math.round(wizard.capitalFloatTolerance).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-[10px] text-muted-foreground">
+              <span>$0</span><span>$5,000</span><span>$10,000</span>
+            </div>
+            {wizard.capitalFloatTolerance < 1000 && (
+              <AdvisorInsight
+                text="With a low float tolerance, we'll avoid states that require upfront tag fees (NM elk = ~$550, WY moose = ~$1,400). This limits your portfolio to refund-on-miss states like CO and MT."
+                icon={Banknote}
+              />
+            )}
+            {wizard.capitalFloatTolerance >= 5000 && (
+              <AdvisorInsight
+                text="High float tolerance opens the full playbook. You can apply in NM, ID, and WY without worrying about capital lockup. Just remember — that money is tied up until refunds process (60–120 days)."
+                icon={Banknote}
+              />
+            )}
           </div>
         </div>
 

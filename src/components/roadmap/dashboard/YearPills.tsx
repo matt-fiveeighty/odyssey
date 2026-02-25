@@ -4,14 +4,21 @@ import { useRef, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+interface YearStatusLabel {
+  year: number;
+  label: string; // e.g. "BUILD & LOTTERY", "BURN CO", "BUILD"
+}
+
 interface YearPillsProps {
   years: number[];
   selectedYear: number;
   onSelect: (year: number) => void;
   currentYear: number;
+  /** Optional inline status labels per year (e.g. "BUILD & LOTTERY") */
+  yearLabels?: YearStatusLabel[];
 }
 
-export function YearPills({ years, selectedYear, onSelect, currentYear }: YearPillsProps) {
+export function YearPills({ years, selectedYear, onSelect, currentYear, yearLabels }: YearPillsProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll selected pill into view on mount / year change
@@ -27,9 +34,11 @@ export function YearPills({ years, selectedYear, onSelect, currentYear }: YearPi
   const scroll = useCallback((dir: "left" | "right") => {
     const container = scrollRef.current;
     if (!container) return;
-    const amount = dir === "left" ? -120 : 120;
+    const amount = dir === "left" ? -160 : 160;
     container.scrollBy({ left: amount, behavior: "smooth" });
   }, []);
+
+  const labelMap = new Map(yearLabels?.map((yl) => [yl.year, yl.label]) ?? []);
 
   return (
     <div className="flex items-center gap-1">
@@ -45,11 +54,12 @@ export function YearPills({ years, selectedYear, onSelect, currentYear }: YearPi
       {/* Scrollable pill container */}
       <div
         ref={scrollRef}
-        className="flex items-center gap-1.5 overflow-x-auto scrollbar-none scroll-smooth snap-x snap-mandatory max-w-[320px]"
+        className="flex items-center gap-1.5 overflow-x-auto scrollbar-none scroll-smooth snap-x snap-mandatory max-w-[480px]"
       >
         {years.map((year) => {
           const isSelected = year === selectedYear;
           const isCurrent = year === currentYear;
+          const statusLabel = labelMap.get(year);
 
           return (
             <button
@@ -57,15 +67,24 @@ export function YearPills({ years, selectedYear, onSelect, currentYear }: YearPi
               data-selected={isSelected}
               onClick={() => onSelect(year)}
               className={cn(
-                "relative px-3 py-1.5 rounded-lg text-xs font-medium tabular-nums transition-all duration-150 cursor-pointer border shrink-0 snap-center",
+                "relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium font-financial transition-all cursor-pointer border shrink-0 snap-center",
                 isSelected
-                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm spring-scale"
                   : "bg-secondary/40 text-muted-foreground border-border/50 hover:bg-secondary/60 hover:text-foreground",
               )}
             >
               {year}
-              {/* Current year dot indicator (subtle, only when NOT selected) */}
-              {isCurrent && !isSelected && (
+              {/* Inline status label — glanceable without clicking */}
+              {statusLabel && (
+                <span className={cn(
+                  "text-[8px] uppercase tracking-wider font-semibold whitespace-nowrap",
+                  isSelected ? "text-primary-foreground/70" : "text-muted-foreground/50",
+                )}>
+                  {statusLabel}
+                </span>
+              )}
+              {/* Current year dot indicator (subtle, only when NOT selected and no label) */}
+              {isCurrent && !isSelected && !statusLabel && (
                 <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
               )}
             </button>

@@ -11,11 +11,13 @@ import {
 import type { User, SupabaseClient } from "@supabase/supabase-js";
 import { isSupabaseConfigured, createClient } from "@/lib/supabase/client";
 import { migrateAssessmentToRoadmapStore } from "@/lib/store";
+import { hydrateFromDb } from "@/lib/sync";
 
 interface AuthContextValue {
   user: User | null;
   isGuest: boolean;
   loading: boolean;
+  hydrated: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   isGuest: false,
   loading: true,
+  hydrated: false,
   signOut: async () => {},
 });
 
@@ -46,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isGuest, setIsGuest] = useState(checkGuestCookie);
   const [loading, setLoading] = useState(!!supabase);
+  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     if (!supabase) return;
@@ -90,8 +94,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     migrateAssessmentToRoadmapStore();
   }, []);
 
+  // Hydrate all stores from Supabase on authenticated login
+  useEffect(() => {
+    if (user && !isGuest && !loading) {
+      hydrateFromDb()
+        .then(() => setHydrated(true))
+        .catch(() => setHydrated(true)); // Proceed even if hydration fails (offline-first)
+    } else if (isGuest || (!supabase && !loading)) {
+      // Guests and unconfigured Supabase: mark as hydrated immediately (use localStorage)
+      setHydrated(true);
+    }
+  }, [user, isGuest, loading, supabase]);
+
   return (
-    <AuthContext.Provider value={{ user, isGuest, loading, signOut }}>
+    <AuthContext.Provider value={{ user, isGuest, loading, hydrated, signOut }}>
       {children}
     </AuthContext.Provider>
   );

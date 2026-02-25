@@ -26,13 +26,21 @@ const COLOR_INACTIVE = "oklch(0.20 0.01 260)";
 const STROKE_ACTIVE = "oklch(0.85 0 0)";
 const STROKE_INACTIVE = "oklch(0.30 0.01 260)";
 
+export interface StateAllocatorData {
+  points: number;
+  sunkCost: number;
+  targetDrawYear: number | null;
+}
+
 interface InteractiveMapProps {
   yearData: JourneyYearData | null;
   onStateClick: (stateId: string) => void;
   selectedYear: number;
+  /** Optional per-state allocator data for enriched hover tooltips */
+  allocatorData?: Record<string, StateAllocatorData>;
 }
 
-export function InteractiveMap({ yearData, onStateClick, selectedYear }: InteractiveMapProps) {
+export function InteractiveMap({ yearData, onStateClick, selectedYear, allocatorData }: InteractiveMapProps) {
   const [hoveredState, setHoveredState] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -119,11 +127,23 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
                   : { transition: 'transform 0.2s ease' }
                 }
               >
+                {/* Electric blue glow behind state on hover */}
+                {isHovered && active && (
+                  <path
+                    d={stateData.path}
+                    fill="none"
+                    stroke="#3b82f6"
+                    strokeWidth={6}
+                    opacity={0.35}
+                    style={{ filter: "blur(3px)" }}
+                    aria-hidden="true"
+                  />
+                )}
                 <path
                   d={stateData.path}
                   fill={fill}
-                  stroke={active ? STROKE_ACTIVE : STROKE_INACTIVE}
-                  strokeWidth={isHovered ? 3 : 2}
+                  stroke={isHovered && active ? "#3b82f6" : active ? STROKE_ACTIVE : STROKE_INACTIVE}
+                  strokeWidth={isHovered ? 2.5 : 2}
                   opacity={active || !yearData ? 1 : 0.35}
                   className="cursor-pointer transition-all duration-200"
                   style={isHovered ? { filter: "brightness(1.25)" } : undefined}
@@ -213,20 +233,51 @@ export function InteractiveMap({ yearData, onStateClick, selectedYear }: Interac
         })()}
       </svg>
 
-      {/* Tooltip */}
-      {hoveredState && (
-        <div
-          className="absolute pointer-events-none z-10 bg-card border border-border rounded-lg px-3 py-1.5 text-xs shadow-lg"
-          style={{ left: tooltipPos.x, top: tooltipPos.y }}
-        >
-          <span className="font-semibold">{STATES_MAP[hoveredState]?.name ?? hoveredState}</span>
-          {getActionLabel(hoveredState) && (
-            <span className="text-muted-foreground ml-1.5">
-              {getActionLabel(hoveredState)}
-            </span>
-          )}
-        </div>
-      )}
+      {/* Tooltip — dark-glass allocator overlay */}
+      {hoveredState && (() => {
+        const stateInfo = STATES_MAP[hoveredState];
+        const stateName = stateInfo?.name ?? hoveredState;
+        const actionLabel = getActionLabel(hoveredState);
+        const alloc = allocatorData?.[hoveredState];
+
+        return (
+          <div
+            className="absolute pointer-events-none z-10 glass-tooltip rounded-lg px-3 py-2 text-xs min-w-[180px]"
+            style={{ left: tooltipPos.x, top: tooltipPos.y, transition: "none" }}
+          >
+            {/* State name + action */}
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-bold text-foreground uppercase tracking-wide text-[11px]">
+                {stateName}
+              </span>
+              {actionLabel && (
+                <span className="text-muted-foreground text-[10px]">{actionLabel}</span>
+              )}
+            </div>
+
+            {/* Allocator data row */}
+            {alloc && (
+              <div className="flex items-center gap-3 text-[10px] text-muted-foreground border-t border-border/40 pt-1.5 mt-1">
+                {alloc.points > 0 && (
+                  <span>
+                    <span className="text-blue-400 font-semibold font-financial">{alloc.points}</span> Pts
+                  </span>
+                )}
+                {alloc.sunkCost > 0 && (
+                  <span>
+                    <span className="text-red-400 font-semibold font-financial">${alloc.sunkCost.toLocaleString()}</span> Sunk
+                  </span>
+                )}
+                {alloc.targetDrawYear && (
+                  <span>
+                    Draw: <span className="text-emerald-400 font-semibold font-financial">{alloc.targetDrawYear}</span>
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })()}
     </div>
   );
 }

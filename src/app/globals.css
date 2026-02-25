@@ -323,6 +323,255 @@
   box-shadow: 0 0 12px oklch(0.65 0.18 145 / 0.1);
 }
 
+/* ============================== */
+/* Lux Typography System           */
+/* ============================== */
+
+/* Financial monospace — tabular-nums for column-aligned dollars, points, odds */
+.font-financial {
+  font-family: var(--font-geist-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Support labels — the muted uppercase text next to hero numbers */
+.label-uppercase {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 10px;
+  font-weight: 500;
+  color: oklch(0.55 0.01 260);
+}
+
+/* ============================== */
+/* Spring Physics System           */
+/* ============================== */
+
+/* Spring slide — overshoot-and-settle for sheets, modals, toggles */
+@keyframes springSlideUp {
+  0%   { opacity: 0; transform: translateY(40px) scale(0.98); }
+  60%  { opacity: 1; transform: translateY(-4px) scale(1.01); }
+  80%  { transform: translateY(2px) scale(1); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes springSlideDown {
+  0%   { transform: translateY(0) scale(1); }
+  100% { transform: translateY(100%) scale(0.95); opacity: 0; }
+}
+@keyframes springScale {
+  0%   { transform: scale(0.9); opacity: 0; }
+  60%  { transform: scale(1.03); opacity: 1; }
+  80%  { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+
+/* Number tick entrance — slight overshoot when counter lands */
+@keyframes tickLand {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.04); }
+  70%  { transform: scale(0.99); }
+  100% { transform: scale(1); }
+}
+
+.spring-enter { animation: springSlideUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.spring-exit  { animation: springSlideDown 0.35s cubic-bezier(0.55, 0, 1, 0.45) both; }
+.spring-scale { animation: springScale 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.tick-land    { animation: tickLand 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
+
+/* Spring transition timing for interactive elements */
+.spring-transition {
+  transition-timing-function: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ============================== */
+/* Glassmorphism System            */
+/* ============================== */
+
+/* Heavy frosted glass — for action detail overlays on photography */
+.glass-panel {
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  background: oklch(0 0 0 / 0.6);
+  border: 1px solid oklch(1 0 0 / 0.08);
+}
+
+/* Lighter frosted glass — for tooltips, floating panels */
+.glass-panel-light {
+  backdrop-filter: blur(12px) saturate(1.1);
+  -webkit-backdrop-filter: blur(12px) saturate(1.1);
+  background: oklch(0 0 0 / 0.4);
+  border: 1px solid oklch(1 0 0 / 0.06);
+}
+
+/* Tooltip-specific glass — tight blur, snappy */
+.glass-tooltip {
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  background: oklch(0.08 0.005 260 / 0.85);
+  border: 1px solid oklch(1 0 0 / 0.1);
+  box-shadow: 0 8px 32px oklch(0 0 0 / 0.4);
+}
+
+/* ============================== */
+/* Semantic Glow System            */
+/* ============================== */
+
+/* Success — neon green underglow for mature/ready assets */
+.glow-success {
+  box-shadow:
+    0 4px 20px oklch(0.70 0.17 155 / 0.2),
+    0 8px 40px oklch(0.70 0.17 155 / 0.08);
+}
+
+/* Equity — electric blue for points/equity positions */
+.glow-equity {
+  box-shadow:
+    0 4px 20px oklch(0.60 0.14 240 / 0.2),
+    0 8px 40px oklch(0.60 0.14 240 / 0.08);
+}
+
+/* Danger — soft red underglow for alerts, dead assets */
+.glow-danger {
+  box-shadow:
+    0 4px 20px oklch(0.60 0.22 25 / 0.2),
+    0 8px 40px oklch(0.60 0.22 25 / 0.08);
+}
+
+/* Burn year — premium green halo for hunt-year cards */
+.glow-burn-year {
+  position: relative;
+}
+.glow-burn-year::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  background: radial-gradient(
+    ellipse at center bottom,
+    oklch(0.65 0.18 145 / 0.2) 0%,
+    oklch(0.65 0.18 145 / 0.08) 40%,
+    transparent 70%
+  );
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* ============================== */
+/* Enhanced Shimmer Skeleton       */
+/* ============================== */
+
+@keyframes skeletonShimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(200%); }
+}
+
+.skeleton-shimmer {
+  position: relative;
+  overflow: hidden;
+  background: oklch(0.18 0.008 260);
+  border-radius: 0.5rem;
+}
+.skeleton-shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.04) 40%,
+    oklch(1 0 0 / 0.06) 50%,
+    oklch(1 0 0 / 0.04) 60%,
+    transparent 100%
+  );
+  width: 60%;
+  animation: skeletonShimmer 2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Metallic variant — brighter sweep for premium loading states */
+.skeleton-shimmer-metallic::after {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.06) 35%,
+    oklch(0.65 0.18 145 / 0.08) 50%,
+    oklch(1 0 0 / 0.06) 65%,
+    transparent 100%
+  );
+}
+
+/* ============================== */
+/* Magnetic Button System          */
+/* ============================== */
+
+.magnetic-button {
+  --magnetic-x: 0px;
+  --magnetic-y: 0px;
+  --glow-x: 50%;
+  --glow-y: 50%;
+  transform: translate(var(--magnetic-x), var(--magnetic-y));
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease-out;
+}
+.magnetic-button:hover {
+  box-shadow:
+    0 0 30px oklch(0.65 0.18 145 / 0.15),
+    radial-gradient(circle at var(--glow-x) var(--glow-y), oklch(0.65 0.18 145 / 0.3) 0%, transparent 60%);
+}
+.magnetic-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: radial-gradient(
+    circle at var(--glow-x) var(--glow-y),
+    oklch(0.65 0.18 145 / 0.15) 0%,
+    transparent 60%
+  );
+  transition: opacity 0.3s ease-out;
+  pointer-events: none;
+}
+.magnetic-button:hover .magnetic-glow {
+  opacity: 1;
+}
+
+/* ============================== */
+/* Segmented Toggle Pill           */
+/* ============================== */
+
+.toggle-pill-track {
+  position: relative;
+  display: inline-flex;
+  border-radius: 9999px;
+  padding: 3px;
+  background: oklch(0.18 0.008 260);
+  border: 1px solid oklch(0.25 0.01 260);
+}
+.toggle-pill-indicator {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  border-radius: 9999px;
+  background: oklch(0.65 0.18 145);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+              width 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+  box-shadow: 0 0 12px oklch(0.65 0.18 145 / 0.3);
+}
+.toggle-pill-option {
+  position: relative;
+  z-index: 1;
+  padding: 6px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: color 0.2s ease-out;
+  white-space: nowrap;
+  user-select: none;
+}
+
 /* Reduced motion: disable all custom animations for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   .step-enter-forward,
@@ -346,7 +595,11 @@
   .hero-stagger-4,
   .hero-stagger-5,
   .glow-pulse,
-  .step-glow {
+  .step-glow,
+  .spring-enter,
+  .spring-exit,
+  .spring-scale,
+  .tick-land {
     animation: none !important;
   }
   .shimmer-bg,
@@ -355,14 +608,19 @@
     background: transparent;
   }
   .shimmer-sweep::after,
-  .orbital-glow::before {
+  .orbital-glow::before,
+  .skeleton-shimmer::after {
     animation: none !important;
   }
   .progress-glow {
     animation: none !important;
   }
-  .card-lift:hover {
+  .card-lift:hover,
+  .magnetic-button {
     transform: none !important;
+  }
+  .glow-burn-year::after {
+    display: none;
   }
   *,
   *::before,

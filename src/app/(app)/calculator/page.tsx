@@ -207,7 +207,7 @@ export default function CalculatorPage() {
                 max={99}
                 value={currentPoints}
                 onChange={(e) => setCurrentPoints(Math.max(0, Number(e.target.value) || 0))}
-                className="w-10 text-center text-xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-10 text-center text-xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-financial [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 aria-label="Increase current points"
@@ -238,7 +238,7 @@ export default function CalculatorPage() {
                 max={99}
                 value={targetPoints}
                 onChange={(e) => setTargetPoints(Math.max(0, Number(e.target.value) || 0))}
-                className="w-10 text-center text-xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-mono [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                className="w-10 text-center text-xl font-bold bg-transparent border-b border-border focus:border-primary focus:outline-none font-financial [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
               <button
                 aria-label="Increase target points"
@@ -254,7 +254,7 @@ export default function CalculatorPage() {
                 <button
                   key={pts}
                   onClick={() => setTargetPoints(pts)}
-                  className={`text-[8px] px-1.5 py-0.5 rounded-full font-mono transition-colors cursor-pointer ${
+                  className={`text-[8px] px-1.5 py-0.5 rounded-full font-financial transition-colors cursor-pointer ${
                     targetPoints === pts
                       ? "bg-primary text-primary-foreground"
                       : "bg-secondary text-muted-foreground hover:bg-accent"
@@ -484,7 +484,7 @@ export default function CalculatorPage() {
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold font-mono text-muted-foreground">{year}</span>
+                            <span className="text-[10px] font-bold font-financial text-muted-foreground">{year}</span>
                             <span
                               className={`text-[8px] px-1 py-0.5 rounded font-medium leading-none ${
                                 isHuntYear

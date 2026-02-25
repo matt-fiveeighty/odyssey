@@ -124,7 +124,7 @@ export function RoadmapActionList({ actions, selectedIndex, onSelect }: RoadmapA
                 </div>
                 {/* Cost — type color when selected, muted otherwise */}
                 <span className={cn(
-                  "text-xs font-semibold tabular-nums shrink-0",
+                  "text-xs font-semibold font-financial shrink-0",
                   isSelected ? typeStyle.text : "text-muted-foreground",
                 )}>
                   ${Math.round(action.cost).toLocaleString()}

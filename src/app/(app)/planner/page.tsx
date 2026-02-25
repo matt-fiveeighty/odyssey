@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Compass, Plus, PanelLeftClose, PanelLeft } from "lucide-react";
+import { Compass, Plus, PanelLeftClose, PanelLeft, AlertTriangle, Clock } from "lucide-react";
 import { YearCalendar } from "@/components/planner/YearCalendar";
 import { AddPlanItemDialog } from "@/components/planner/AddPlanItemDialog";
 import { AutoFillButton } from "@/components/planner/AutoFillButton";
@@ -16,8 +16,9 @@ import type { PlanItem } from "@/components/planner/PlanItemCard";
 import type { CalendarMode } from "@/components/planner/CalendarSidebar";
 import { generatePlanDefaultItems } from "@/lib/engine/auto-fill";
 import type { RoadmapYear } from "@/lib/types";
-import { useAppStore, PLAN_PALETTE } from "@/lib/store";
+import { useAppStore, useWizardStore, PLAN_PALETTE } from "@/lib/store";
 import { NoPlanGate } from "@/components/shared/NoPlanGate";
+import { formatSpeciesName } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -64,6 +65,9 @@ export default function PlannerPage() {
   const activePlanId = useAppStore((s) => s.activePlanId);
   const friendPlans = useAppStore((s) => s.friendPlans);
   const planVisibility = useAppStore((s) => s.planVisibility);
+  const scheduleConflicts = useAppStore((s) => s.scheduleConflicts);
+  const fiduciaryAlerts = useAppStore((s) => s.fiduciaryAlerts);
+  const huntDaysPerYear = useWizardStore((s) => s.huntDaysPerYear);
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
@@ -293,6 +297,55 @@ export default function PlannerPage() {
             </span>
           )}
         </div>
+
+        {/* PTO Collision Alerts */}
+        {(() => {
+          // Hunt items in current year
+          const huntItems = overlayItems.filter(
+            (i) => i.type === "hunt" && !i.planId,
+          );
+          const estimatedDaysNeeded = huntItems.length * 6;
+          const ptoConflicts = scheduleConflicts.filter(
+            (c) => c.conflictType === "pto_overlap" && c.affectedYear === selectedYear,
+          );
+          const hasPTOShortage = huntDaysPerYear > 0 && estimatedDaysNeeded > huntDaysPerYear;
+
+          if (ptoConflicts.length === 0 && !hasPTOShortage) return null;
+
+          return (
+            <div className="space-y-2">
+              {hasPTOShortage && (
+                <div className="flex items-start gap-2.5 rounded-lg border border-amber-800/50 bg-amber-950/30 p-3">
+                  <Clock className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-amber-300">
+                      PTO Shortage: {estimatedDaysNeeded} days needed, {huntDaysPerYear} available
+                    </p>
+                    <p className="text-[11px] text-amber-500/80 mt-0.5">
+                      {huntItems.length} hunt{huntItems.length !== 1 ? "s" : ""} planned in {selectedYear} require approximately {estimatedDaysNeeded} days. Consider deferring lower-priority hunts.
+                    </p>
+                  </div>
+                </div>
+              )}
+              {ptoConflicts.map((conflict) => (
+                <div
+                  key={`${conflict.stateId}-${conflict.speciesId}-${conflict.conflictType}`}
+                  className="flex items-start gap-2.5 rounded-lg border border-red-800/50 bg-red-950/30 p-3"
+                >
+                  <AlertTriangle className="h-4 w-4 text-red-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-medium text-red-300">
+                      Schedule Conflict: {conflict.stateId} {formatSpeciesName(conflict.speciesId)}
+                    </p>
+                    <p className="text-[11px] text-red-500/80 mt-0.5">
+                      {conflict.message}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         {/* Calendar View — Overlay or Compare */}
         {calendarMode === "overlay" ? (

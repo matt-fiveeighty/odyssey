@@ -8,6 +8,7 @@ import {
   Compass,
   Wallet,
   Settings,
+  Shield,
   ExternalLink,
   ChevronLeft,
   ChevronRight,
@@ -53,6 +54,12 @@ const navSections = [
       { href: "/units", label: "Units", icon: Map },
       { href: "/odds", label: "Odds", icon: Search },
       { href: "/calculator", label: "Calculator", icon: Calculator },
+    ],
+  },
+  {
+    label: "Admin",
+    items: [
+      { href: "/admin", label: "Data Airlock", icon: Shield },
     ],
   },
 ];

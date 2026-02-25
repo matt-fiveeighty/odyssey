@@ -5,7 +5,25 @@ import type {
   StateScoreBreakdown, BoardState, DisciplineViolation, LockedAnchor, PortfolioMandate,
   ExperienceLevel, TrophyVsMeat, SavingsGoal,
 } from "@/lib/types";
-import { generateMilestonesForGoal } from "@/lib/engine/roadmap-generator";
+import { generateMilestonesForGoal, generateStrategicAssessment } from "@/lib/engine/roadmap-generator";
+import { buildConsultationInput } from "@/lib/engine/build-consultation-input";
+import {
+  dispatchDrawOutcome,
+  dispatchBudgetChange,
+  dispatchProfileChange,
+  dispatchDeadlineMissed,
+  dispatchPartyChange,
+  detectMissedDeadlines,
+  detectSuccessDisaster,
+  type CascadeResult,
+  type FiduciaryAlert,
+  type DrawOutcomeEvent,
+  type BudgetChangeEvent,
+  type ProfileChangeEvent,
+  type DeadlineMissedEvent,
+  type PartyChangeEvent,
+  type ScheduleConflict,
+} from "@/lib/engine/fiduciary-dispatcher";
 
 // ============================================================================
 // Strategic Consultation Wizard Store v4
@@ -48,6 +66,7 @@ interface ConsultationState {
   // Step 4: Let's talk investment
   pointYearBudget: number;
   huntYearBudget: number;
+  capitalFloatTolerance: number;  // Max $ willing to float for upfront tag fees (NM, ID, WY)
 
   // Step 5: Your hunting DNA
   huntStylePrimary: HuntStyle | null;
@@ -104,6 +123,8 @@ interface ConsultationState {
   confirmPlan: (assessment: StrategicAssessment) => void;
   prefillFromGoals: (goals: import("@/lib/types").UserGoal[]) => void;
   setExpressMode: (enabled: boolean) => void;
+  /** Cascade-aware profile anchor mutation — triggers Endless Loop */
+  setAnchorField: (field: ProfileChangeEvent["field"], value: unknown) => void;
   reset: () => void;
 }
 
@@ -111,7 +132,7 @@ const consultationInitial: Omit<ConsultationState,
   | "setStep" | "setField" | "setExistingPoints" | "toggleArrayField"
   | "addDreamHunt" | "removeDreamHunt" | "confirmPlan" | "prefillFromGoals" | "reset"
   | "setPreviewScores" | "confirmStateSelection" | "setFineTuneAnswer"
-  | "setGenerationPhase" | "setGenerationProgress" | "setExpressMode"
+  | "setGenerationPhase" | "setGenerationProgress" | "setExpressMode" | "setAnchorField"
 > = {
   step: 1,
   planForName: "",
@@ -130,6 +151,7 @@ const consultationInitial: Omit<ConsultationState,
   dreamHunts: [],
   pointYearBudget: 1500,
   huntYearBudget: 5000,
+  capitalFloatTolerance: 2000,
   huntStylePrimary: null,
   openToGuided: false,
   guidedForSpecies: [],
@@ -193,6 +215,53 @@ export const useWizardStore = create<ConsultationState>()(
       setGenerationProgress: (pct) => set({ generationProgress: pct }),
       confirmPlan: (assessment) => set({ confirmedPlan: assessment }),
       setExpressMode: (enabled) => set({ expressMode: enabled }),
+      setAnchorField: (field, value) => {
+        const current = useWizardStore.getState();
+        // Map field names to store keys
+        const keyMap: Record<string, keyof ConsultationState> = {
+          physicalHorizon: "physicalHorizon",
+          weaponType: "weaponType",
+          capitalFloatTolerance: "capitalFloatTolerance",
+          partySize: "partySize",
+          planningHorizon: "planningHorizon",
+        };
+        const storeKey = keyMap[field];
+        if (!storeKey) return;
+
+        const oldValue = current[storeKey];
+
+        // Update the field
+        set({ [storeKey]: value } as Partial<ConsultationState>);
+
+        // Dispatch cascade
+        const roadmap = useRoadmapStore.getState().activeAssessment?.roadmap ?? [];
+        const appState = useAppStore.getState();
+        const event: ProfileChangeEvent = {
+          type: "profile_change",
+          field,
+          oldValue,
+          newValue: value,
+        };
+        const cascadeResult = dispatchProfileChange(
+          event,
+          roadmap,
+          appState.userPoints,
+          current.pointYearBudget,
+        );
+
+        // Push alerts to AppStore
+        if (cascadeResult.alerts.length > 0) {
+          useAppStore.setState((prev) => ({
+            fiduciaryAlerts: [...prev.fiduciaryAlerts, ...cascadeResult.alerts],
+            lastCascadeResult: cascadeResult,
+          }));
+        }
+
+        // Flag that assessment is stale and should be regenerated
+        if (useAppStore.getState().confirmedAssessment) {
+          useAppStore.setState({ needsRegeneration: true });
+        }
+      },
       prefillFromGoals: (goals) => {
         // Extract unique species from goals
         const species = [...new Set(goals.map(g => g.speciesId))];
@@ -350,35 +419,44 @@ interface AppState {
   addDateProposal: (proposal: DateProposal) => void;
   removeProposal: (id: string) => void;
 
+  // ── Fiduciary Event Dispatcher (Endless Loop) ──
+  /** Last cascade result for UI consumption (alerts, conflicts, etc.) */
+  lastCascadeResult: CascadeResult | null;
+  /** Persistent fiduciary alerts from cascades (survive page navigation) */
+  fiduciaryAlerts: FiduciaryAlert[];
+  /** Active schedule conflicts from draw outcomes */
+  scheduleConflicts: ScheduleConflict[];
+  /** Enhanced draw outcome that triggers the 4-part cascade */
+  setDrawOutcomeCascade: (id: string, outcome: "drew" | "didnt_draw") => void;
+  /** Clear fiduciary alerts */
+  clearFiduciaryAlerts: () => void;
+  /** Dismiss a single fiduciary alert */
+  dismissFiduciaryAlert: (alertId: string) => void;
+
   setConfirmedAssessment: (assessment: StrategicAssessment) => void;
   clearConfirmedAssessment: () => void;
+
+  // ── Dynamic Re-Generation (Phase 2: Unfreeze Assessment) ──
+  /** True when anchor fields have changed since last generation */
+  needsRegeneration: boolean;
+  /** Set the regeneration flag (called by setAnchorField) */
+  setNeedsRegeneration: (needs: boolean) => void;
+  /** Re-run the engine with current wizard inputs, preserving milestone progress */
+  regenerateAssessment: () => Promise<StrategicAssessment | null>;
 }
 
 // ============================================================================
-// Points DB Sync — fire-and-forget POST to /api/user/points
+// Cloud Persistence — Debounced bulk sync to Supabase
 // Zustand stays the source of truth for instant UI. DB is async backup.
+// See src/lib/sync.ts for full sync manager (hydrateFromDb, syncAllToDb).
 // ============================================================================
 
-let syncTimeout: ReturnType<typeof setTimeout> | null = null;
-
-function syncPointsToDb() {
-  // Debounce: wait 500ms after last mutation before syncing
-  if (syncTimeout) clearTimeout(syncTimeout);
-  syncTimeout = setTimeout(() => {
-    const pts = useAppStore.getState().userPoints;
-    fetch("/api/user/points", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ points: pts }),
-    }).catch(() => {
-      // Silent fail — local store is still authoritative
-    });
-  }, 500);
-}
+import { syncAllToDb } from "@/lib/sync";
+export { hydrateFromDb, getSyncStatus, getLastSyncAt } from "@/lib/sync";
 
 /**
- * Hydrate points from DB on authenticated app load.
- * Call this from a top-level layout effect when user is authenticated.
+ * @deprecated Use hydrateFromDb() from sync.ts instead (bulk hydration).
+ * Kept for backwards compatibility during migration.
  */
 export async function hydratePointsFromDb() {
   try {
@@ -431,15 +509,18 @@ export const useAppStore = create<AppState>()(
           confirmedAssessment: assessment,
         }));
         useRoadmapStore.getState().setActiveAssessment(assessment);
+        syncAllToDb();
         return id;
       },
-      renamePlan: (id, name) =>
+      renamePlan: (id, name) => {
         set((state) => ({
           savedPlans: state.savedPlans.map((p) =>
             p.id === id ? { ...p, name, updatedAt: new Date().toISOString() } : p
           ),
-        })),
-      deletePlan: (id) =>
+        }));
+        syncAllToDb();
+      },
+      deletePlan: (id) => {
         set((state) => {
           const remaining = state.savedPlans.filter((p) => p.id !== id);
           const wasActive = state.activePlanId === id;
@@ -458,14 +539,18 @@ export const useAppStore = create<AppState>()(
             return { savedPlans: remaining, activePlanId: null, confirmedAssessment: null };
           }
           return { savedPlans: remaining };
-        }),
-      switchPlan: (id) =>
+        });
+        syncAllToDb();
+      },
+      switchPlan: (id) => {
         set((state) => {
           const plan = state.savedPlans.find((p) => p.id === id);
           if (!plan) return {};
           useRoadmapStore.getState().setActiveAssessment(plan.assessment);
           return { activePlanId: id, confirmedAssessment: plan.assessment };
-        }),
+        });
+        syncAllToDb();
+      },
       duplicatePlan: (id, newName) => {
         const newId = `plan-${Date.now()}`;
         const now = new Date().toISOString();
@@ -481,6 +566,7 @@ export const useAppStore = create<AppState>()(
           };
           return { savedPlans: [...state.savedPlans, clone] };
         });
+        syncAllToDb();
         return newId;
       },
 
@@ -502,7 +588,7 @@ export const useAppStore = create<AppState>()(
       setUserPoints: (userPoints) => set({ userPoints }),
       addUserPoint: (point) => {
         set((state) => ({ userPoints: [...state.userPoints, point] }));
-        syncPointsToDb();
+        syncAllToDb();
       },
       updateUserPoint: (id, updates) => {
         set((state) => ({
@@ -510,17 +596,17 @@ export const useAppStore = create<AppState>()(
             p.id === id ? { ...p, ...updates } : p
           ),
         }));
-        syncPointsToDb();
+        syncAllToDb();
       },
       removeUserPoint: (id) => {
         set((state) => ({
           userPoints: state.userPoints.filter((p) => p.id !== id),
         }));
-        syncPointsToDb();
+        syncAllToDb();
       },
 
       setUserGoals: (userGoals) => set({ userGoals }),
-      addUserGoal: (goal) =>
+      addUserGoal: (goal) => {
         set((state) => {
           const hs = useWizardStore.getState().homeState;
           const goalMs = generateMilestonesForGoal(goal, hs);
@@ -555,8 +641,10 @@ export const useAppStore = create<AppState>()(
             milestones: [...state.milestones, ...goalMs],
             savingsGoals: newSavingsGoals,
           };
-        }),
-      updateUserGoal: (id, updates) =>
+        });
+        syncAllToDb();
+      },
+      updateUserGoal: (id, updates) => {
         set((state) => {
           const updatedGoals = state.userGoals.map((g) =>
             g.id === id ? { ...g, ...updates } : g
@@ -580,57 +668,160 @@ export const useAppStore = create<AppState>()(
             userGoals: updatedGoals,
             milestones: [...otherMs, ...newGoalMs],
           };
-        }),
-      removeUserGoal: (id) =>
+        });
+        syncAllToDb();
+      },
+      removeUserGoal: (id) => {
         set((state) => ({
           userGoals: state.userGoals.filter((g) => g.id !== id),
           milestones: state.milestones.filter((m) => m.planId !== id),
           savingsGoals: state.savingsGoals.filter((sg) => sg.goalId !== id),
-        })),
+        }));
+        syncAllToDb();
+      },
 
-      setMilestones: (milestones) =>
+      setMilestones: (milestones) => {
         set((state) => {
           // Preserve goal-sourced milestones; only replace plan-sourced ones
           const goalMs = state.milestones.filter(
             (m) => m.planId && state.userGoals.some((g) => g.id === m.planId)
           );
           return { milestones: [...milestones, ...goalMs] };
-        }),
-      addMilestones: (newMilestones) =>
-        set((state) => ({ milestones: [...state.milestones, ...newMilestones] })),
-      completeMilestone: (id) =>
+        });
+        syncAllToDb();
+      },
+      addMilestones: (newMilestones) => {
+        set((state) => ({ milestones: [...state.milestones, ...newMilestones] }));
+        syncAllToDb();
+      },
+      completeMilestone: (id) => {
         set((state) => ({
           milestones: state.milestones.map((m) =>
             m.id === id ? { ...m, completed: true, completedAt: new Date().toISOString() } : m
           ),
-        })),
-      uncompleteMilestone: (id) =>
+        }));
+        syncAllToDb();
+      },
+      uncompleteMilestone: (id) => {
         set((state) => ({
           milestones: state.milestones.map((m) =>
             m.id === id ? { ...m, completed: false, completedAt: undefined } : m
           ),
-        })),
-      setDrawOutcome: (id, outcome) =>
+        }));
+        syncAllToDb();
+      },
+      setDrawOutcome: (id, outcome) => {
         set((state) => ({
           milestones: state.milestones.map((m) =>
             m.id === id
               ? { ...m, drawOutcome: outcome, drawOutcomeAt: outcome ? new Date().toISOString() : undefined }
               : m
           ),
-        })),
+        }));
+        syncAllToDb();
+      },
+      // ── Fiduciary Cascade Draw Outcome ──
+      lastCascadeResult: null,
+      fiduciaryAlerts: [],
+      scheduleConflicts: [],
+      setDrawOutcomeCascade: (id, outcome) => {
+        const state = useAppStore.getState();
+        const milestone = state.milestones.find((m) => m.id === id);
+        if (!milestone) return;
+
+        const roadmap = useRoadmapStore.getState().activeAssessment?.roadmap ?? [];
+        const wizardState = useWizardStore.getState();
+
+        // Find current points for this state/species
+        const userPtsEntry = state.userPoints.find(
+          (p) => p.stateId === milestone.stateId && p.speciesId === milestone.speciesId,
+        );
+        const currentPoints = userPtsEntry?.points ?? 0;
+
+        // Build event
+        const event: DrawOutcomeEvent = {
+          type: "draw_outcome",
+          milestoneId: id,
+          outcome,
+          stateId: milestone.stateId,
+          speciesId: milestone.speciesId,
+          year: milestone.year,
+          currentPoints,
+        };
+
+        // Dispatch cascade
+        const cascadeResult = dispatchDrawOutcome(
+          event,
+          roadmap,
+          state.userPoints,
+          state.milestones,
+          wizardState.huntDaysPerYear || 14,
+          wizardState.huntYearBudget,
+        );
+
+        // Execute mutations
+        set((prev) => {
+          // 1. Update milestone outcome
+          let milestones = prev.milestones.map((m) =>
+            m.id === id
+              ? { ...m, drawOutcome: outcome, drawOutcomeAt: new Date().toISOString() }
+              : m,
+          );
+
+          // 2. Apply point mutations
+          let userPoints = [...prev.userPoints];
+          for (const pm of cascadeResult.pointMutations) {
+            const existingIdx = userPoints.findIndex(
+              (p) => p.stateId === pm.stateId && p.speciesId === pm.speciesId,
+            );
+            if (existingIdx >= 0) {
+              userPoints = userPoints.map((p, i) =>
+                i === existingIdx ? { ...p, points: pm.newPoints } : p,
+              );
+            }
+          }
+
+          return {
+            milestones,
+            userPoints,
+            lastCascadeResult: cascadeResult,
+            fiduciaryAlerts: [...prev.fiduciaryAlerts, ...cascadeResult.alerts],
+            scheduleConflicts: [...prev.scheduleConflicts, ...cascadeResult.scheduleConflicts],
+          };
+        });
+
+        // Sync points to DB
+        syncAllToDb();
+      },
+      clearFiduciaryAlerts: () => {
+        set({ fiduciaryAlerts: [], scheduleConflicts: [] });
+        syncAllToDb();
+      },
+      dismissFiduciaryAlert: (alertId) => {
+        set((state) => ({
+          fiduciaryAlerts: state.fiduciaryAlerts.filter((a) => a.id !== alertId),
+        }));
+        syncAllToDb();
+      },
 
       // Savings goals (Phase 8)
-      addSavingsGoal: (goal) =>
-        set((state) => ({ savingsGoals: [...state.savingsGoals, goal] })),
-      updateSavingsGoal: (id, updates) =>
+      addSavingsGoal: (goal) => {
+        set((state) => ({ savingsGoals: [...state.savingsGoals, goal] }));
+        syncAllToDb();
+      },
+      updateSavingsGoal: (id, updates) => {
         set((state) => ({
           savingsGoals: state.savingsGoals.map((sg) =>
             sg.id === id ? { ...sg, ...updates, updatedAt: new Date().toISOString() } : sg
           ),
-        })),
-      removeSavingsGoal: (id) =>
-        set((state) => ({ savingsGoals: state.savingsGoals.filter((sg) => sg.id !== id) })),
-      addContribution: (goalId, amount, note) =>
+        }));
+        syncAllToDb();
+      },
+      removeSavingsGoal: (id) => {
+        set((state) => ({ savingsGoals: state.savingsGoals.filter((sg) => sg.id !== id) }));
+        syncAllToDb();
+      },
+      addContribution: (goalId, amount, note) => {
         set((state) => ({
           savingsGoals: state.savingsGoals.map((sg) =>
             sg.id !== goalId
@@ -642,7 +833,9 @@ export const useAppStore = create<AppState>()(
                   updatedAt: new Date().toISOString(),
                 }
           ),
-        })),
+        }));
+        syncAllToDb();
+      },
 
       // Diff tracking (Phase 9)
       markDiffSeen: (id) =>
@@ -722,15 +915,89 @@ export const useAppStore = create<AppState>()(
         if (assessment) {
           useRoadmapStore.getState().setActiveAssessment(assessment);
         }
+        syncAllToDb();
       },
-      clearConfirmedAssessment: () =>
+      clearConfirmedAssessment: () => {
         set((state) => ({
           confirmedAssessment: null,
           // Keep goal-sourced milestones, only clear plan ones
           milestones: state.milestones.filter(
             (m) => m.planId && state.userGoals.some((g) => g.id === m.planId)
           ),
-        })),
+        }));
+        syncAllToDb();
+      },
+
+      // ── Dynamic Re-Generation ──────────────────────────────────────────
+      needsRegeneration: false,
+      setNeedsRegeneration: (needs) => set({ needsRegeneration: needs }),
+
+      regenerateAssessment: async (): Promise<StrategicAssessment | null> => {
+        const wizard = useWizardStore.getState();
+        const appState: AppState = useAppStore.getState();
+
+        // Must have an existing assessment to regenerate
+        if (!appState.confirmedAssessment) return null;
+
+        // 1. Snapshot existing milestone progress (completed, draw outcomes)
+        const milestoneProgress = new Map<string, {
+          completed: boolean;
+          completedAt?: string;
+          drawOutcome?: "drew" | "didnt_draw" | null;
+          drawOutcomeAt?: string;
+        }>(
+          appState.milestones.map((m) => [
+            `${m.stateId}:${m.speciesId}:${m.type}:${m.year}`,
+            {
+              completed: m.completed,
+              completedAt: m.completedAt,
+              drawOutcome: m.drawOutcome,
+              drawOutcomeAt: m.drawOutcomeAt,
+            },
+          ])
+        );
+
+        try {
+          // 2. Build fresh input from current wizard state and re-generate
+          const input = buildConsultationInput(wizard);
+          const newAssessment = generateStrategicAssessment(input);
+
+          // 3. Restore milestone progress onto new milestones
+          const restoredMilestones: typeof newAssessment.milestones = newAssessment.milestones.map((m) => {
+            const key = `${m.stateId}:${m.speciesId}:${m.type}:${m.year}`;
+            const prev = milestoneProgress.get(key);
+            if (prev) {
+              return {
+                ...m,
+                completed: prev.completed,
+                completedAt: prev.completedAt,
+                drawOutcome: prev.drawOutcome,
+                drawOutcomeAt: prev.drawOutcomeAt,
+              };
+            }
+            return m;
+          });
+
+          // 4. Update the assessment with restored milestones
+          const finalAssessment = { ...newAssessment, milestones: restoredMilestones };
+
+          // 5. Push to stores (setConfirmedAssessment handles savedPlans + RoadmapStore + sync)
+          useAppStore.getState().setConfirmedAssessment(finalAssessment);
+
+          // 6. Update milestones in AppStore
+          set({
+            milestones: restoredMilestones,
+            needsRegeneration: false,
+            fiduciaryAlerts: [], // Clear stale alerts — new assessment is fresh
+          });
+          syncAllToDb();
+
+          return finalAssessment;
+        } catch (err) {
+          console.error("[regenerateAssessment]", err);
+          return null;
+        }
+      },
     }),
     { name: "hunt-planner-app-v2" }
   )

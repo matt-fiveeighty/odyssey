@@ -481,6 +481,7 @@ export abstract class BaseScraper {
     let leftoverTagCount = 0;
 
     const now = new Date().toISOString();
+    const batchId = `batch-${this.stateId}-${Date.now()}`;
 
     // --- 1. Scrape & upsert units ---
     try {
@@ -616,6 +617,8 @@ export abstract class BaseScraper {
           notes: d.notes ?? null,
           source_url: this.sourceUrl,
           source_pulled_at: now,
+          status: "staging",
+          scrape_batch_id: batchId,
         }));
 
         const { error } = await this.supabase
@@ -657,6 +660,8 @@ export abstract class BaseScraper {
           notes: f.notes ?? null,
           source_url: this.sourceUrl,
           source_pulled_at: now,
+          status: "staging",
+          scrape_batch_id: batchId,
         }));
 
         const { error } = await this.supabase
@@ -676,14 +681,11 @@ export abstract class BaseScraper {
       this.log(`  ${msg}`);
     }
 
-    // --- 4b. Sync fee data → ref_states (keeps app State objects current) ---
-    try {
-      await this.syncFeesToRefStates(scrapedFees, now);
-    } catch (err) {
-      const msg = `syncFeesToRefStates failed: ${(err as Error).message}`;
-      errors.push(msg);
-      this.log(`  ${msg}`);
-    }
+    // --- 4b. Fee sync to ref_states is now handled by the Data Airlock ---
+    // Fees land as status='staging' and are promoted to 'approved' (with ref_states
+    // sync) only after passing the airlock evaluation. See airlock-db.ts
+    // promoteScrapedBatch() for the promotion path.
+    // (Previous direct sync via syncFeesToRefStates has been disabled.)
 
     // --- 5. Scrape & upsert seasons ---
     try {
@@ -707,6 +709,8 @@ export abstract class BaseScraper {
           notes: s.notes ?? null,
           source_url: this.sourceUrl,
           source_pulled_at: now,
+          status: "staging",
+          scrape_batch_id: batchId,
         }));
 
         const { error } = await this.supabase
@@ -745,6 +749,8 @@ export abstract class BaseScraper {
           source_url: r.sourceUrl,
           category: r.category,
           scraped_at: now,
+          status: "staging",
+          scrape_batch_id: batchId,
         }));
 
         const { error } = await this.supabase
@@ -783,6 +789,8 @@ export abstract class BaseScraper {
           season_type: l.seasonType ?? null,
           source_url: l.sourceUrl,
           scraped_at: now,
+          status: "staging",
+          scrape_batch_id: batchId,
         }));
 
         const { error } = await this.supabase
@@ -821,6 +829,24 @@ export abstract class BaseScraper {
       `Fees: ${feeCount}, Seasons: ${seasonCount}, Regs: ${regulationCount}, Leftover: ${leftoverTagCount}, ` +
       `Errors: ${errors.length}`
     );
+
+    // --- Trigger airlock evaluation via webhook ---
+    const airlockUrl = process.env.AIRLOCK_WEBHOOK_URL;
+    if (airlockUrl && (feeCount > 0 || deadlineCount > 0)) {
+      try {
+        const resp = await fetch(airlockUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-admin-key": process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+          },
+          body: JSON.stringify({ stateId: this.stateId, batchId }),
+        });
+        this.log(`  Airlock evaluation triggered (status: ${resp.status})`);
+      } catch (err) {
+        this.log(`  Airlock webhook failed (non-fatal): ${(err as Error).message}`);
+      }
+    }
 
     return {
       units: unitCount,

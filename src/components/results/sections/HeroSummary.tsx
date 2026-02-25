@@ -73,33 +73,33 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center card-lift">
-          <p className="text-2xl font-bold text-primary">
+          <p className="text-2xl font-bold text-primary font-financial">
             <AnimatedCounter value={stateRecommendations.length} />
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">States</p>
+          <p className="label-uppercase mt-1">States</p>
         </div>
         <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center card-lift">
-          <p className="text-2xl font-bold text-chart-2">
+          <p className="text-2xl font-bold text-chart-2 font-financial">
             <AnimatedCounter value={financialSummary.annualSubscription} prefix="$" />
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Annual Cost</p>
+          <p className="label-uppercase mt-1">Annual Cost</p>
           {hasSpendingData && (
-            <p className="text-[9px] text-chart-2/70 mt-0.5">
+            <p className="text-[9px] text-chart-2/70 mt-0.5 font-financial">
               ${Math.round(ytdSpent).toLocaleString()} spent YTD
             </p>
           )}
         </div>
         <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center card-lift">
-          <p className="text-2xl font-bold text-chart-3">
+          <p className="text-2xl font-bold text-chart-3 font-financial">
             <AnimatedCounter value={macroSummary.plannedHunts} />
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">Planned Hunts</p>
+          <p className="label-uppercase mt-1">Planned Hunts</p>
         </div>
         <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center card-lift">
-          <p className="text-2xl font-bold text-chart-4">
+          <p className="text-2xl font-bold text-chart-4 font-financial">
             <AnimatedCounter value={financialSummary.tenYearTotal} prefix="$" />
           </p>
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider mt-1">10-Year Total</p>
+          <p className="label-uppercase mt-1">10-Year Total</p>
           {inflationDelta > 100 && (
             <p className="text-[9px] text-chart-4/70 mt-0.5">
               ~${Math.round(inflatedTenYearTotal).toLocaleString()} w/ inflation
@@ -112,8 +112,8 @@ export function HeroSummary({ assessment }: HeroSummaryProps) {
       {hasSpendingData && year1Budget > 0 && (
         <div className="mt-4 p-3 rounded-lg bg-primary/5 border border-primary/10">
           <div className="flex items-center justify-between mb-1.5">
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Year 1 Spending</span>
-            <span className="text-[10px] font-medium">
+            <span className="label-uppercase">Year 1 Spending</span>
+            <span className="text-[10px] font-medium font-financial">
               <span className="text-chart-2">${Math.round(ytdSpent).toLocaleString()}</span>
               <span className="text-muted-foreground"> / ${Math.round(year1Budget).toLocaleString()}</span>
               <span className="text-muted-foreground/60 ml-1">({spendPct}%)</span>

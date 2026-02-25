@@ -54,7 +54,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-3.5 h-3.5 text-red-400" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Sunk Capital</span>
+            <span className="label-uppercase">Sunk Capital</span>
             <Tooltip>
               <TooltipTrigger>
                 <span className="text-[10px] text-muted-foreground/40 cursor-help">[?]</span>
@@ -65,7 +65,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="text-2xl font-bold tracking-tight tabular-nums">
+          <p className="text-2xl font-bold tracking-tight font-financial">
             <AnimatedCounter value={capitalSummary.sunkCapital} prefix="$" />
           </p>
           {/* Mini per-state breakdown bars */}
@@ -98,7 +98,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Unlock className="w-3.5 h-3.5 text-chart-2" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">Floated</span>
+            <span className="label-uppercase">Floated</span>
             <Tooltip>
               <TooltipTrigger>
                 <span className="text-[10px] text-muted-foreground/40 cursor-help">[?]</span>
@@ -109,10 +109,10 @@ export function KPIStrip({ assessment }: KPIStripProps) {
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="text-2xl font-bold text-chart-2 tracking-tight tabular-nums">
+          <p className="text-2xl font-bold text-chart-2 tracking-tight font-financial">
             <AnimatedCounter value={capitalSummary.floatedCapital} prefix="$" />
           </p>
-          <p className="text-[10px] text-muted-foreground/60 mt-1 tabular-nums">
+          <p className="text-[10px] text-muted-foreground/60 mt-1 font-financial">
             Total deployed: ${capitalSummary.totalDeployed.toLocaleString()}
           </p>
           {/* Sunk vs Floated ratio bar */}
@@ -142,9 +142,9 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Crosshair className="w-3.5 h-3.5 text-chart-3" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">First Hunt</span>
+            <span className="label-uppercase">First Hunt</span>
           </div>
-          <p className="text-2xl font-bold text-chart-3 tracking-tight tabular-nums">
+          <p className="text-2xl font-bold text-chart-3 tracking-tight font-financial">
             {firstHunt ? firstHunt.year : "—"}
           </p>
           {huntAction && (
@@ -155,7 +155,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
               </span>
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground/60 mt-1 tabular-nums">
+          <p className="text-[10px] text-muted-foreground/60 mt-1 font-financial">
             {macroSummary.plannedHunts} hunts / {roadmap.length} years
           </p>
         </div>
@@ -164,7 +164,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-3.5 h-3.5 text-chart-4" />
-            <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">10-Year Total</span>
+            <span className="label-uppercase">10-Year Total</span>
             <Tooltip>
               <TooltipTrigger>
                 <span className="text-[10px] text-muted-foreground/40 cursor-help">[?]</span>
@@ -175,10 +175,10 @@ export function KPIStrip({ assessment }: KPIStripProps) {
               </TooltipContent>
             </Tooltip>
           </div>
-          <p className="text-2xl font-bold text-chart-4 tracking-tight tabular-nums">
+          <p className="text-2xl font-bold text-chart-4 tracking-tight font-financial">
             <AnimatedCounter value={financialSummary.tenYearTotal} prefix="$" />
           </p>
-          <p className="text-[10px] text-muted-foreground/60 mt-0.5 tabular-nums">
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5 font-financial">
             ~${Math.round(financialSummary.tenYearTotal / roadmap.length).toLocaleString()}/yr avg
           </p>
           {/* Sparkline */}
@@ -199,7 +199,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
                       style={{ height: `${hPct}%` }}
                     />
                   </TooltipTrigger>
-                  <TooltipContent className="text-xs tabular-nums">
+                  <TooltipContent className="text-xs font-financial">
                     {yp.year}: ${yp.cost.toLocaleString()} {yp.isHuntYear ? "(hunt)" : "(build)"}
                   </TooltipContent>
                 </Tooltip>

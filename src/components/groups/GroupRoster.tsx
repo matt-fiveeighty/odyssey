@@ -131,7 +131,7 @@ export function GroupRoster({
 
               <div className="flex items-center gap-2.5 shrink-0">
                 {/* Points */}
-                <span className="text-sm font-bold tabular-nums">
+                <span className="text-sm font-bold font-financial">
                   {member.points} <span className="text-[10px] font-normal text-muted-foreground">pts</span>
                 </span>
 

@@ -46,7 +46,7 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
       <div className="rounded-xl border border-border/50 overflow-hidden">
         {/* Header */}
         <div className="px-4 py-2.5 bg-secondary/40 border-b border-border/30 flex items-center justify-between">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+          <span className="label-uppercase">
             Burn Rate Matrix
           </span>
           <Tooltip>
@@ -111,12 +111,12 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
                     </td>
 
                     {/* Current Points */}
-                    <td className="text-center px-2 py-2.5 font-mono font-semibold">
+                    <td className="text-center px-2 py-2.5 font-financial font-semibold">
                       {entry.currentPoints}
                     </td>
 
                     {/* Required Points */}
-                    <td className="text-center px-2 py-2.5 font-mono">
+                    <td className="text-center px-2 py-2.5 font-financial">
                       {entry.drawType === "lottery" ? "—" : entry.requiredPoints}
                     </td>
 
@@ -127,7 +127,7 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
                       ) : (
                         <div className="flex items-center justify-center gap-1">
                           <TrendIcon className={`w-3 h-3 ${trendColor}`} />
-                          <span className={`font-mono ${entry.pcv >= 1 ? "text-red-400 font-semibold" : ""}`}>
+                          <span className={`font-financial ${entry.pcv >= 1 ? "text-red-400 font-semibold" : ""}`}>
                             {entry.pcv.toFixed(1)}
                           </span>
                         </div>
@@ -148,7 +148,7 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
                       ) : entry.drawType === "lottery" ? (
                         <Tooltip>
                           <TooltipTrigger>
-                            <span className="font-mono text-chart-4">
+                            <span className="font-financial text-chart-4">
                               {entry.cumulativeOdds !== undefined
                                 ? `${Math.round(entry.cumulativeOdds * 100)}%`
                                 : "—"}
@@ -160,7 +160,7 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
                           </TooltipContent>
                         </Tooltip>
                       ) : (
-                        <span className={`font-mono ${entry.etaYear - currentYear <= 2 ? "text-chart-3 font-semibold" : ""}`}>
+                        <span className={`font-financial ${entry.etaYear - currentYear <= 2 ? "text-chart-3 font-semibold" : ""}`}>
                           {entry.etaYear}
                         </span>
                       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,11 @@ import {
   Zap,
   MapPin,
   Crosshair,
+  ShieldAlert,
+  Calendar,
 } from "lucide-react";
 import Link from "next/link";
-import { useAppStore, useRoadmapStore } from "@/lib/store";
+import { useAppStore, useRoadmapStore, useWizardStore } from "@/lib/store";
 import { STATES_MAP } from "@/lib/constants/states";
 import { STATE_VISUALS } from "@/lib/constants/state-images";
 import { SpeciesAvatar } from "@/components/shared/SpeciesAvatar";
@@ -29,6 +31,7 @@ import {
   yearsToDrawWithCreep,
   drawConfidenceBand,
 } from "@/lib/engine/point-creep";
+import { detectSuccessDisaster, detectMissedDeadlines } from "@/lib/engine/fiduciary-dispatcher";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -90,10 +93,24 @@ function statusColor(s: DrawStatus) {
 // ---------------------------------------------------------------------------
 
 export default function RebalancePage() {
-  const { milestones, userPoints } = useAppStore();
+  const { milestones, userPoints, fiduciaryAlerts, scheduleConflicts, setDrawOutcomeCascade } = useAppStore();
   const activeAssessment = useRoadmapStore((s) => s.activeAssessment);
+  const huntYearBudget = useWizardStore((s) => s.huntYearBudget);
+  const huntDaysPerYear = useWizardStore((s) => s.huntDaysPerYear);
 
   const currentYear = new Date().getFullYear();
+
+  // ── Success Disaster Detection ──
+  const successDisasterAlerts = useMemo(
+    () => detectSuccessDisaster(milestones, huntYearBudget, huntDaysPerYear || 14, currentYear),
+    [milestones, huntYearBudget, huntDaysPerYear, currentYear],
+  );
+
+  // ── Missed Deadline Detection ──
+  const missedDeadlines = useMemo(
+    () => detectMissedDeadlines(milestones),
+    [milestones],
+  );
 
   // Gather this year's apply milestones
   const applyMilestones = useMemo(
@@ -350,6 +367,120 @@ export default function RebalancePage() {
           )}
         </CardContent>
       </Card>
+
+      {/* ================================================================ */}
+      {/* SUCCESS DISASTER WARNING                                         */}
+      {/* ================================================================ */}
+      {successDisasterAlerts.length > 0 && (
+        <div className="space-y-3">
+          {successDisasterAlerts.map((alert) => (
+            <div
+              key={alert.id}
+              className={`p-4 rounded-xl border ${
+                alert.severity === "critical"
+                  ? "border-destructive/40 bg-destructive/5"
+                  : "border-chart-4/30 bg-chart-4/5"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                <ShieldAlert className={`w-4 h-4 shrink-0 ${
+                  alert.severity === "critical" ? "text-destructive" : "text-chart-4"
+                }`} />
+                <span className={`text-sm font-semibold ${
+                  alert.severity === "critical" ? "text-destructive" : "text-chart-4"
+                }`}>
+                  {alert.title}
+                </span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">
+                {alert.description}
+              </p>
+              {alert.recommendation && (
+                <p className="text-xs text-muted-foreground/80 italic">
+                  {alert.recommendation}
+                </p>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* MISSED DEADLINES ALERT                                           */}
+      {/* ================================================================ */}
+      {missedDeadlines.length > 0 && (
+        <div className="p-4 rounded-xl border border-destructive/30 bg-destructive/5">
+          <div className="flex items-center gap-2 mb-2">
+            <Calendar className="w-4 h-4 text-destructive shrink-0" />
+            <span className="text-sm font-semibold text-destructive">
+              {missedDeadlines.length} Missed Deadline{missedDeadlines.length > 1 ? "s" : ""}
+            </span>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">
+            Application deadlines passed without a recorded submission. This may
+            affect your point accumulation and purge timers.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {missedDeadlines.map((md) => {
+              const state = STATES_MAP[md.stateId];
+              return (
+                <div
+                  key={md.milestoneId}
+                  className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-destructive/10 text-xs"
+                >
+                  {state && (
+                    <span
+                      className="w-5 h-5 rounded flex items-center justify-center text-[7px] font-bold text-white"
+                      style={{ backgroundColor: state.color }}
+                    >
+                      {state.abbreviation}
+                    </span>
+                  )}
+                  <SpeciesAvatar speciesId={md.speciesId} size={14} />
+                  <span className="font-medium">
+                    {formatSpeciesName(md.speciesId)}
+                  </span>
+                  <span className="text-muted-foreground/60">
+                    due {md.deadline}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ================================================================ */}
+      {/* FIDUCIARY CASCADE ALERTS                                         */}
+      {/* ================================================================ */}
+      {fiduciaryAlerts.length > 0 && (
+        <div className="space-y-2">
+          {fiduciaryAlerts.slice(0, 5).map((alert) => (
+            <div
+              key={alert.id}
+              className={`p-3 rounded-xl border text-xs ${
+                alert.severity === "critical"
+                  ? "border-destructive/30 bg-destructive/5"
+                  : alert.severity === "warning"
+                    ? "border-chart-4/30 bg-chart-4/5"
+                    : "border-primary/20 bg-primary/5"
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-1">
+                {alert.severity === "critical" ? (
+                  <ShieldAlert className="w-3.5 h-3.5 text-destructive shrink-0" />
+                ) : alert.severity === "warning" ? (
+                  <AlertTriangle className="w-3.5 h-3.5 text-chart-4 shrink-0" />
+                ) : (
+                  <TrendingUp className="w-3.5 h-3.5 text-primary shrink-0" />
+                )}
+                <span className="font-semibold">{alert.title}</span>
+              </div>
+              <p className="text-muted-foreground">{alert.description}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* ================================================================ */}
       {/* UNRECORDED RESULTS ALERT                                         */}

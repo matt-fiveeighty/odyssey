@@ -1,72 +1,142 @@
-# Build Plan: 3 Month-9 Retention Features
+# Phase 1: Cloud Persistence — Wire All User Data to Supabase
 
-## Build 1: Post-Draw Rebalance Engine
-**File:** `src/app/(app)/rebalance/page.tsx` (replace empty placeholder)
-**Why:** Strategist (4/10), Purist (3/10), Dad (6/10) all need guidance after partial draw results
+## Key Discovery
+**The DB tables already exist.** Supabase already has `assessments`, `user_goals`, `wizard_state`, `savings_goals`, `budget_plans`, and `user_points` tables with RLS policies. The only working sync is `user_points`. Everything else is disconnected.
 
-**What it does:**
-- Reads `milestones` from appStore, filters to current year's `apply` type milestones
-- Groups by state, shows: Drew / Didn't Draw / Awaiting / Not Yet Applied
-- For each "didn't draw" state+species: computes rebalance options:
-  - **Stay the course** — show updated years-to-draw with point creep (using `yearsToDrawWithCreep`)
-  - **Burn consolation** — suggest lower-tier unit in same state where they could draw sooner
-  - **Pivot state** — flag alternative states with same species + better odds
-- Summary card at top: "You applied to X states. Drew Y. Didn't draw Z. Here's what changed."
-- Uses existing `estimateCreepRate`, `yearsToDrawWithCreep` from point-creep.ts
-- Reads `userPoints` to show actual position
-- Links to `/plan-builder` with "Rebuild Strategy" CTA
+## Architecture Decision: Bulk Sync Endpoint
+Instead of 6 separate API endpoints (one per data type), we build **one bulk sync endpoint** — `POST /api/user/sync` for writes and `GET /api/user/sync` for full hydration. This means:
+- **1 network request on login** (not 6)
+- **1 debounced sync call** on mutations (not 6)
+- Atomic: all data arrives together, no partial states
 
-**No new store fields needed** — reads from existing appStore milestones + userPoints + roadmapStore activeAssessment
+## Store → DB Table Mapping
 
-## Build 2: Welcome Back Dashboard Card
-**File:** `src/app/(app)/dashboard/page.tsx` (insert new card section)
-**Why:** Professional (5/10) comes back after months and is lost, all personas need context reinstatement
+| Store Field | DB Table | Strategy |
+|---|---|---|
+| `savedPlans` | `assessments` | Add `name`, `label`, `is_active` columns |
+| `userGoals` | `user_goals` | Already exists — wire up (milestones embedded as JSONB) |
+| `milestones` | embedded in `user_goals.milestones` | No separate table needed |
+| `savingsGoals` | `savings_goals` | Already exists — wire up |
+| `fiduciaryAlerts` | NEW `fiduciary_alerts` table | Create table |
+| `scheduleConflicts` | embedded in fiduciary_alerts JSONB | No separate table |
+| `activePlanId` | derived from `assessments.is_active` | No extra table |
+| Wizard state | `wizard_state` | Already exists — wire up |
 
-**What it does:**
-- Detects returning user: `hasPlan && milestones.length > 0`
-- Computes "since you've been away" summary:
-  - Count milestones completed, draw outcomes recorded
-  - Find unrecorded draw results (milestones with `drawResultDate` in the past but no `drawOutcome`)
-  - Count upcoming deadlines within 60 days
-- Shows card between deadline banner and strategic metrics:
-  - "Welcome back! Here's your status:" headline
-  - Status chips: "2 drew · 1 didn't draw · 3 pending"
-  - Alert: "X draw results are in — record yours" (links to /goals)
-  - Alert: "Y deadlines in the next 60 days" (links to /deadlines)
-  - Cycle indicator: "You're in Year N of your plan" (computed from roadmap[0].year vs current year)
-- Auto-hides after user has visited 3+ times in current month (use sessionStorage counter)
+---
 
-## Build 3: Quick Plan Express Mode
-**File:** `src/components/consultation/ConsultationShell.tsx` (modify step navigation)
-**File:** `src/app/(app)/dashboard/page.tsx` (add Express CTA)
-**Why:** Casual Regional (6/10) and Professional (7/10) find 9 steps too long
+## Implementation Steps
 
-**What it does:**
-- Add `expressMode` boolean to wizard store
-- When expressMode = true:
-  - ConsultationShell shows only Steps 1, 2, 4 (About You, Species, Budget)
-  - Step labels update: "1 of 3", "2 of 3", "3 of 3"
-  - After Step 4, auto-fills sensible defaults for Steps 3, 5, 6, 7, 8, 9:
-    - trophyVsMeat: "balanced"
-    - huntStyle: "diy_truck"
-    - importantFactors: ["draw_odds", "cost"]
-    - huntFrequency: "every_year"
-    - timeAvailable: "full_week"
-    - travelWillingness: based on homeState (western state = "drive_only", else "short_flight")
-    - selectedStatesConfirmed: auto-select top 3 states from preview scores
-  - Jumps directly to generation (Step 9 → generate)
-- Dashboard gets "Quick Plan (60 seconds)" button alongside existing "New Plan" / "Adjust Plan"
-- Express CTA only shows when user has NO confirmed plan yet
+### Step 1: SQL Migration
+**New file: `supabase-migration-cloud-persist.sql`**
 
-**Store change:** Add `expressMode: boolean` + `setExpressMode` to ConsultationState + initial state
+- ALTER `assessments`: add `name TEXT`, `label TEXT`, `is_active BOOLEAN`, `updated_at TIMESTAMPTZ`
+- CREATE `fiduciary_alerts` table with RLS
+- Add indexes for `assessments(user_id, is_active)` and `fiduciary_alerts(user_id)`
+- User runs this manually against their Supabase instance
 
-## Execution Order
-1. Rebalance Engine (standalone page, no dependencies)
-2. Welcome Back Card (standalone dashboard addition)
-3. Express Mode (touches wizard store + shell + dashboard)
+### Step 2: Bulk Sync API Route
+**New file: `src/app/api/user/sync/route.ts`**
 
-## Files touched
-- `src/app/(app)/rebalance/page.tsx` — full rewrite
-- `src/app/(app)/dashboard/page.tsx` — add Welcome Back card + Express CTA
-- `src/components/consultation/ConsultationShell.tsx` — express mode step logic
-- `src/lib/store.ts` — add expressMode field + action
+**GET** — Fetches ALL user data in parallel from 5 tables:
+- `assessments` → `savedPlans` (camelCase mapping)
+- `user_goals` → `userGoals` (milestones are JSONB within goals)
+- `savings_goals` → `savingsGoals`
+- `fiduciary_alerts` → `fiduciaryAlerts`
+- `user_points` → `userPoints`
+- `wizard_state` → wizard store snapshot
+
+Returns `{ plans, goals, savings, alerts, points, wizardState, activePlanId }`
+
+**POST** — Upserts ALL user data atomically:
+- Maps each store section to its table using conflict keys
+- Assessment conflict: `(user_id, id)` — upsert with input/result JSONB
+- Goals conflict: `(user_id, id)` — upsert with milestones embedded
+- Savings conflict: `(user_id, id)`
+- Alerts conflict: `(user_id, alert_id)`
+- Points conflict: `(user_id, state_id, species_id, point_type)`
+
+Pattern follows existing `/api/user/points` — `createServerSupabase()`, auth check, snake_case DB columns.
+
+### Step 3: Sync Manager
+**New file: `src/lib/sync.ts`**
+
+Replaces inline `syncPointsToDb()`:
+
+```
+syncAllToDb()     — debounced (800ms), POST /api/user/sync with full state
+hydrateFromDb()   — GET /api/user/sync → populate all 3 stores
+getSyncStatus()   — 'idle' | 'syncing' | 'error' for UI indicator
+```
+
+- Single shared debounce timer (800ms after last mutation)
+- Silent fail — local store stays authoritative (offline-first)
+- Exported for AuthProvider and store actions
+- Maps between Zustand camelCase types and DB snake_case
+
+### Step 4: Wire Sync into Store
+**Modify: `src/lib/store.ts`**
+
+Remove `syncPointsToDb()` function (replaced by sync.ts).
+
+Add `syncAllToDb()` call to every mutating action:
+- Points: `addUserPoint`, `updateUserPoint`, `removeUserPoint`
+- Goals: `addUserGoal`, `updateUserGoal`, `removeUserGoal`
+- Milestones: `completeMilestone`, `uncompleteMilestone`, `setDrawOutcome`
+- Plans: `savePlan`, `renamePlan`, `deletePlan`, `switchPlan`, `setConfirmedAssessment`
+- Savings: `addSavingsGoal`, `updateSavingsGoal`, `removeSavingsGoal`, `addContribution`
+- Alerts: `dismissFiduciaryAlert`, `clearFiduciaryAlerts`
+- Cascade: `setDrawOutcomeCascade`
+
+Each action gets ONE additional line at the end: `syncAllToDb();`
+
+Wizard store: sync on `confirmPlan()` only (not every field change — too noisy during 9-step flow).
+
+### Step 5: Wire Hydration into AuthProvider
+**Modify: `src/components/providers/AuthProvider.tsx`**
+
+After successful auth:
+1. Call `hydrateFromDb()`
+2. Merge strategy: DB data wins if local store is empty for that section. If both have data, use whichever `updatedAt` is newer.
+3. Add `hydrated` state to context so pages can show loading until data arrives
+
+### Step 6: Tests
+**New file: `src/lib/engine/__tests__/cloud-persistence.test.ts`**
+
+- camelCase↔snake_case mapping roundtrips
+- Debounce: 5 rapid mutations → 1 sync call
+- Hydration merge: empty local + full DB → use DB
+- Hydration merge: full local + stale DB → keep local
+- Assessment JSONB serialization roundtrip
+- Alert deduplication (same alert_id)
+- Graceful degradation (fetch throws → local store unaffected)
+- Wizard state: only syncs on confirmPlan, not on setField
+
+---
+
+## Files Summary
+
+### Created (4 files)
+1. `supabase-migration-cloud-persist.sql` — Schema changes
+2. `src/app/api/user/sync/route.ts` — Bulk sync endpoint
+3. `src/lib/sync.ts` — Sync manager
+4. `src/lib/engine/__tests__/cloud-persistence.test.ts` — Tests
+
+### Modified (2 files)
+1. `src/lib/store.ts` — Replace `syncPointsToDb` with `syncAllToDb`, add sync calls to all actions
+2. `src/components/providers/AuthProvider.tsx` — Add `hydrateFromDb()` on login
+
+---
+
+## What This Fixes
+- ✅ 10-year strategic plan survives cache clear
+- ✅ Goals and milestones persist to cloud
+- ✅ Fiduciary alerts persist across devices
+- ✅ Savings goals don't vanish on browser switch
+- ✅ Cross-device access (phone ↔ laptop)
+- ✅ Single network request on login
+- ✅ Offline-first: localStorage is always authoritative, Supabase is async backup
+
+## What This Defers
+- Schema migration V1→V2 auto-upgrade (on ice)
+- Simultaneous multi-device conflict resolution (Beta limitation — last write wins)
+- Wizard auto-save during steps (only saves completed plans)

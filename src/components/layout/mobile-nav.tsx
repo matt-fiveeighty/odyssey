@@ -18,6 +18,7 @@ import {
   Calendar,
   RefreshCw,
   Sparkles,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,6 +38,7 @@ const moreItems = [
   { href: "/rebalance", label: "Rebalance", icon: RefreshCw },
   { href: "/plan-builder", label: "Onboarding", icon: Sparkles },
   { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/admin", label: "Data Airlock", icon: Shield },
 ];
 
 export function MobileNav() {
