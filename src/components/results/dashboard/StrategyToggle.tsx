@@ -12,7 +12,7 @@ export function StrategyToggle({ assessment }: StrategyToggleProps) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-xl border border-primary/20 bg-gradient-to-r from-primary/8 via-primary/4 to-transparent overflow-hidden">
+    <div className="magic-card magic-card--glow rounded-xl border border-primary/20 bg-gradient-to-r from-primary/8 via-primary/4 to-transparent overflow-hidden">
       <button
         onClick={() => setOpen(!open)}
         className="w-full flex items-center gap-3 p-4 hover:bg-primary/5 transition-colors cursor-pointer"

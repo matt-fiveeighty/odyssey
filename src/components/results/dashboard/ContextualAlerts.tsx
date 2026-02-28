@@ -81,7 +81,7 @@ export function ContextualAlerts({ assessment }: ContextualAlertsProps) {
           return (
             <div
               key={alert.id}
-              className={`${style.bg} ${style.border} border rounded-xl p-3 flex items-start gap-3`}
+              className={`magic-card magic-card--glow ${style.bg} ${style.border} border rounded-xl p-3 flex items-start gap-3`}
             >
               <Icon className={`w-4 h-4 ${style.icon} mt-0.5 shrink-0`} />
               <div className="flex-1 min-w-0">

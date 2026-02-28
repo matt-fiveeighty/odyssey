@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import Link from "next/link";
 import { Route, ArrowRight, Pencil, RefreshCw, Zap } from "lucide-react";
+import { useDashboardSpotlight } from "@/hooks/useDashboardSpotlight";
 import { Button } from "@/components/ui/button";
 import { useRoadmapStore, useAppStore, useWizardStore } from "@/lib/store";
 import { KPIGridSkeleton, MapSkeleton } from "@/components/shared/SkeletonShimmer";
@@ -48,6 +49,8 @@ export default function RoadmapPage() {
 
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  useDashboardSpotlight(dashboardRef, !!activeAssessment);
   const [selectedStateId, setSelectedStateId] = useState<string | null>(null);
   const [selectedActionIdx, setSelectedActionIdx] = useState<number | null>(0);
   const [mapExpanded, setMapExpanded] = useState(false);
@@ -379,7 +382,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 space-y-4 fade-in-up">
+    <div ref={dashboardRef} className="p-4 md:p-6 space-y-4 fade-in-up">
       {/* ROW 1: Header — Plan name + Year pills + Edit/Rebuild */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <PlanManager />
@@ -520,7 +523,7 @@ export default function RoadmapPage() {
 
       {/* ROW 4: Master-Detail — Action List + Action Detail */}
       <div className={cn(
-        "grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-0 min-h-[440px] rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm",
+        "magic-card magic-card--glow grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-0 min-h-[440px] rounded-xl border border-border/60 overflow-hidden bg-card shadow-sm",
         mobileView === "State Map" && "hidden lg:grid",
       )}>
         {/* Left: Action List — own background zone */}

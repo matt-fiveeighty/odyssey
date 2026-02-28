@@ -7,6 +7,7 @@ import { OutcomeSlider } from "@/components/marketing/OutcomeSlider";
 import { ParallaxImage } from "@/components/marketing/ParallaxImage";
 import { ScrollReveal } from "@/components/marketing/ScrollReveal";
 import { StateOutline } from "@/components/shared/StateOutline";
+import { StarBorder } from "@/components/shared/StarBorder";
 import {
   Crosshair,
   Map,
@@ -171,12 +172,14 @@ export default function LandingPage() {
 
           <div className="hero-stagger-4 mt-10">
             <Link href="/auth/sign-up">
-              <Button
-                size="lg"
-                className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
-              >
-                Start Planning <ArrowRight className="w-4 h-4" />
-              </Button>
+              <StarBorder>
+                <Button
+                  size="lg"
+                  className="gap-2 text-base px-8"
+                >
+                  Start Planning <ArrowRight className="w-4 h-4" />
+                </Button>
+              </StarBorder>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
               Free forever. No credit card.
@@ -189,11 +192,11 @@ export default function LandingPage() {
               (state) => (
                 <span
                   key={state}
-                  className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md bg-secondary/60 border border-primary/30 text-xs font-semibold text-muted-foreground badge-shimmer shadow-[0_0_8px_hsl(var(--primary)/0.25),0_0_20px_hsl(var(--primary)/0.1)]"
+                  className="inline-flex items-center justify-center gap-1.5 px-3 h-9 rounded-md bg-secondary/60 border border-primary/30 text-xs font-semibold text-muted-foreground badge-shimmer shadow-[0_0_8px_hsl(var(--primary)/0.25),0_0_20px_hsl(var(--primary)/0.1)]"
                 >
                   <StateOutline
                     stateId={state}
-                    size={16}
+                    size={18}
                     className="drop-shadow-[0_0_4px_hsl(var(--primary)/0.4)]"
                     strokeColor="white"
                     strokeWidth={3}
@@ -229,7 +232,7 @@ export default function LandingPage() {
             ].map((species) => (
               <span
                 key={species}
-                className="px-2.5 py-1 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer text-center"
+                className="flex items-center justify-center px-2.5 h-10 rounded-md bg-primary/5 border border-primary/10 text-[10px] font-medium text-primary/70 badge-shimmer text-center leading-tight"
               >
                 {species}
               </span>
@@ -435,21 +438,23 @@ export default function LandingPage() {
             </p>
           </ScrollReveal>
 
-          <ScrollReveal animation="fade-up" stagger={80} once={false} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <ScrollReveal animation="fade-up" stagger={80} once={false} className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {features.map((feature) => (
               <div
                 key={feature.title}
-                className="relative flex flex-col p-5 rounded-xl bg-card border border-border transition-all duration-300 hover:scale-[1.05] hover:-translate-y-2 hover:z-10 hover:border-primary/30 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] h-full"
+                className="relative flex flex-row items-center gap-4 sm:flex-col sm:items-start sm:gap-0 p-4 sm:p-5 rounded-xl bg-card border border-border transition-all duration-300 hover:scale-[1.05] hover:-translate-y-2 hover:z-10 hover:border-primary/30 hover:shadow-[0_16px_50px_oklch(0_0_0/0.4),0_0_25px_oklch(0.65_0.18_145/0.1)] h-full"
               >
-                <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center mb-3">
+                <div className="w-9 h-9 shrink-0 rounded-lg bg-primary/10 flex items-center justify-center sm:mb-3">
                   <feature.icon className="w-4.5 h-4.5 text-primary" />
                 </div>
-                <h3 className="text-sm font-semibold mb-1.5">
-                  {feature.title}
-                </h3>
-                <p className="text-xs text-muted-foreground leading-relaxed flex-1">
-                  {feature.description}
-                </p>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-semibold mb-0.5 sm:mb-1.5">
+                    {feature.title}
+                  </h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
             ))}
           </ScrollReveal>
@@ -517,12 +522,14 @@ export default function LandingPage() {
           <ScrollReveal animation="fade-up" delay={300} once={false}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-8">
               <Link href="/auth/sign-up">
-                <Button
-                  size="lg"
-                  className="gap-2 text-base px-8 glow-pulse shimmer-sweep"
-                >
-                  Build Your Strategy <ArrowRight className="w-4 h-4" />
-                </Button>
+                <StarBorder>
+                  <Button
+                    size="lg"
+                    className="gap-2 text-base px-8"
+                  >
+                    Build Your Strategy <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </StarBorder>
               </Link>
               <GuestEntryButton />
             </div>

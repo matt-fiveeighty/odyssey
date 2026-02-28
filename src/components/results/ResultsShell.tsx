@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { StrategicAssessment, RoadmapAction } from "@/lib/types";
 import { useWizardStore, useAppStore } from "@/lib/store";
+import { useDashboardSpotlight } from "@/hooks/useDashboardSpotlight";
 import { StrategyToggle } from "./dashboard/StrategyToggle";
 import { StatusTicker } from "./dashboard/StatusTicker";
 import { KPIStrip } from "./dashboard/KPIStrip";
@@ -47,6 +48,8 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
   const wizard = useWizardStore();
   const appStore = useAppStore();
   const router = useRouter();
+  const dashboardRef = useRef<HTMLDivElement>(null);
+  useDashboardSpotlight(dashboardRef);
 
   const currentYear = new Date().getFullYear();
 
@@ -127,7 +130,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div ref={dashboardRef} className="space-y-4">
       {/* ROW 1: Strategy Toggle — toggleable header */}
       <StrategyToggle assessment={assessment} />
 
@@ -152,7 +155,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
       />
 
       {/* ROW 4: Master-Detail — Action List (left) + Action Detail (right) */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-0 min-h-[520px] rounded-xl border border-border/50 overflow-hidden bg-background/30">
+      <div className="magic-card magic-card--glow grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-0 min-h-[520px] rounded-xl border border-border/50 overflow-hidden bg-background/30">
         {/* Left: Action List */}
         <div className="lg:border-r border-border/30 lg:max-h-[600px] lg:overflow-y-auto scrollbar-thin">
           <div className="p-3 border-b border-border/30">
@@ -184,7 +187,7 @@ export function ResultsShell({ assessment }: ResultsShellProps) {
       <div className="space-y-2 pt-4 border-t border-border/50">
         <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium mb-2">Deep Dive</p>
         {DEEP_SECTIONS.map((section) => (
-          <div key={section.id} className="rounded-xl border border-border/50 overflow-hidden">
+          <div key={section.id} className="magic-card magic-card--glow rounded-xl border border-border/50 overflow-hidden">
             <button
               onClick={() => toggleSection(section.id)}
               className="w-full flex items-center gap-2 p-3.5 hover:bg-secondary/20 transition-colors cursor-pointer"

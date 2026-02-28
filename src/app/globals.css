@@ -247,6 +247,28 @@
   pointer-events: none;
 }
 
+/* Star border — rotating conic-gradient sweep around edges */
+.star-border {
+  display: inline-block;
+  position: relative;
+  border-radius: var(--radius);
+}
+.star-border__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px;
+  pointer-events: none;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+}
+.star-border > :not(.star-border__ring) {
+  position: relative;
+  z-index: 1;
+}
+
 /* Card lift — subtle hover elevation */
 .card-lift {
   transition: transform 0.25s ease-out, box-shadow 0.25s ease-out;
@@ -572,6 +594,54 @@
   user-select: none;
 }
 
+/* ============================== */
+/* Slot Counter — Rolling Digits  */
+/* ============================== */
+
+.sc-counter {
+  /* Inherits font-financial + parent sizing */
+}
+.sc-col {
+  position: relative;
+  display: inline-block;
+  width: 1ch;
+  height: 1em;
+  overflow: hidden;
+  vertical-align: baseline;
+}
+.sc-strip {
+  display: flex;
+  flex-direction: column;
+  will-change: transform;
+}
+.sc-num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 1em;
+  width: 1ch;
+}
+.sc-comma {
+  width: 0.4ch;
+  display: inline-block;
+}
+
+/* ============================== */
+/* Magic Card — Cursor-tracking   */
+/* border glow from spotlight     */
+/* ============================== */
+
+.magic-card {
+  position: relative;
+}
+
+/* Elevated shadow on hover for magic cards */
+.magic-card:hover {
+  box-shadow:
+    0 4px 20px oklch(0 0 0 / 0.3),
+    0 0 25px oklch(0.65 0.18 145 / 0.08);
+}
+
 /* Reduced motion: disable all custom animations for users who prefer it */
 @media (prefers-reduced-motion: reduce) {
   .step-enter-forward,
@@ -621,6 +691,9 @@
   }
   .glow-burn-year::after {
     display: none;
+  }
+  .magic-card:hover {
+    box-shadow: none !important;
   }
   *,
   *::before,

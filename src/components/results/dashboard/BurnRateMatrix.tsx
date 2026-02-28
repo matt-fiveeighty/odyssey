@@ -43,7 +43,7 @@ export function BurnRateMatrix({ assessment }: BurnRateMatrixProps) {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="rounded-xl border border-border/50 overflow-hidden">
+      <div className="magic-card magic-card--glow rounded-xl border border-border/50 overflow-hidden">
         {/* Header */}
         <div className="px-4 py-2.5 bg-secondary/40 border-b border-border/30 flex items-center justify-between">
           <span className="label-uppercase">

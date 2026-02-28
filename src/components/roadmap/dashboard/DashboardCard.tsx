@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { StrategicAssessment, BoardState, DisciplineViolation } from "@/lib/types";
+import { useMagicCard } from "@/hooks/useMagicCard";
 import type { JourneyYearData } from "@/lib/engine/journey-data";
 import { InteractiveMap, type StateAllocatorData } from "@/components/journey/InteractiveMap";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
@@ -27,6 +28,22 @@ import {
   Minus,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+/** Map Tailwind icon-color classes → RGB strings for glow effects */
+const ICON_COLOR_RGB: Record<string, string> = {
+  "text-red-400":     "248, 113, 113",
+  "text-chart-2":     "234, 160, 0",    // oklch(0.70 0.15 55) ≈ warm amber
+  "text-blue-400":    "96, 165, 250",
+  "text-amber-400":   "251, 191, 36",
+  "text-chart-3":     "99, 102, 241",    // oklch(0.55 0.15 260) ≈ indigo
+  "text-chart-4":     "239, 118, 46",    // oklch(0.65 0.20 30) ≈ orange
+  "text-purple-400":  "192, 132, 252",
+  "text-emerald-400": "52, 211, 153",
+};
+
+function resolveGlowColor(iconColor: string): string {
+  return ICON_COLOR_RGB[iconColor] ?? "34, 197, 94";
+}
 
 interface DashboardCardProps {
   assessment: StrategicAssessment;
@@ -182,7 +199,7 @@ export function DashboardCard({
 
   return (
     <div className={cn(
-      "grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm",
+      "magic-card magic-card--glow grid grid-cols-1 lg:grid-cols-[2fr_3fr] gap-0 rounded-xl border border-border/60 bg-card overflow-hidden shadow-sm",
       isBurnYear && "glow-burn-year",
     )}>
       {/* Left: 2x4 Allocator KPI Grid */}
@@ -218,7 +235,7 @@ export function DashboardCard({
             sublabel={`${stateRecommendations.length} states`}
             glowClass="glow-equity"
           >
-            <span className="font-financial">{portfolioValue} pts</span>
+            <AnimatedCounter value={portfolioValue} suffix=" pts" />
           </KPITile>
 
           {/* 4. Active F&G Apps — hidden on mobile for condensed 2×2 */}
@@ -229,7 +246,7 @@ export function DashboardCard({
             sublabel={activeApps.nextDeadline ? `Next: ${formatShortDate(activeApps.nextDeadline)}` : selectedYear.toString()}
             className="hidden md:flex"
           >
-            <span className="font-financial">{String(activeApps.count).padStart(2, "0")}</span>
+            <AnimatedCounter value={activeApps.count} padStart={2} />
           </KPITile>
 
           {/* 5. Creep Velocity — hidden on mobile for condensed 2×2 */}
@@ -242,8 +259,9 @@ export function DashboardCard({
             glowClass={avgPCV >= 1.0 ? "glow-danger" : undefined}
             className="hidden md:flex"
           >
-            <span className={cn("font-financial", avgPCV >= 1.0 && "text-red-400")}>
-              {avgPCV >= 1.0 ? "▲ " : ""}{avgPCV.toFixed(1)}
+            <span className={cn(avgPCV >= 1.0 && "text-red-400")}>
+              {avgPCV >= 1.0 && "▲ "}
+              <AnimatedCounter value={parseFloat(avgPCV.toFixed(1))} decimals={1} />
             </span>
           </KPITile>
 
@@ -255,7 +273,11 @@ export function DashboardCard({
             sublabel={nextMilestone ? `${nextMilestone.species} · ${nextMilestone.stateAbbr}` : "No hunts yet"}
             glowClass={isBurnYear ? "glow-success" : undefined}
           >
-            <span className="font-financial text-chart-3">{nextMilestone?.year ?? "—"}</span>
+            {nextMilestone ? (
+              <AnimatedCounter value={nextMilestone.year} className="text-chart-3" locale={false} />
+            ) : (
+              <span className="font-financial text-chart-3">—</span>
+            )}
           </KPITile>
 
           {/* 7. Draw Probability — hidden on mobile for condensed 2×2 */}
@@ -266,12 +288,13 @@ export function DashboardCard({
             sublabel={`${selectedYear} cumulative`}
             className="hidden md:flex"
           >
-            <span className={cn(
-              "font-financial",
-              drawProbability >= 50 ? "text-emerald-400" : drawProbability >= 25 ? "text-amber-400" : "text-red-400",
-            )}>
-              {drawProbability}%
-            </span>
+            <AnimatedCounter
+              value={drawProbability}
+              suffix="%"
+              className={cn(
+                drawProbability >= 50 ? "text-emerald-400" : drawProbability >= 25 ? "text-amber-400" : "text-red-400",
+              )}
+            />
           </KPITile>
 
           {/* 8. Budget Discipline — hidden on mobile for condensed 2×2 */}
@@ -365,13 +388,20 @@ function KPITile({
   className?: string;
   children: React.ReactNode;
 }) {
+  const tileRef = useRef<HTMLDivElement>(null);
+  useMagicCard(tileRef);
+
   return (
-    <div className={cn(
-      "flex flex-col justify-between p-3 rounded-lg bg-secondary/40 border border-border/40 min-h-[100px] transition-all duration-300",
-      "hover:border-border/60 hover:bg-secondary/50",
-      glowClass,
-      className,
-    )}>
+    <div
+      ref={tileRef}
+      data-glow-color={resolveGlowColor(iconColor)}
+      className={cn(
+        "magic-card magic-card--glow flex flex-col justify-between p-3 rounded-lg bg-secondary/40 border border-border/40 min-h-[100px] transition-all duration-300",
+        "hover:border-border/60 hover:bg-secondary/50",
+        glowClass,
+        className,
+      )}
+    >
       {/* Header: icon + label */}
       <div className="flex items-center gap-1.5 mb-1">
         <Icon className={cn("w-3.5 h-3.5", iconColor)} />

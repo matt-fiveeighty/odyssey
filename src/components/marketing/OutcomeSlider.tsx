@@ -13,9 +13,9 @@ import {
 /* ------------------------------------------------------------------ */
 
 function TimelinePill({ year }: { year: SamplePlanYear }) {
-  const base = "flex flex-col items-center gap-1";
+  const base = "flex flex-col items-center gap-1 min-w-0";
   const dotBase =
-    "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold";
+    "w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0";
 
   if (year.phase === "draw") {
     return (
@@ -23,7 +23,7 @@ function TimelinePill({ year }: { year: SamplePlanYear }) {
         <div className={`${dotBase} bg-primary text-primary-foreground`}>
           {year.year}
         </div>
-        <span className="text-[9px] text-primary font-medium leading-tight text-center max-w-[48px]">
+        <span className="text-[9px] text-primary font-medium leading-tight text-center truncate w-full">
           {year.species}
         </span>
       </div>
@@ -38,7 +38,7 @@ function TimelinePill({ year }: { year: SamplePlanYear }) {
         >
           {year.year}
         </div>
-        <span className="text-[9px] text-muted-foreground/60 leading-tight text-center max-w-[48px]">
+        <span className="text-[9px] text-muted-foreground/60 leading-tight text-center truncate w-full">
           {year.state}
         </span>
       </div>
@@ -60,6 +60,39 @@ function TimelinePill({ year }: { year: SamplePlanYear }) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Vertical label (rotated text on the edge)                          */
+/* ------------------------------------------------------------------ */
+
+function VerticalLabel({
+  text,
+  side,
+  variant,
+}: {
+  text: string;
+  side: "left" | "right";
+  variant: "blind" | "disciplined";
+}) {
+  const isPrimary = variant === "disciplined";
+  return (
+    <div
+      className={`absolute top-0 bottom-0 ${side === "left" ? "left-0" : "right-0"} w-10 flex items-center justify-center z-10`}
+    >
+      <span
+        className={`text-[11px] font-extrabold uppercase tracking-[0.2em] whitespace-nowrap ${
+          isPrimary ? "text-primary/30" : "text-muted-foreground/20"
+        }`}
+        style={{
+          writingMode: "vertical-lr",
+          transform: side === "left" ? "rotate(180deg)" : undefined,
+        }}
+      >
+        {text}
+      </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
 /*  Plan panel (used on both sides)                                    */
 /* ------------------------------------------------------------------ */
 
@@ -73,48 +106,41 @@ function PlanPanel({
   const isPrimary = variant === "disciplined";
 
   return (
-    <div className="h-full flex flex-col justify-between p-6 md:p-8">
-      <div>
-        <h3
-          className={`text-sm font-bold mb-5 ${
-            isPrimary ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          {plan.label}
-        </h3>
-
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div>
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-              Annual Spend
-            </p>
-            <p className="text-sm font-semibold">
-              ${Math.round(plan.annualSpend).toLocaleString()}/yr
-            </p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-              States
-            </p>
-            <p className="text-sm font-semibold">{plan.states}</p>
-          </div>
-          <div>
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
-              Projected Hunts
-            </p>
-            <p className="text-sm font-semibold">{plan.huntsProjected}</p>
-          </div>
+    <div className="h-full flex flex-col px-12 py-6 md:py-8">
+      {/* KPI row */}
+      <div className="grid grid-cols-3 gap-4 mb-5">
+        <div>
+          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+            Annual Spend
+          </p>
+          <p className="text-sm font-semibold">
+            ${Math.round(plan.annualSpend).toLocaleString()}/yr
+          </p>
         </div>
-
-        <div className="flex items-end gap-2 flex-wrap justify-center">
-          {plan.timeline.map((yr) => (
-            <TimelinePill key={yr.year} year={yr} />
-          ))}
+        <div>
+          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+            States
+          </p>
+          <p className="text-sm font-semibold">{plan.states}</p>
+        </div>
+        <div>
+          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+            Projected Hunts
+          </p>
+          <p className="text-sm font-semibold">{plan.huntsProjected}</p>
         </div>
       </div>
 
+      {/* Timeline */}
+      <div className="grid grid-cols-8 gap-1 mb-5">
+        {plan.timeline.map((yr) => (
+          <TimelinePill key={yr.year} year={yr} />
+        ))}
+      </div>
+
+      {/* Summary — pushed to bottom with auto margin */}
       <p
-        className={`text-center text-lg font-bold pt-6 ${
+        className={`text-center text-base font-bold mt-auto ${
           isPrimary ? "text-primary" : "text-muted-foreground/60"
         }`}
       >
@@ -205,65 +231,60 @@ export function OutcomeSlider() {
     <div
       ref={containerRef}
       className="relative rounded-xl border border-border overflow-hidden bg-card select-none touch-none"
-      style={{ minHeight: 340 }}
+      style={{ height: 280 }}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
     >
       {/* Blind side (full width, underneath) */}
       <div className="absolute inset-0">
+        <VerticalLabel text="Applying Blind" side="left" variant="blind" />
         <PlanPanel plan={planBlind} variant="blind" />
       </div>
 
       {/* Disciplined side (clipped by slider) */}
       <div
-        className="absolute inset-0 border-r-0"
+        className="absolute inset-0"
         style={{
           clipPath: `inset(0 0 0 ${sliderPos}%)`,
         }}
       >
-        <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-primary/10" />
-        <PlanPanel plan={planDisciplined} variant="disciplined" />
-      </div>
-
-      {/* Slider handle */}
-      <div
-        className="absolute top-0 bottom-0 z-10 flex items-center"
-        style={{ left: `${sliderPos}%`, transform: "translateX(-50%)" }}
-      >
-        {/* Vertical line */}
-        <div className="absolute inset-y-0 w-0.5 bg-primary/60" />
-
-        {/* Drag handle */}
-        <div className="relative z-10 w-10 h-10 rounded-full bg-primary border-2 border-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 16 16"
-            fill="none"
-            className="text-primary-foreground"
-          >
-            <path
-              d="M4 8L1 5.5M4 8L1 10.5M4 8H12M12 8L15 5.5M12 8L15 10.5"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
+        <div className="absolute inset-0 bg-card" />
+        <div className="absolute inset-0 bg-gradient-to-r from-primary/8 to-primary/15" />
+        <div className="relative z-10 h-full">
+          <VerticalLabel text="Strategic Plan" side="right" variant="disciplined" />
+          <PlanPanel plan={planDisciplined} variant="disciplined" />
         </div>
       </div>
 
-      {/* Labels */}
-      <div className="absolute top-3 left-3 z-20">
-        <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-wider bg-background/60 backdrop-blur-sm px-2 py-0.5 rounded-md">
-          Blind
-        </span>
-      </div>
-      <div className="absolute top-3 right-3 z-20">
-        <span className="text-[10px] font-bold text-primary/60 uppercase tracking-wider bg-background/60 backdrop-blur-sm px-2 py-0.5 rounded-md">
-          Strategic
-        </span>
+      {/* Slider handle — line + centered grab circle */}
+      <div
+        className="absolute top-0 bottom-0 z-20 pointer-events-none"
+        style={{ left: `${sliderPos}%` }}
+      >
+        {/* Vertical line — centered on the left edge */}
+        <div className="absolute inset-y-0 w-0.5 bg-primary/60 -translate-x-1/2" />
+
+        {/* Drag handle — centered on the line */}
+        <div className="absolute top-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-auto">
+          <div className="w-10 h-10 rounded-full bg-primary border-2 border-primary-foreground shadow-lg flex items-center justify-center cursor-grab active:cursor-grabbing">
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+              className="text-primary-foreground"
+            >
+              <path
+                d="M4 8L1 5.5M4 8L1 10.5M4 8H12M12 8L15 5.5M12 8L15 10.5"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
   );

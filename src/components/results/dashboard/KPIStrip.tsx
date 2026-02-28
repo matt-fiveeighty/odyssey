@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import type { StrategicAssessment } from "@/lib/types";
 import { STATES_MAP } from "@/lib/constants/states";
 import { AnimatedCounter } from "@/components/shared/AnimatedCounter";
@@ -11,6 +11,7 @@ import type { YearType } from "@/lib/types";
 import { computeCapitalSummary } from "@/lib/engine/capital-allocator";
 import { useWizardStore } from "@/lib/store";
 import { Lock, Unlock, Crosshair, TrendingUp, DollarSign } from "lucide-react";
+import { useMagicCard } from "@/hooks/useMagicCard";
 import {
   Tooltip,
   TooltipContent,
@@ -25,6 +26,15 @@ interface KPIStripProps {
 export function KPIStrip({ assessment }: KPIStripProps) {
   const { financialSummary, stateRecommendations, macroSummary, roadmap } = assessment;
   const homeState = useWizardStore((s) => s.homeState);
+
+  const card1Ref = useRef<HTMLDivElement>(null);
+  const card2Ref = useRef<HTMLDivElement>(null);
+  const card3Ref = useRef<HTMLDivElement>(null);
+  const card4Ref = useRef<HTMLDivElement>(null);
+  useMagicCard(card1Ref);
+  useMagicCard(card2Ref);
+  useMagicCard(card3Ref);
+  useMagicCard(card4Ref);
 
   const capitalSummary = useMemo(
     () => computeCapitalSummary(assessment, homeState),
@@ -51,7 +61,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
 
         {/* Card 1: Sunk Capital — non-refundable fees */}
-        <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
+        <div ref={card1Ref} data-glow-color="248, 113, 113" className="magic-card magic-card--glow p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Lock className="w-3.5 h-3.5 text-red-400" />
             <span className="label-uppercase">Sunk Capital</span>
@@ -95,7 +105,7 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         </div>
 
         {/* Card 2: Floated Capital — refundable if unsuccessful */}
-        <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
+        <div ref={card2Ref} data-glow-color="234, 160, 0" className="magic-card magic-card--glow p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Unlock className="w-3.5 h-3.5 text-chart-2" />
             <span className="label-uppercase">Floated</span>
@@ -139,13 +149,13 @@ export function KPIStrip({ assessment }: KPIStripProps) {
         </div>
 
         {/* Card 3: First Hunt — when and what */}
-        <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
+        <div ref={card3Ref} data-glow-color="99, 102, 241" className="magic-card magic-card--glow p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <Crosshair className="w-3.5 h-3.5 text-chart-3" />
             <span className="label-uppercase">First Hunt</span>
           </div>
           <p className="text-2xl font-bold text-chart-3 tracking-tight font-financial">
-            {firstHunt ? firstHunt.year : "—"}
+            {firstHunt ? <AnimatedCounter value={firstHunt.year} className="text-chart-3" locale={false} /> : "—"}
           </p>
           {huntAction && (
             <div className="flex items-center gap-1.5 mt-1.5">
@@ -156,12 +166,12 @@ export function KPIStrip({ assessment }: KPIStripProps) {
             </div>
           )}
           <p className="text-[10px] text-muted-foreground/60 mt-1 font-financial">
-            {macroSummary.plannedHunts} hunts / {roadmap.length} years
+            <AnimatedCounter value={macroSummary.plannedHunts} className="text-[10px]" /> hunts / {roadmap.length} years
           </p>
         </div>
 
         {/* Card 4: 10-Year Total — sparkline cost per year */}
-        <div className="p-4 rounded-xl bg-secondary/40 border border-border/50">
+        <div ref={card4Ref} data-glow-color="239, 118, 46" className="magic-card magic-card--glow p-4 rounded-xl bg-secondary/40 border border-border/50">
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp className="w-3.5 h-3.5 text-chart-4" />
             <span className="label-uppercase">10-Year Total</span>

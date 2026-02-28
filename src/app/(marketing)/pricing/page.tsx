@@ -12,6 +12,7 @@ import {
   Crown,
   TrendingUp,
 } from "lucide-react";
+import { StarBorder } from "@/components/shared/StarBorder";
 
 export const metadata: Metadata = {
   title: "Pricing | Odyssey Outdoors",
@@ -288,9 +289,11 @@ export default function PricingPage() {
           {/* CTA */}
           <div className="mt-16 text-center">
             <Link href="/auth/sign-up">
-              <Button size="lg" className="gap-2 text-base px-8 glow-pulse">
-                Get Started Now <ArrowRight className="w-4 h-4" />
-              </Button>
+              <StarBorder>
+                <Button size="lg" className="gap-2 text-base px-8">
+                  Get Started Now <ArrowRight className="w-4 h-4" />
+                </Button>
+              </StarBorder>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground">
               Free forever. No credit card required.
